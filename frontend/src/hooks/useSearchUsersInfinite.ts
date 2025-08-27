@@ -15,7 +15,7 @@ export const useSearchUsersInfinite = (params: Omit<SearchUsersParams, 'pageable
 
       const resData = response.data;
 
-      if (!resData || resData.fail) {
+      if (!resData || resData.fail || !resData.data) {
         return {
           content: [],
           page: 0,
@@ -26,7 +26,7 @@ export const useSearchUsersInfinite = (params: Omit<SearchUsersParams, 'pageable
         };
       }
 
-      const data = resData.data;
+      const data = resData.data as any;
 
       return {
         content: data.content || [],
@@ -34,7 +34,7 @@ export const useSearchUsersInfinite = (params: Omit<SearchUsersParams, 'pageable
         size: data.size || 10,
         totalElements: data.totalElements || 0,
         totalPages: data.totalPages || 0,
-        hasNext: data.page + 1 < data.totalPages,
+        hasNext: (data.page || 0) + 1 < (data.totalPages || 0),
       };
     },
     getNextPageParam: (lastPage) => (lastPage.hasNext ? lastPage.page + 1 : undefined),
