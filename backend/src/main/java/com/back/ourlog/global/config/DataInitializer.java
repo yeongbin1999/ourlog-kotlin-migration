@@ -25,6 +25,7 @@ import com.back.ourlog.domain.user.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
@@ -32,6 +33,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 @Component
+@Profile({"!prod"})
 @RequiredArgsConstructor
 public class DataInitializer implements CommandLineRunner {
 
