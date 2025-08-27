@@ -4,27 +4,34 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'backend/**'
+
+permissions:
+  contents: read
+  packages: write
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v3
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v3
 
-      - name: Login to DockerHub
+      - name: Log in to GHCR
         uses: docker/login-action@v2
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push Docker image
         run: |
-          docker build -t my-backend:latest ./backend
-          docker tag my-backend:latest your-dockerhub-username/my-backend:latest
-          docker push your-dockerhub-username/my-backend:latest
+          IMAGE=ghcr.io/${{ github.repository_owner }}/my-backend:latest
+          docker build -t $IMAGE ./backend
+          docker push $IMAGE
 
       - name: Deploy to EC2 (Blue-Green)
         uses: appleboy/ssh-action@v0.1.8
@@ -34,6 +41,10 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           port: 22
           script: |
+            IMAGE=ghcr.io/${{ github.repository_owner }}/my-backend:latest
+
+            echo ${{ secrets.GHCR_PAT }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            
             if docker ps --filter "name=backend-blue" | grep backend-blue; then
                 ACTIVE=blue
                 INACTIVE=green
@@ -43,13 +54,12 @@ jobs:
                 INACTIVE=blue
                 PORT=8081
             fi
-
-            docker pull your-dockerhub-username/my-backend:latest
+            
+            docker pull $IMAGE
             docker stop backend-$INACTIVE || true
             docker rm backend-$INACTIVE || true
-            docker run -d --name backend-$INACTIVE -p $PORT:8080 your-dockerhub-username/my-backend:latest
-
-            # Nginx upstream 교체 후 reload
+            docker run -d --name backend-$INACTIVE -p $PORT:8080 $IMAGE
+            
             sed -i "s/server 127.0.0.1:808[12];/server 127.0.0.1:$PORT;/g" /etc/nginx/conf.d/backend.conf
             nginx -s reload
 
