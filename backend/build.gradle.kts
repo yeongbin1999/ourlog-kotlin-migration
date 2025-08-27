@@ -1,6 +1,3 @@
-import org.gradle.kotlin.dsl.annotationProcessor
-import org.gradle.kotlin.dsl.implementation
-
 plugins {
     java
     id("org.springframework.boot") version "3.5.3"
@@ -81,11 +78,6 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.12.2")
     testImplementation("org.springframework.security:spring-security-test")
 
-    // --- Testcontainers ---
-    testImplementation(platform("org.testcontainers:testcontainers-bom:1.19.8"))
-    testImplementation("org.testcontainers:junit-jupiter")
-    testImplementation("org.testcontainers:redis")
-
 }
 
 kotlin {
@@ -93,7 +85,6 @@ kotlin {
         freeCompilerArgs.addAll("-Xjsr305=strict")
     }
 }
-
 
 tasks.withType<Test> {
     useJUnitPlatform()
