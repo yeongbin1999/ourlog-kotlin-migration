@@ -1,0 +1,64 @@
+name: Issue → Branch
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  create-branch:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Debug fetch branches
+        run: |
+          git fetch --prune origin
+          echo "📌 Remote branches:"
+          git branch -r
+
+      - name: Generate Branch Name
+        id: gen_branch
+        run: |
+          ISSUE_TITLE="${{ github.event.issue.title }}"
+          ISSUE_NUMBER=${{ github.event.issue.number }}
+
+          echo "📌 ISSUE_TITLE: $ISSUE_TITLE"
+          echo "📌 ISSUE_NUMBER: $ISSUE_NUMBER"
+
+          # type & scope 추출
+          if [[ "$ISSUE_TITLE" =~ ^(infra): ]]; then
+            TYPE="infra"
+            SCOPE=""
+          elif [[ "$ISSUE_TITLE" =~ ^(feat|fix|chore|refactor|docs)\((be|fe)\): ]]; then
+            TYPE="${BASH_REMATCH[1]}"
+            SCOPE="${BASH_REMATCH[2]}"
+          else
+            TYPE="chore"
+            SCOPE="misc"
+          fi
+
+          # 브랜치명 규칙: 전부 / 로 구분
+          if [ "$TYPE" = "infra" ]; then
+            BRANCH_NAME="infra/${ISSUE_NUMBER}"
+          else
+            if [ -z "$SCOPE" ]; then
+              BRANCH_NAME="${TYPE}/${ISSUE_NUMBER}"
+            else
+              BRANCH_NAME="${TYPE}/${SCOPE}/${ISSUE_NUMBER}"
+            fi
+          fi
+
+          echo "✅ Final BRANCH_NAME: $BRANCH_NAME"
+          echo "branch=$BRANCH_NAME" >> $GITHUB_OUTPUT
+
+      - name: Push branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git fetch --prune origin
+          git checkout -b ${{ steps.gen_branch.outputs.branch }} origin/dev
+          git push origin ${{ steps.gen_branch.outputs.branch }}

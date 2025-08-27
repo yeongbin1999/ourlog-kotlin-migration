@@ -1,0 +1,50 @@
+name: Close linked issues on dev merge
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  close-issues-and-delete-branch:
+    if: github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'dev'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Close linked issues and delete branch
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const pr = context.payload.pull_request;
+            const text = `${pr.title}\n${pr.body || ''}`;
+
+            // ✅ PR 제목/본문에서 (#123) 패턴 찾기
+            const issueMatches = [...text.matchAll(/\(#(\d+)\)/g)].map(m => m[1]);
+
+            if (issueMatches.length === 0) {
+              console.log('ℹ️ No linked issues found in PR');
+            } else {
+              for (const issueNumber of issueMatches) {
+                console.log(`✅ Closing issue #${issueNumber}`);
+                await github.rest.issues.update({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issueNumber,
+                  state: "closed"
+                });
+              }
+            }
+
+            // ✅ 병합된 브랜치 삭제
+            const headBranch = pr.head.ref;
+            const protectedBranches = ['main', 'dev'];
+
+            if (!protectedBranches.includes(headBranch)) {
+              console.log(`🗑️ Deleting branch: ${headBranch}`);
+              await github.rest.git.deleteRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: `heads/${headBranch}`
+              });
+            } else {
+              console.log(`⚠️ Skipping deletion of protected branch: ${headBranch}`);
+            }

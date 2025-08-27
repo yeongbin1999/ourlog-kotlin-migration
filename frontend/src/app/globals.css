@@ -1,0 +1,53 @@
+@import "tailwindcss";
+@import "@fontsource/anton";
+@import "@fontsource/inter";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+/* @theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+} */
+
+/* @media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+} */
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: 'Inter', sans-serif; 
+}
+
+.font-logo {
+  font-family: 'Anton', sans-serif;
+}
+
+a {
+  text-decoration: none !important;
+  color: inherit !important;
+  font-weight: normal;
+}
+
+.timeline-hover {
+  transition: all 0.3s ease;
+}
+
+.timeline-hover:hover {
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+  transform: translateY(-5px);
+  cursor: pointer;
+}
+
+.timeline-hover:active {
+  transform: translateY(-2px) scale(0.98);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}

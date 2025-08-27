@@ -1,0 +1,67 @@
+name: Auto PR Title from Issue
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+
+permissions:
+  issues: read
+  pull-requests: write
+
+jobs:
+  set-pr-title:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set PR title same as issue title + number
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const pr = context.payload.pull_request;
+
+            // Dependabot PR은 무시
+            if (pr.user.login === 'dependabot[bot]') {
+              console.log('ℹ️ Dependabot PR detected, skipping title update');
+              return;
+            }
+
+            const branch = pr.head.ref; // 예: feat/be/5
+
+            // 브랜치명에서 issueNumber 추출
+            const match = branch.match(/(\d+)$/);
+            if (!match) {
+              console.log(`❌ Branch ${branch} has no issue number`);
+              return;
+            }
+            const issueNumber = parseInt(match[1], 10);
+
+            // 이슈 존재 여부 체크
+            let issue;
+            try {
+              issue = await github.rest.issues.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber
+              });
+            } catch (error) {
+              if (error.status === 404) {
+                console.log(`❌ Issue #${issueNumber} not found, skipping`);
+                return;
+              }
+              throw error;
+            }
+
+            const issueTitle = issue.data.title; // ex: feat(be): 로그인 API 추가
+            const newTitle = `${issueTitle} (#${issueNumber})`;
+
+            if (newTitle !== pr.title) {
+              await github.rest.pulls.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pr.number,
+                title: newTitle
+              });
+              console.log(`✅ PR title updated → ${newTitle}`);
+            } else {
+              console.log(`ℹ️ PR title already correct`);
+            }

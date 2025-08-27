@@ -1,0 +1,50 @@
+# === Next.js 관련 ===
+node_modules/
+.next/
+out/
+build/
+dist/
+
+# 환경변수
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# 로그 파일
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Mac OS 관련
+.DS_Store
+
+# VSCode 관련
+.vscode/
+
+# === Spring Boot 관련 ===
+
+# 빌드 결과물
+target/
+build/
+
+# IntelliJ IDEA 관련
+*.iml
+.idea/
+out/
+
+# Maven Wrapper
+.mvn/wrapper/maven-wrapper.jar
+
+# Gradle Wrapper
+.gradle/
+build/
+
+# 로그 파일
+*.log
+
+# OS별 파일
+Thumbs.db
+
+*.tar
