@@ -7,7 +7,7 @@ import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 
 
-interface CommentRepository : JpaRepository<Comment, Int> {
+interface CommentRepository : JpaRepository<Comment, Int>, CommentRepositoryCustom {
     // 특정 일기에 달린 댓글 수를 계산..
     fun countByDiaryId(diaryId: Int): Int
 
