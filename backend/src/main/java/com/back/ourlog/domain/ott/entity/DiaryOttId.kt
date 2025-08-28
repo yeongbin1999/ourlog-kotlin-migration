@@ -1,18 +1,9 @@
-package com.back.ourlog.domain.ott.entity;
+package com.back.ourlog.domain.ott.entity
 
-import com.back.ourlog.domain.diary.entity.Diary;
-import lombok.AllArgsConstructor;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import com.back.ourlog.domain.diary.entity.Diary
+import java.io.Serializable
 
-import java.io.Serializable;
-
-@Getter
-@NoArgsConstructor
-@AllArgsConstructor
-@EqualsAndHashCode
-public class DiaryOttId implements Serializable {
-    private Diary diary;
-    private Ott ott;
-}
+data class DiaryOttId(
+    var diary: Diary? = null,
+    var ott: Ott? = null
+) : Serializable

@@ -1,35 +1,23 @@
-package com.back.ourlog.domain.ott.entity;
+package com.back.ourlog.domain.ott.entity
 
-import jakarta.persistence.*;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-
-import java.util.ArrayList;
-import java.util.List;
+import jakarta.persistence.*
 
 @Entity
-@Getter
-@NoArgsConstructor
-@EqualsAndHashCode(onlyExplicitlyIncluded = true)
-public class Ott {
+class Ott(
+
+    @Column(nullable = false, unique = true)
+    val name: String,
+    val logoUrl: String? = null
+) {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    val id: Int? = null
 
-    private String name;
-    private String logoUrl;
+    @OneToMany(mappedBy = "ott", cascade = [CascadeType.ALL], orphanRemoval = true, fetch = FetchType.LAZY)
+    val diaryOtts: MutableList<DiaryOtt> = mutableListOf()
 
-    @OneToMany(mappedBy = "ott", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<DiaryOtt> diaryOtts = new ArrayList<>();
+    override fun equals(other: Any?): Boolean =
+        this === other || (other is Ott && id != null && id == other.id)
 
-    public Ott(String name) {
-        this.name = name;
-    }
-
-    public Ott(String name, String logoUrl) {
-        this.name = name;
-        this.logoUrl = logoUrl;
-    }
-
+    override fun hashCode(): Int = id?.hashCode() ?: 0
 }

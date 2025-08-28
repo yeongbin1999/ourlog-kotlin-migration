@@ -1,7 +1,6 @@
-package com.back.ourlog.domain.ott.repository;
+package com.back.ourlog.domain.ott.repository
 
-import com.back.ourlog.domain.ott.entity.Ott;
-import org.springframework.data.jpa.repository.JpaRepository;
+import com.back.ourlog.domain.ott.entity.Ott
+import org.springframework.data.jpa.repository.JpaRepository
 
-public interface OttRepository extends JpaRepository<Ott, Integer> {
-}
+interface OttRepository : JpaRepository<Ott, Int>
