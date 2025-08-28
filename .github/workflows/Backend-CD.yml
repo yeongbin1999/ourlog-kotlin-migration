@@ -12,9 +12,13 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
+      # 1. 코드 체크아웃
       - uses: actions/checkout@v3
+
+      # 2. Docker 빌드 환경
       - uses: docker/setup-buildx-action@v3
 
+      # 3. GHCR 로그인
       - name: Log in to GHCR
         uses: docker/login-action@v2
         with:
@@ -22,13 +26,15 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # 4. Docker 이미지 빌드 및 Push
       - name: Build and push backend Docker image
         run: |
           IMAGE=ghcr.io/${{ github.repository_owner }}/my-backend:latest
           docker build -t $IMAGE ./infra/backend
           docker push $IMAGE
 
-      - name: Deploy to EC2 (Blue-Green)
+      # 5. EC2 배포 (Blue-Green + NPM API)
+      - name: Deploy to EC2
         uses: appleboy/ssh-action@v0.1.8
         with:
           host: ${{ secrets.EC2_HOST }}
@@ -37,23 +43,27 @@ jobs:
           port: 22
           script: |
             IMAGE=ghcr.io/${{ github.repository_owner }}/my-backend:latest
-            echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
+            # 활성/비활성 컨테이너 판단
             if docker ps --filter "name=backend-blue" | grep backend-blue; then
                 ACTIVE=blue
                 INACTIVE=green
-                PORT=8082
+                PORT_ACTIVE=8081
+                PORT_INACTIVE=8082
             else
                 ACTIVE=green
                 INACTIVE=blue
-                PORT=8081
+                PORT_ACTIVE=8082
+                PORT_INACTIVE=8081
             fi
 
+            # 새 컨테이너 실행
             docker pull $IMAGE
             docker stop backend-$INACTIVE || true
             docker rm backend-$INACTIVE || true
             docker run -d --name backend-$INACTIVE \
-              -p $PORT:8080 \
+              --network common \
+              -p $PORT_INACTIVE:8080 \
               -e SPOTIFY_CLIENT_ID="${{ secrets.SPOTIFY_CLIENT_ID }}" \
               -e SPOTIFY_CLIENT_SECRET="${{ secrets.SPOTIFY_CLIENT_SECRET }}" \
               -e TMDB_API_KEY="${{ secrets.TMDB_API_KEY }}" \
@@ -64,15 +74,32 @@ jobs:
               -e NAVER_CLIENT_SECRET="${{ secrets.NAVER_CLIENT_SECRET }}" \
               -e KAKAO_CLIENT_ID="${{ secrets.KAKAO_CLIENT_ID }}" \
               -e KAKAO_CLIENT_SECRET="${{ secrets.KAKAO_CLIENT_SECRET }}" \
-              # 설정 해줘야함
-              -e REDIS_HOST="your-redis-host" \
+              -e REDIS_HOST="${{ secrets.REDIS_HOST }}" \
               -e REDIS_PORT="6379" \
-              -e SPRING_DATASOURCE_URL="jdbc:mysql://your-mysql-host:3306/dbname" \
+              -e SPRING_DATASOURCE_URL="${{ secrets.MYSQL_URL }}" \
               -e SPRING_DATASOURCE_USERNAME="${{ secrets.MYSQL_USER }}" \
               -e SPRING_DATASOURCE_PASSWORD="${{ secrets.MYSQL_PASSWORD }}" \
               $IMAGE
 
-            sed -i "s/server 127.0.0.1:808[12];/server 127.0.0.1:$PORT;/g" /etc/nginx/conf.d/backend.conf
-            nginx -s reload
+            # Health Check
+            echo "⏱ Waiting for new container to become healthy..."
+            for i in {1..30}; do
+              STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:$PORT_INACTIVE/actuator/health)
+              if [ "$STATUS" -eq 200 ]; then
+                echo "✅ New container is healthy!"
+                break
+              fi
+              sleep 2
+            done
+
+            # NPM API로 업스트림 전환
+            curl -X PATCH "http://127.0.0.1:81/api/nginx/proxy-hosts/${{ secrets.NPM_PROXY_ID }}" \
+                 -H "Authorization: Bearer ${{ secrets.NPM_API_TOKEN }}" \
+                 -H "Content-Type: application/json" \
+                 -d "{\"forward_host\": \"127.0.0.1\", \"forward_port\": $PORT_INACTIVE}"
+
+            # 이전 컨테이너 종료
+            docker stop backend-$ACTIVE || true
+            docker rm backend-$ACTIVE || true
 
             echo "✅ Deployment complete. Active container: $INACTIVE"
