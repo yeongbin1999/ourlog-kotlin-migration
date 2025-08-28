@@ -47,4 +47,15 @@ build/
 # OS별 파일
 Thumbs.db
 
-*.tar
+# terraform
+terraform.tfvars
+*.tfvars
+*.tfstate
+*.tfstate.*
+
+infra/terraform/.terraform/
+
+# Crash logs & override
+crash.log
+override.tf
+override.tf.json
