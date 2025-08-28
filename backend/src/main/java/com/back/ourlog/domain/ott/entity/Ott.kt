@@ -11,9 +11,16 @@ class Ott(
 ) {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Int? = null
+    val id: Int = 0
 
-    @OneToMany(mappedBy = "ott", cascade = [CascadeType.ALL], orphanRemoval = true, fetch = FetchType.LAZY)
+    constructor(name: String) : this(name, null)
+
+    @OneToMany(
+        mappedBy = "ott",
+        cascade = [CascadeType.ALL],
+        orphanRemoval = true,
+        fetch = FetchType.LAZY
+    )
     val diaryOtts: MutableList<DiaryOtt> = mutableListOf()
 
     override fun equals(other: Any?): Boolean =

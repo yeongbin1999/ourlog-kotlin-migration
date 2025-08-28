@@ -11,7 +11,7 @@ class Genre(
 ) {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Int? = null
+    val id: Int = 0
 
     @OneToMany(
         mappedBy = "genre",
