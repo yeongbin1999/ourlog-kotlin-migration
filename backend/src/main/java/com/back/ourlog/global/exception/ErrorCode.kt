@@ -1,10 +1,12 @@
-package com.back.ourlog.global.exception;
+package com.back.ourlog.global.exception
 
-import lombok.Getter;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatus
 
-@Getter
-public enum ErrorCode {
+enum class ErrorCode(
+    val status: HttpStatus,
+    val code: String,
+    val message: String
+) {
     // ======================== 인증/인가 관련 ========================
     AUTH_INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH_001", "유효하지 않은 토큰입니다."),
     AUTH_EXPIRED_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH_002", "토큰이 만료되었습니다."),
@@ -45,8 +47,8 @@ public enum ErrorCode {
 
     // ======================== 댓글 관련 ========================
     COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "COMMENT_001", "존재하지 않는 댓글입니다."),
-    COMMENT_DELETE_FORBIDDEN(HttpStatus.FORBIDDEN,"COMMENT_002", "댓글을 삭제할 권한이 없습니다."),
-    COMMENT_UPDATE_FORBIDDEN(HttpStatus.FORBIDDEN,"COMMENT_003", "댓글을 수정할 권한이 없습니다."),
+    COMMENT_DELETE_FORBIDDEN(HttpStatus.FORBIDDEN, "COMMENT_002", "댓글을 삭제할 권한이 없습니다."),
+    COMMENT_UPDATE_FORBIDDEN(HttpStatus.FORBIDDEN, "COMMENT_003", "댓글을 수정할 권한이 없습니다."),
 
     // ======================== 팔로우 관련 ========================
     FOLLOW_ALREADY_EXISTS(HttpStatus.BAD_REQUEST, "FOLLOW_001", "이미 팔로우한 사용자입니다."),
@@ -63,14 +65,4 @@ public enum ErrorCode {
     BAD_REQUEST(HttpStatus.BAD_REQUEST, "COMMON_400", "잘못된 요청입니다."),
     FORBIDDEN(HttpStatus.FORBIDDEN, "COMMON_403", "접근 권한이 없습니다."),
     NOT_FOUND(HttpStatus.NOT_FOUND, "COMMON_404", "요청하신 리소스를 찾을 수 없습니다.");
-
-    private final HttpStatus status;
-    private final String code;
-    private final String message;
-
-    ErrorCode(HttpStatus status, String code, String message) {
-        this.status = status;
-        this.code = code;
-        this.message = message;
-    }
 }
