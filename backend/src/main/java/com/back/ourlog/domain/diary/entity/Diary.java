@@ -171,4 +171,9 @@ public class Diary {
     public void deleteComment(Comment comment) {
         comments.remove(comment);
     }
+
+    // Comment 코틀린 전환 작업으로 생성한 getter
+    public Integer getId() {
+        return id;
+    }
 }
