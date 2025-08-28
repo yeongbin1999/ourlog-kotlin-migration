@@ -1,23 +1,20 @@
-package com.back.ourlog.domain.genre.service;
+package com.back.ourlog.domain.genre.service
 
-import com.back.ourlog.domain.genre.entity.Genre;
-import com.back.ourlog.domain.genre.repository.GenreRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-
-import java.util.List;
+import com.back.ourlog.domain.genre.entity.Genre
+import com.back.ourlog.domain.genre.repository.GenreRepository
+import org.springframework.stereotype.Service
 
 @Service
-@RequiredArgsConstructor
-public class GenreService {
-    private final GenreRepository genreRepository;
+class GenreService(
+    private val genreRepository: GenreRepository
+) {
 
-    public List<Genre> getGenresByIds(List<Integer> ids) {
-        return genreRepository.findAllById(ids);
+    fun getGenresByIds(ids: List<Int>): List<Genre> {
+        return genreRepository.findAllById(ids)
     }
 
-    public Genre findOrCreateByName(String name) {
+    fun findOrCreateByName(name: String): Genre {
         return genreRepository.findByName(name)
-                .orElseGet(() -> genreRepository.save(new Genre(name)));
+            ?: genreRepository.save(Genre(name))
     }
 }

@@ -1,18 +1,9 @@
-package com.back.ourlog.domain.genre.entity;
+package com.back.ourlog.domain.genre.entity
 
-import com.back.ourlog.domain.diary.entity.Diary;
-import lombok.AllArgsConstructor;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import com.back.ourlog.domain.diary.entity.Diary
+import java.io.Serializable
 
-import java.io.Serializable;
-
-@Getter
-@NoArgsConstructor
-@AllArgsConstructor
-@EqualsAndHashCode
-public class DiaryGenreId implements Serializable {
-    private Diary diary;
-    private Genre genre;
-}
+data class DiaryGenreId(
+    var diary: Diary? = null,
+    var genre: Genre? = null
+) : Serializable

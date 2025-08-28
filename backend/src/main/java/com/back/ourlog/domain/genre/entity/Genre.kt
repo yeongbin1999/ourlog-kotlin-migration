@@ -1,30 +1,28 @@
-package com.back.ourlog.domain.genre.entity;
+package com.back.ourlog.domain.genre.entity
 
-import jakarta.persistence.*;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-
-import java.util.ArrayList;
-import java.util.List;
+import jakarta.persistence.*
 
 @Entity
-@Getter
-@NoArgsConstructor
-@EqualsAndHashCode(onlyExplicitlyIncluded = true)
-public class Genre {
+class Genre(
+
+    @Column(unique = true, nullable = false)
+    var name: String
+
+) {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    val id: Int? = null
 
-    @Column(unique = true)
-    private String name;
+    @OneToMany(
+        mappedBy = "genre",
+        cascade = [CascadeType.ALL],
+        orphanRemoval = true,
+        fetch = FetchType.LAZY
+    )
+    val diaryGenres: MutableList<DiaryGenre> = mutableListOf()
 
-    @OneToMany(mappedBy = "genre", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<DiaryGenre> diaryGenres = new ArrayList<>();
+    override fun equals(other: Any?): Boolean =
+        this === other || (other is Genre && id != null && id == other.id)
 
-    public Genre(String name) {
-        this.name = name;
-    }
-
+    override fun hashCode(): Int = id?.hashCode() ?: 0
 }

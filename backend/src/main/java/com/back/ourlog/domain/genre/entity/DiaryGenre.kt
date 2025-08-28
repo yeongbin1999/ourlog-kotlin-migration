@@ -1,27 +1,19 @@
-package com.back.ourlog.domain.genre.entity;
+package com.back.ourlog.domain.genre.entity
 
-import com.back.ourlog.domain.diary.entity.Diary;
-import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import com.back.ourlog.domain.diary.entity.Diary
+import jakarta.persistence.*
 
 @Entity
-@Getter
-@NoArgsConstructor
-@IdClass(DiaryGenreId.class)
-public class DiaryGenre {
+@IdClass(DiaryGenreId::class)
+class DiaryGenre(
+
     @Id
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "diary_id", nullable = false)
-    private Diary diary;
+    val diary: Diary,
 
     @Id
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "genre_id", nullable = false)
-    private Genre genre;
-
-    public DiaryGenre(Diary diary, Genre genre) {
-        this.diary = diary;
-        this.genre = genre;
-    }
-}
+    val genre: Genre
+)
