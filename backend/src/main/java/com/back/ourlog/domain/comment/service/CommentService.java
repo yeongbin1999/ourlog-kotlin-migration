@@ -64,15 +64,14 @@ public class CommentService {
         Comment comment = commentRepository.findById(id)
                 .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
 
-        // 양방향(User, Diary) 관계 제거
+        // (Diary, User) 와 Comment 연관관계 제거
         Diary diary = comment.getDiary();
+
         diary.deleteComment(comment);
 
         User user = comment.getUser();
 
         user.deleteComment(comment);
-
-        commentRepository.delete(comment);
     }
 
     @Transactional(readOnly = true)

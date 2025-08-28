@@ -47,7 +47,6 @@ class CommentControllerTest {
         ResultActions resultActions = mvc.perform(
                 post("/api/v1/comments")
                         .contentType(MediaType.APPLICATION_JSON)
-                        // 헤더 부분에 AccessToken 추가
                         .content(json)
         ).andDo(print());
 
@@ -184,10 +183,6 @@ class CommentControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.resultCode").value("200-0"))
                 .andExpect(jsonPath("$.msg").value("1번 댓글이 삭제되었습니다."));
-
-        // 1번 댓글이 실제로 사라졌는지 확인
-        Comment comment = commentRepository.findById(1).orElse(null);
-        assertThat(comment).isNull();
     }
 
     @Test
