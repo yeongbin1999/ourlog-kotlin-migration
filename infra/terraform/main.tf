@@ -21,7 +21,7 @@ provider "aws" {
 # SSH 키 페어 생성
 resource "aws_key_pair" "key_pair_1" {
   key_name   = "${var.prefix}-${var.nickname}-key-pair"
-  public_key = file(pathexpand("~/.ssh/id_rsa.pub"))
+  public_key = file(pathexpand("~/.ssh/id_rsa_ourlog.pub"))
 
   tags = {
     Name = "${var.prefix}-${var.nickname}-key-pair"
@@ -155,6 +155,13 @@ resource "aws_security_group" "ec2_sg" {
   ingress {
     from_port   = 81
     to_port     = 81
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
