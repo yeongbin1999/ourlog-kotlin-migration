@@ -5,8 +5,8 @@ import jakarta.validation.constraints.NotNull
 
 data class CommentRequestDto(
     @field:NotNull
-    val diaryId: Int,
+    val diaryId: Int = 0,
 
     @field:NotBlank
-    val content: String
+    val content: String = ""
 )
