@@ -68,6 +68,10 @@ dependencies {
     testCompileOnly("org.projectlombok:lombok")
     testAnnotationProcessor("org.projectlombok:lombok")
 
+    // --- Kotlin Lombok ---
+    kapt("org.projectlombok:lombok")
+    kaptTest("org.projectlombok:lombok")
+
     // --- Jakarta 추가 어노테이션 ---
     implementation("jakarta.annotation:jakarta.annotation-api:2.1.1")
 
