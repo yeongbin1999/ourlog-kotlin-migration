@@ -15,15 +15,15 @@ class Comment (
         name = "diary_id",
         nullable = false
     ) @field:ManyToOne(fetch = FetchType.LAZY)
-    var diary: Diary?,
+    var diary: Diary,
 
     @field:JoinColumn(
         name = "user_id",
         nullable = true
     ) @field:ManyToOne(fetch = FetchType.LAZY)
-    var user: User?,
+    var user: User,
 
-    var content: String?,
+    var content: String,
 ) {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -38,13 +38,5 @@ class Comment (
 
     fun update(content: String) {
         this.content = content
-    }
-
-    fun removeDiary() {
-        this.diary = null
-    }
-
-    fun removeUser() {
-        this.user = null
     }
 }

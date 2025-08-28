@@ -112,7 +112,6 @@ public class User {
 
     public void deleteComment(Comment comment) {
         comments.remove(comment);
-        comment.removeUser();
     }
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -146,5 +145,18 @@ public class User {
                 .nickname(nickname)
                 .profileImageUrl(profileImageUrl)
                 .build();
+    }
+
+// == Comment 마이그레이션 작업으로 인해 get메서드 추가
+    public Integer getId() {
+        return id;
+    }
+
+    public String getNickname() {
+        return nickname;
+    }
+
+    public String getProfileImageUrl() {
+        return profileImageUrl;
     }
 }
