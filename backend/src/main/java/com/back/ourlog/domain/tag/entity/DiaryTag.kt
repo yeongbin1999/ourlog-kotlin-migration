@@ -17,8 +17,12 @@ class DiaryTag(
     @JoinColumn(name = "tag_id", nullable = false)
     var tag: Tag
 ) {
+    /*
+    // TODO: Diary 마이그레이션 완료 후 기본 생성자 다시 정의할 것
     protected constructor() : this(
-        diary = Diary(), // Dummy
+        diary = null!!,
         tag = Tag("")
     )
+
+     */
 }

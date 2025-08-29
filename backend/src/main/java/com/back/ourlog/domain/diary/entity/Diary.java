@@ -105,11 +105,13 @@ public class Diary {
                 .filter(name -> !currentNames.contains(name))
                 .toList();
 
-        toAdd.forEach(tagName -> {
-            Tag tag = tagRepository.findByName(tagName)
-                    .orElseGet(() -> tagRepository.save(new Tag(tagName)));
+        for (String tagName : toAdd) {
+            Tag tag = tagRepository.findByName(tagName);
+            if (tag == null) {
+                tag = tagRepository.save(new Tag(tagName));
+            }
             this.getDiaryTags().add(new DiaryTag(this, tag));
-        });
+        }
     }
 
     public void updateGenres(List<String> newGenreNames, GenreService genreService, LibraryService libraryService) {
