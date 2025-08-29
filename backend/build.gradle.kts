@@ -5,7 +5,7 @@ plugins {
     kotlin("jvm") version "1.9.25"
     kotlin("plugin.spring") version "1.9.25"
     kotlin("plugin.jpa") version "1.9.25"
-    kotlin("kapt") version "1.9.25"
+    id("com.google.devtools.ksp") version "1.9.25-1.0.20"
 }
 
 group = "com.back"
@@ -32,10 +32,6 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
-
-    // --- QueryDSL ---
-    implementation("io.github.openfeign.querydsl:querydsl-jpa:7.0")
-    kapt("io.github.openfeign.querydsl:querydsl-apt:7.0:jpa")
 
     // --- Spring Boot 기본 ---
     implementation("org.springframework.boot:spring-boot-starter-web")
@@ -68,10 +64,6 @@ dependencies {
     testCompileOnly("org.projectlombok:lombok")
     testAnnotationProcessor("org.projectlombok:lombok")
 
-    // --- Kotlin Lombok ---
-    kapt("org.projectlombok:lombok")
-    kaptTest("org.projectlombok:lombok")
-
     // --- Jakarta 추가 어노테이션 ---
     implementation("jakarta.annotation:jakarta.annotation-api:2.1.1")
 
@@ -86,6 +78,11 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter:5.12.2")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.12.2")
     testImplementation("org.springframework.security:spring-security-test")
+
+    // --- Querydsl ---
+    implementation("io.github.openfeign.querydsl:querydsl-jpa:7.0")
+    ksp("io.github.openfeign.querydsl:querydsl-ksp-codegen:7.0")
+
 }
 
 kotlin {
