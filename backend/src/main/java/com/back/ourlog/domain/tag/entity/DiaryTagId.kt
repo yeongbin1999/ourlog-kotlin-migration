@@ -1,19 +1,9 @@
-package com.back.ourlog.domain.tag.entity;
+package com.back.ourlog.domain.tag.entity
 
-import com.back.ourlog.domain.diary.entity.Diary;
-import lombok.AllArgsConstructor;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import com.back.ourlog.domain.diary.entity.Diary
+import java.io.Serializable
 
-import java.io.Serializable;
-
-
-@Getter
-@NoArgsConstructor
-@AllArgsConstructor
-@EqualsAndHashCode
-public class DiaryTagId implements Serializable {
-    private Diary diary;
-    private Tag tag;
-}
+data class DiaryTagId(
+    var diary: Diary? = null,
+    var tag: Tag? = null
+) : Serializable

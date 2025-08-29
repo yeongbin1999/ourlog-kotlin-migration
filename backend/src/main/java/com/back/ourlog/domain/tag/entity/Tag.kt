@@ -1,30 +1,18 @@
-package com.back.ourlog.domain.tag.entity;
+package com.back.ourlog.domain.tag.entity
 
-import jakarta.persistence.*;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-
-import java.util.ArrayList;
-import java.util.List;
+import jakarta.persistence.*
 
 @Entity
-@Getter
-@NoArgsConstructor
-@EqualsAndHashCode(onlyExplicitlyIncluded = true)
-public class Tag {
+class Tag(
+    @Column(unique = true, nullable = false)
+    var name: String
+) {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    val id: Int? = null
 
-    @Column(unique = true)
-    private String name;
+    @OneToMany(mappedBy = "tag", cascade = [CascadeType.ALL], orphanRemoval = true)
+    val diaryTags: MutableList<DiaryTag> = mutableListOf()
 
-    @OneToMany(mappedBy = "tag", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<DiaryTag> diaryTags = new ArrayList<>();
-
-    public Tag(String name) {
-        this.name = name;
-    }
-
+    protected constructor() : this("")
 }
