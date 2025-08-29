@@ -53,7 +53,7 @@ class CommentControllerTest {
         resultActions
                 .andExpect(handler().handlerType(CommentController.class))
                 .andExpect(handler().methodName("writeComment"))
-                .andExpect(status().isCreated())
+                .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.content").value("안녕하시렵니까?"))
                 .andExpect(jsonPath("$.data.userId").value(1));
     }
@@ -135,7 +135,7 @@ class CommentControllerTest {
                 .andExpect(handler().handlerType(CommentController.class))
                 .andExpect(handler().methodName("updateComment"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.resultCode").value("200-0"))
+                .andExpect(jsonPath("$.resultCode").value("SUCCESS_200"))
                 .andExpect(jsonPath("$.msg").value("1번 댓글이 수정되었습니다."));
 
         // 실제 1번 댓글의 content 가 변했는지 확인
@@ -181,7 +181,7 @@ class CommentControllerTest {
                 .andExpect(handler().handlerType(CommentController.class))
                 .andExpect(handler().methodName("deleteComment"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.resultCode").value("200-0"))
+                .andExpect(jsonPath("$.resultCode").value("SUCCESS_200"))
                 .andExpect(jsonPath("$.msg").value("1번 댓글이 삭제되었습니다."));
     }
 
