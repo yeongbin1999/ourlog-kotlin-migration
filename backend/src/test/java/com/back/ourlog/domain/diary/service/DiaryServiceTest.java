@@ -114,8 +114,16 @@ class DiaryServiceTest {
     @DisplayName("감상일기 등록 → DiaryOtt 생성")
     void t3() throws Exception {
         tagRepository.save(new Tag("더미"));
-        Ott ott1 = ottRepository.save(new Ott("Netflix"));
-        Ott ott2 = ottRepository.save(new Ott("Disney+"));
+
+        Ott ott1 = ottRepository.findByName("Netflix");
+        if (ott1 == null) {
+            ott1 = ottRepository.save(new Ott("Netflix"));
+        }
+
+        Ott ott2 = ottRepository.findByName("Disney+");
+        if (ott2 == null) {
+            ott2 = ottRepository.save(new Ott("Disney+"));
+        }
 
         String body = """
     {
@@ -128,7 +136,7 @@ class DiaryServiceTest {
         "tagNames": ["더미"],
         "ottIds": [%d, %d]
     }
-""".formatted(ott1.getId(), ott2.getId());
+    """.formatted(ott1.getId(), ott2.getId());
 
         mockMvc.perform(post("/api/v1/diaries")
                         .contentType(MediaType.APPLICATION_JSON)
