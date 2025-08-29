@@ -1,75 +1,89 @@
-package com.back.ourlog.global.config;
+package com.back.ourlog.global.config
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
-import org.springframework.cache.annotation.EnableCaching;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.data.redis.cache.RedisCacheConfiguration;
-import org.springframework.data.redis.cache.RedisCacheManager;
-import org.springframework.data.redis.connection.RedisConnectionFactory;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.data.redis.core.script.DefaultRedisScript;
-import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
-import org.springframework.data.redis.serializer.RedisSerializationContext;
-import org.springframework.data.redis.serializer.RedisSerializer;
-import org.springframework.data.redis.serializer.StringRedisSerializer;
-
-import java.time.Duration;
+import com.fasterxml.jackson.databind.ObjectMapper
+import org.springframework.cache.annotation.EnableCaching
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
+import org.springframework.core.io.ClassPathResource
+import org.springframework.data.redis.cache.RedisCacheConfiguration
+import org.springframework.data.redis.cache.RedisCacheManager
+import org.springframework.data.redis.connection.RedisConnectionFactory
+import org.springframework.data.redis.core.RedisTemplate
+import org.springframework.data.redis.core.StringRedisTemplate
+import org.springframework.data.redis.core.script.DefaultRedisScript
+import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer
+import org.springframework.data.redis.serializer.RedisSerializationContext
+import org.springframework.data.redis.serializer.StringRedisSerializer
+import java.time.Duration
 
 @EnableCaching
 @Configuration
-public class RedisConfig {
+class RedisConfig {
 
     @Bean
-    public StringRedisTemplate redisTemplate(RedisConnectionFactory connectionFactory) {
-        return new StringRedisTemplate(connectionFactory);
+    fun redisTemplate(connectionFactory: RedisConnectionFactory): StringRedisTemplate {
+        return StringRedisTemplate(connectionFactory)
     }
+
+    /**
+     * Object 저장용 템플릿
+     * 전역 ObjectMapper 설정을 그대로 사용해 GenericJackson2JsonRedisSerializer 구성
+     * → @class 메타 포함으로 타입 복원 안정화
+     */
 
     @Bean
-    public RedisTemplate<String, Object> objectRedisTemplate(RedisConnectionFactory connectionFactory, ObjectMapper objectMapper) {
-        RedisTemplate<String, Object> template = new RedisTemplate<>();
-        template.setConnectionFactory(connectionFactory);
-        template.setKeySerializer(new StringRedisSerializer());
-        template.setValueSerializer(new GenericJackson2JsonRedisSerializer(objectMapper));
-        return template;
+    fun objectRedisTemplate(
+        connectionFactory: RedisConnectionFactory,
+        objectMapper: ObjectMapper
+    ): RedisTemplate<String, Any> {
+        val keySerializer = StringRedisSerializer()
+        val valueSerializer = GenericJackson2JsonRedisSerializer(objectMapper)
+
+        return RedisTemplate<String, Any>().apply {
+            this.connectionFactory = connectionFactory
+            this.keySerializer = keySerializer
+            this.valueSerializer = valueSerializer
+            this.hashKeySerializer = keySerializer
+            this.hashValueSerializer = valueSerializer
+        }
     }
 
-    @Bean(name = "refreshTokenRotationScript")
-    public DefaultRedisScript<Long> refreshTokenRotationScript() {
-        DefaultRedisScript<Long> redisScript = new DefaultRedisScript<>();
-        redisScript.setLocation(new ClassPathResource("redis/refresh_token_rotate.lua"));
-        redisScript.setResultType(Long.class);
-        return redisScript;
-    }
+    /**
+     * 캐시 매니저
+     * - 키: String
+     * - 값: GenericJackson2JsonRedisSerializer (ObjectMapper 공유)
+     * - 기본 TTL: 1시간
+     */
 
     @Bean
-    public RedisCacheManager redisCacheManager(RedisConnectionFactory factory, ObjectMapper objectMapper) {
-        // 캐시 전용 ObjectMapper 생성 (기존 ObjectMapper 복사)
-        ObjectMapper cacheObjectMapper = objectMapper.copy();
+    fun redisCacheManager(
+        factory: RedisConnectionFactory,
+        objectMapper: ObjectMapper
+    ): RedisCacheManager {
+        val valueSerializer = GenericJackson2JsonRedisSerializer(objectMapper)
 
-        // 타입 정보 포함한 직렬화 설정 (LinkedHashMap 문제 해결)
-        cacheObjectMapper.activateDefaultTyping(
-                BasicPolymorphicTypeValidator.builder()
-                        .allowIfSubType(Object.class)
-                        .build(),
-                ObjectMapper.DefaultTyping.NON_FINAL,
-                JsonTypeInfo.As.PROPERTY
-        );
-
-        RedisSerializer<Object> jsonSerializer = new GenericJackson2JsonRedisSerializer(cacheObjectMapper);
-
-        RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
-                .entryTtl(Duration.ofMinutes(30)) // 30분 TTL 설정
-                .disableCachingNullValues() // null 값 캐싱 방지
-                .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(RedisSerializer.string()))
-                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(jsonSerializer));
+        val config = RedisCacheConfiguration.defaultCacheConfig()
+            .entryTtl(Duration.ofHours(1))
+            .disableCachingNullValues()
+            .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(StringRedisSerializer()))
+            .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(valueSerializer))
 
         return RedisCacheManager.builder(factory)
-                .cacheDefaults(config)
-                .build();
+            .cacheDefaults(config)
+            .transactionAware()
+            .build()
+    }
+
+    /**
+     * Refresh Token 회전용 Lua 스크립트
+     */
+
+    @Bean("refreshTokenRotationScript")
+    fun refreshTokenRotationScript(): DefaultRedisScript<Long> {
+        return DefaultRedisScript<Long>().apply {
+
+            setLocation(ClassPathResource("redis/refresh_token_rotate.lua"))
+            setResultType(Long::class.java)
+        }
     }
 }

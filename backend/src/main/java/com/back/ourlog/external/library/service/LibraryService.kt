@@ -1,226 +1,187 @@
-package com.back.ourlog.external.library.service;
+package com.back.ourlog.external.library.service
 
-import com.back.ourlog.domain.content.dto.ContentSearchResultDto;
-import com.back.ourlog.domain.content.entity.ContentType;
-import com.back.ourlog.global.exception.CustomException;
-import com.back.ourlog.global.exception.ErrorCode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
+import com.back.ourlog.domain.content.dto.ContentSearchResultDto
+import com.back.ourlog.domain.content.entity.ContentType
+import com.back.ourlog.external.library.dto.LibraryBookDto
+import com.back.ourlog.external.library.dto.LibraryResponse
+import com.back.ourlog.global.exception.CustomException
+import com.back.ourlog.global.exception.ErrorCode
+import com.fasterxml.jackson.databind.ObjectMapper
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.cache.annotation.Cacheable
+import org.springframework.stereotype.Service
+import org.springframework.web.client.RestTemplate
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
-import java.util.*;
-
-@Slf4j
 @Service
-@RequiredArgsConstructor
-public class LibraryService {
-    private final RestTemplate restTemplate;
-    private final ObjectMapper objectMapper;
+class LibraryService(
+    private val restTemplate: RestTemplate,
+    private val objectMapper: ObjectMapper,
 
-    @Value("${library.api-key}")
-    private String libraryApiKey;
+    @Value("\${library.api-key}")
+    private val libraryApiKey: String
+) {
 
-    public ContentSearchResultDto searchBookByExternalId(String externalId) {
-        String key = externalId.replace("library-", "");
-        List<Map<String, Object>> results;
+    companion object {
+        // 패턴 및 정규식 상수 정의
+        private val ISBN_10_PATTERN = "\\d{10}".toRegex()
+        private val ISBN_13_PATTERN = "\\d{13}".toRegex()
+        private const val DATE_PATTERN = "yyyyMMdd"
+        private const val AUTHOR_PREFIX_PATTERN = "(원작자|저자|지은이|글|그림|편저|엮은이)\\s*[:：]\\s*"
+        private const val AUTHOR_SUFFIX_PATTERN = "\\s*;\\s*$"
+        private const val GENRE_SEPARATOR_PATTERN = "[,:;]"
+        private const val SINGLE_DIGIT_PATTERN = "^\\d$"
 
-        if (key.matches("\\d{10}") || key.matches("\\d{13}")) {
-            results = getResultFromLibraryByIsbn(key).stream()
-                    .filter(doc -> {
-                        String eaIsbn = (String) doc.get("EA_ISBN");
-                        boolean match = eaIsbn != null && eaIsbn.replaceAll("-", "").trim().equals(key);
-                        return match;
-                    })
-                    .toList();
-        } else {
-            results = getResultFromLibraryByControlNo(key).stream()
-                    .filter(doc -> {
-                        String controlNo = (String) doc.get("CONTROL_NO");
-                        boolean match = controlNo != null && controlNo.trim().equals(key);
-                        return match;
-                    })
-                    .toList();
+        private val DATE_FORMATTER: DateTimeFormatter = DateTimeFormatter.ofPattern(DATE_PATTERN)
+        private val AUTHOR_PREFIX_REGEX = AUTHOR_PREFIX_PATTERN.toRegex()
+        private val AUTHOR_SUFFIX_REGEX = AUTHOR_SUFFIX_PATTERN.toRegex()
+        private val GENRE_SEPARATOR_REGEX = GENRE_SEPARATOR_PATTERN.toRegex()
+        private val SINGLE_DIGIT_REGEX = SINGLE_DIGIT_PATTERN.toRegex()
+
+        // KDC 코드 → 장르명 매핑 테이블
+        private val KDC_GENRE_MAP = mapOf(
+            "0" to "총류",
+            "1" to "철학",
+            "2" to "종교",
+            "3" to "사회과학",
+            "4" to "언어",
+            "5" to "과학",
+            "6" to "기술과학",
+            "7" to "예술",
+            "8" to "문학",
+            "9" to "역사"
+        )
+    }
+
+    // 외부 ID(ISBN, CONTROL_NO)로 단일 도서 조회
+    @Cacheable(
+        value = ["libraryBooks"],
+        key = "#externalId",
+        condition = "#externalId != null && !#externalId.isEmpty()",
+        unless = "#result == null"
+    )
+    fun searchBookByExternalId(externalId: String): ContentSearchResultDto {
+        return try {
+            val key = externalId.removePrefix("library-")
+            val results: List<LibraryBookDto> = when {
+                key.matches(ISBN_10_PATTERN) || key.matches(ISBN_13_PATTERN) -> searchByIsbn(key)
+                else -> searchByControlNo(key)
+            }
+            results.firstOrNull()?.mapToSearchResultDto()
+                ?: throw CustomException(ErrorCode.CONTENT_NOT_FOUND)
+        } catch (e: Exception) {
+            // 캐시 오류 시 직접 API 호출로 폴백
+            throw CustomException(ErrorCode.CONTENT_NOT_FOUND)
         }
-
-        return results.stream()
-                .findFirst()
-                .map(this::mapToSearchResultDto)
-                .orElseThrow(() -> new CustomException(ErrorCode.CONTENT_NOT_FOUND));
     }
 
-    public List<ContentSearchResultDto> searchBookByTitle(String title) {
-        List<Map<String, Object>> docs = getResultFromLibrary(title);
-
-        return docs.stream()
-                .limit(10)
-                .map(item -> {
-                    String externalId = "library-" + getLibraryExternalId(item);
-                    try {
-                        return searchBookByExternalId(externalId);
-                    } catch (CustomException e) {
-                        return mapToSearchResultDto(item); // fallback
-                    }
-                })
-                .filter(Objects::nonNull)
-                .toList();
-    }
-
-    private ContentSearchResultDto mapToSearchResultDto(Map<String, Object> item) {
-        String bookTitle = (String) item.get("TITLE");
-        String creatorName = cleanAuthorPrefix((String) item.get("AUTHOR"));
-        String posterUrl = (String) item.get("TITLE_URL");
-        String releasedAtStr = (String) item.get("PUBLISH_PREDATE");
-
-        // 설명은 책에서는 저장하지 않으므로 null로 처리
-        String description = null;
-
-        LocalDateTime releasedAt = null;
-        if (releasedAtStr != null && !releasedAtStr.isBlank()) {
-            try {
-                releasedAt = LocalDate.parse(releasedAtStr, DateTimeFormatter.ofPattern("yyyyMMdd")).atStartOfDay();
-            } catch (DateTimeParseException ignored) {}
-        }
-
-        List<String> genres = extractGenres(item);
-
-        return new ContentSearchResultDto(
-                "library-" + getLibraryExternalId(item),
-                bookTitle,
-                creatorName,
-                description,
-                posterUrl,
-                releasedAt,
-                ContentType.BOOK,
-                genres
-        );
-    }
-
-    private String cleanAuthorPrefix(String rawAuthor) {
-        if (rawAuthor == null) return null;
-
-        return rawAuthor
-                .replaceAll("(원작자|저자|지은이|글|그림|편저|엮은이)\\s*[:：]\\s*", "")  // 콜론(:, ：) 처리
-                .replaceAll("\\s*;\\s*$", "") // 맨 끝 세미콜론 제거
-                .trim();
-    }
-
-    private List<String> extractGenres(Map<String, Object> item) {
-        String subject = (String) item.get("SUBJECT");
-        String kdc = (String) item.get("KDC");
-        String classNo = (String) item.get("class_no");
-
-        List<String> genres = new ArrayList<>();
-
-        if (subject != null && !subject.isBlank()) {
-            List<String> subjectList = Arrays.stream(subject.split("[,;]"))
-                    .map(String::trim)
-                    .filter(s -> !s.isEmpty())
-                    .toList();
-
-            for (String s : subjectList) {
-                if (s.matches("^\\d$")) {
-                    genres.add(mapKdcToGenre(s));
-                } else {
-                    genres.add(s);
+    // 제목으로 도서 검색 (최대 10개 반환)
+    @Cacheable(
+        value = ["librarySearchResults"],
+        key = "'title:' + #title.trim()",
+        condition = "#title != null && !#title.trim().isEmpty()"
+    )
+    fun searchBookByTitle(title: String): List<ContentSearchResultDto> {
+        return try {
+            getResultFromLibrary(title.trim())
+                .take(10)
+                .mapNotNull { book ->
+                    runCatching {
+                        book.mapToSearchResultDto()
+                    }.getOrNull()
                 }
-            }
-        } else if (kdc != null || classNo != null) {
-            String code = kdc != null ? kdc : classNo;
-            if (code.length() >= 1) {
-                String mainCategory = code.substring(0, 1);
-                genres.add(mapKdcToGenre(mainCategory));
-            }
-        }
-
-        return genres;
-    }
-
-    public String mapKdcToGenre(String kdc) {
-        return switch (kdc) {
-            case "0" -> "총류";
-            case "1" -> "철학";
-            case "2" -> "종교";
-            case "3" -> "사회과학";
-            case "4" -> "언어";
-            case "5" -> "과학";
-            case "6" -> "기술과학";
-            case "7" -> "예술";
-            case "8" -> "문학";
-            case "9" -> "역사";
-            default -> "기타";
-        };
-    }
-
-    private String getLibraryExternalId(Map<String, Object> item) {
-        String isbn = (String) item.get("EA_ISBN");
-        String controlNo = (String) item.get("CONTROL_NO");
-
-        if (isbn != null && !isbn.isBlank()) {
-            return isbn.replaceAll("-", "").trim();
-        } else if (controlNo != null && !controlNo.isBlank()) {
-            return controlNo.trim();
-        } else {
-            return String.valueOf(((String) item.get("TITLE")).hashCode());
+        } catch (e: Exception) {
+            emptyList()
         }
     }
 
-    private List<Map<String, Object>> getResultFromLibrary(String bookTitle) {
-        try {
-            String url = "https://www.nl.go.kr/seoji/SearchApi.do?cert_key=%s".formatted(libraryApiKey) +
-                    "&result_style=json&page_no=1&page_size=10&title=%s".formatted(bookTitle);
+    private fun LibraryBookDto.mapToSearchResultDto(): ContentSearchResultDto =
+        ContentSearchResultDto(
+            externalId = "library-${getLibraryExternalId()}",
+            title = title?.trim(),
+            creatorName = author?.cleanAuthorName(),
+            description = null, // 도서관 API는 설명을 제공하지 않음
+            posterUrl = titleUrl,
+            releasedAt = publishPredate?.parseToLocalDateTime(),
+            type = ContentType.BOOK,
+            genres = extractGenres()
+        )
 
-            String data = restTemplate.getForObject(url, String.class);
-            Map map = objectMapper.readValue(data, Map.class);
+    private fun String.cleanAuthorName(): String =
+        replace(AUTHOR_PREFIX_REGEX, "")
+            .replace(AUTHOR_SUFFIX_REGEX, "")
+            .trim()
 
-            return (List<Map<String, Object>>) map.get("docs");
-        } catch (Exception e) {
-            throw new RuntimeException("도서관 API 응답 처리 중 오류 발생", e);
+    private fun String.parseToLocalDateTime(): LocalDateTime? =
+        takeIf { it.isNotBlank() }?.let {
+            runCatching { LocalDate.parse(it, DATE_FORMATTER).atStartOfDay() }.getOrNull()
         }
+
+    // 장르 추출 (SUBJECT 우선, 없으면 KDC 코드 활용)
+    private fun LibraryBookDto.extractGenres(): List<String> = when {
+        !subject.isNullOrBlank() ->
+            subject.split(GENRE_SEPARATOR_REGEX)
+                .mapNotNull { it.trim().takeIf(String::isNotEmpty) }
+                .map { genre -> if (genre.matches(SINGLE_DIGIT_REGEX)) mapKdcToGenre(genre) else genre }
+
+        !kdc.isNullOrBlank() ->
+            listOf(mapKdcToGenre(kdc.take(1)))
+
+        else -> emptyList()
     }
 
-    private List<Map<String, Object>> getResultFromLibraryByIsbn(String isbn) {
-        try {
-            String url = String.format(
-                    "https://www.nl.go.kr/seoji/SearchApi.do?cert_key=%s&result_style=json&page_no=1&page_size=10&isbn=%s",
-                    libraryApiKey,
-                    isbn
-            );
+    // 도서의 고유 ExternalId 생성 (ISBN > CONTROL_NO > TITLE 해시)
+    private fun LibraryBookDto.getLibraryExternalId(): String =
+        isbn?.replace("-", "")?.trim()
+            ?: controlNo?.trim()
+            ?: title?.trim().orEmpty().hashCode().toString()
 
-            String data = restTemplate.getForObject(url, String.class);
-            Map map = objectMapper.readValue(data, Map.class);
-
-            List<Map<String, Object>> docs = (List<Map<String, Object>>) map.get("docs");
-
-            return docs.stream()
-                    .filter(doc -> {
-                        String eaIsbn = (String) doc.get("EA_ISBN");
-                        return eaIsbn != null && eaIsbn.replaceAll("-", "").trim().equals(isbn);
-                    })
-                    .toList();
-
-        } catch (Exception e) {
-            throw new RuntimeException("도서관 API ISBN 검색 오류", e);
+    private fun searchByIsbn(isbn: String): List<LibraryBookDto> =
+        getResultFromLibraryByIsbn(isbn).filter { book ->
+            book.isbn?.replace("-", "")?.trim() == isbn
         }
+
+    private fun searchByControlNo(controlNo: String): List<LibraryBookDto> =
+        getResultFromLibraryByControlNo(controlNo).filter { book ->
+            book.controlNo?.trim() == controlNo
+        }
+
+    private fun getResultFromLibrary(title: String): List<LibraryBookDto> =
+        callLibraryApi("title=${title.urlEncode()}", "도서관 API 응답 처리")
+
+    private fun getResultFromLibraryByIsbn(isbn: String): List<LibraryBookDto> =
+        callLibraryApi("isbn=${isbn.urlEncode()}", "도서관 API ISBN 검색")
+
+    private fun getResultFromLibraryByControlNo(controlNo: String): List<LibraryBookDto> =
+        callLibraryApi("control_no=${controlNo.urlEncode()}", "도서관 API CONTROL_NO 검색")
+
+    // 공통 API 호출 메서드 (JSON → DTO 변환)
+    private fun callLibraryApi(queryParam: String, errorContext: String): List<LibraryBookDto> = try {
+        val url = buildApiUrl(queryParam)
+        val responseData = restTemplate.getForObject(url, String::class.java)
+            ?: throw RuntimeException("$errorContext 중 빈 응답")
+
+        val response = objectMapper.readValue(responseData, LibraryResponse::class.java)
+        response.docs
+    } catch (e: Exception) {
+        throw RuntimeException("$errorContext 중 오류 발생", e)
     }
 
-    private List<Map<String, Object>> getResultFromLibraryByControlNo(String controlNo) {
-        try {
-            String url = "https://www.nl.go.kr/seoji/SearchApi.do?cert_key=%s".formatted(libraryApiKey) +
-                    "&result_style=json&page_no=1&page_size=10&control_no=%s".formatted(controlNo);
-
-            String data = restTemplate.getForObject(url, String.class);
-            Map map = objectMapper.readValue(data, Map.class);
-            return (List<Map<String, Object>>) map.get("docs");
-        } catch (Exception e) {
-            throw new RuntimeException("도서관 API CONTROL_NO 검색 오류", e);
-        }
+    private fun buildApiUrl(queryParam: String): String = buildString {
+        append("https://www.nl.go.kr/seoji/SearchApi.do?")
+        append("cert_key=$libraryApiKey")
+        append("&result_style=json")
+        append("&page_no=1")
+        append("&page_size=10")
+        append("&$queryParam")
     }
+
+    private fun String.urlEncode(): String = URLEncoder.encode(this, StandardCharsets.UTF_8)
+
+    fun mapKdcToGenre(kdc: String): String = KDC_GENRE_MAP[kdc] ?: "기타"
 
 }
