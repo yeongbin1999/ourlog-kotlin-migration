@@ -1,12 +1,7 @@
-package com.back.ourlog.domain.statistics.dto;
+package com.back.ourlog.domain.statistics.dto
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-
-@Getter
-@AllArgsConstructor
-public class GenreLineGraphDto {
-    private String axisLabel; // "2025-07" 또는 "2025-07-29"
-    private String genre;
-    private Long count;
-}
+data class GenreLineGraphDto(
+    val axisLabel: String, // "2025-07" 또는 "2025-07-29"
+    val genre: String,
+    val count: Long
+)

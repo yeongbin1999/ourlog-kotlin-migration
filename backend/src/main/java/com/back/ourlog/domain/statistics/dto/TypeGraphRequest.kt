@@ -1,12 +1,8 @@
-package com.back.ourlog.domain.statistics.dto;
+package com.back.ourlog.domain.statistics.dto
 
-import com.back.ourlog.domain.statistics.enums.PeriodOption;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
+import com.back.ourlog.domain.statistics.enums.PeriodOption
 
-@Getter
-@AllArgsConstructor
-public class TypeGraphRequest {
-    private Integer userId;          // 특정 회원
-    private PeriodOption period;     // 기간 옵션
-}
+data class TypeGraphRequest(
+    val userId: Int?, // 특정 회원
+    val period: PeriodOption // 기간 옵션
+)

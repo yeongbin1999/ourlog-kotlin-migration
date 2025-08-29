@@ -1,11 +1,6 @@
-package com.back.ourlog.domain.statistics.dto;
+package com.back.ourlog.domain.statistics.dto
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-
-@Getter
-@AllArgsConstructor
-public class GenreRankDto {
-    private String genre;
-    private Long totalCount;
-}
+data class GenreRankDto(
+    val genre: String,
+    val totalCount: Long
+)

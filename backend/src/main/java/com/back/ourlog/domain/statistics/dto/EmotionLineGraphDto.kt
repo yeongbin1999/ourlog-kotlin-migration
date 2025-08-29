@@ -1,12 +1,7 @@
-package com.back.ourlog.domain.statistics.dto;
+package com.back.ourlog.domain.statistics.dto
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-
-@Getter
-@AllArgsConstructor
-public class EmotionLineGraphDto {
-    private String axisLabel; // "2025-07" (월) 또는 "2025-07-30" (일)
-    private String emotion;   // 감정명 (tag.name)
-    private Long count;       // 일기 개수
-}
+data class EmotionLineGraphDto(
+    val axisLabel: String,  // "2025-07" (월) 또는 "2025-07-30" (일)
+    val emotion: String,    // 감정명 (tag.name)
+    val count: Long         // 일기 개수
+)
