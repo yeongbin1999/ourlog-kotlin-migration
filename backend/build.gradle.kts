@@ -5,6 +5,7 @@ plugins {
     kotlin("jvm") version "1.9.25"
     kotlin("plugin.spring") version "1.9.25"
     kotlin("plugin.jpa") version "1.9.25"
+    id("com.google.devtools.ksp") version "1.9.25-1.0.20"
 }
 
 group = "com.back"
@@ -77,6 +78,10 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter:5.12.2")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.12.2")
     testImplementation("org.springframework.security:spring-security-test")
+
+    // --- Querydsl ---
+    implementation("io.github.openfeign.querydsl:querydsl-jpa:7.0")
+    ksp("io.github.openfeign.querydsl:querydsl-ksp-codegen:7.0")
 
 }
 
