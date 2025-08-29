@@ -1,6 +1,6 @@
-package com.back.ourlog.domain.statistics.enums;
+package com.back.ourlog.domain.statistics.enums
 
-public enum PeriodOption {
+enum class PeriodOption {
     ALL,          // 전체
     THIS_YEAR,    // 이번년도
     LAST_6_MONTHS,// 최근 6개월
