@@ -16,6 +16,9 @@ COPY backend/src ./backend/src
 # (선택) gradle.properties가 있다면 복사
 # COPY backend/gradle.properties ./backend/
 
+# .env 복사
+COPY backend/.env ./backend/.env
+
 # 빌드 (테스트 제외, prod 프로파일)
 WORKDIR /app/backend
 RUN ./gradlew clean build -x test -Pprod --no-daemon
@@ -31,11 +34,11 @@ WORKDIR /app
 
 # 빌드 결과물 복사
 COPY --from=build /app/app.jar /app/app.jar
+COPY --from=build /app/backend/.env .env
 
-# JVM 컨테이너 환경 최적화 (필요 시 조정)
+# JVM 컨테이너 환경 최적화
 ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75"
 
-# Spring Boot 민감 정보는 환경 변수에서 주입
-# Docker run 시 --env-file 또는 -e 옵션으로 전달
+# Spring Boot 프로파일 지정 및 포트 노출
 EXPOSE 8080
-ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar /app/app.jar --spring.profiles.active=prod"]
+ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -Dspring.profiles.active=prod -jar /app/app.jar"]

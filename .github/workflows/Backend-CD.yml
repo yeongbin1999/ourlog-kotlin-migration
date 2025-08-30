@@ -81,7 +81,6 @@ jobs:
     needs: buildImageAndPush
     runs-on: ubuntu-latest
     env:
-      DOT_ENV: ${{ secrets.DOT_ENV }}
       DOCKER_IMAGE_NAME: ourlog-backend
     steps:
       - name: Configure AWS Credentials
@@ -118,11 +117,6 @@ jobs:
           command: |
             IMAGE=ghcr.io/${{ github.repository_owner }}/${{ env.DOCKER_IMAGE_NAME }}:${{ needs.makeTagAndRelease.outputs.tag_name }}
 
-            # .env 파일 생성
-            mkdir -p /home/ubuntu/backend
-            echo "$DOT_ENV" > /home/ubuntu/backend/.env
-
-
             # 현재 활성 컨테이너 확인
             if docker ps --filter "name=backend-blue" | grep backend-blue; then
                 ACTIVE=blue
@@ -140,10 +134,11 @@ jobs:
             docker stop backend-$INACTIVE || true
             docker rm backend-$INACTIVE || true
 
+            # 컨테이너 내부 /app/.env 사용
             docker run -d --name backend-$INACTIVE \
               --network common \
               -p $PORT_INACTIVE:8080 \
-              --env-file /home/ubuntu/backend/.env \
+              --env-file /app/.env \
               $IMAGE
 
             # Health Check
@@ -164,17 +159,4 @@ jobs:
             
             PROXY_ID=$(curl -s -X GET "http://127.0.0.1:81/api/nginx/proxy-hosts" \
               -H "Authorization: Bearer $NPM_TOKEN" \
-              | jq '.[] | select(.domain_names[]=="${{ secrets.NPM_DOMAIN }}") | .id')
-
-            echo "🔎 Found Proxy Host ID: $PROXY_ID"
-
-            curl -X PATCH "http://127.0.0.1:81/api/nginx/proxy-hosts/$PROXY_ID" \
-              -H "Authorization: Bearer $NPM_TOKEN" \
-              -H "Content-Type: application/json" \
-              -d "{\"forward_host\": \"127.0.0.1\", \"forward_port\": $PORT_INACTIVE}"
-
-            # 이전 컨테이너 종료
-            docker stop backend-$ACTIVE || true
-            docker rm backend-$ACTIVE || true
-
-            echo "✅ Deployment complete. Active container: $INACTIVE"
+              | jq '.[] | select(.domain_names[]=="${{ secrets.NPM_DOMAIN }}") |
