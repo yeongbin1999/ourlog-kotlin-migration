@@ -114,6 +114,11 @@ jobs:
           command: |
             IMAGE=ghcr.io/${{ github.repository_owner }}/${{ env.DOCKER_IMAGE_NAME }}:${{ needs.makeTagAndRelease.outputs.tag_name }}
 
+            mkdir -p /home/ubuntu/backend
+            cat <<EOF > /home/ubuntu/backend/.env
+            $DOT_ENV
+            EOF
+
             # 현재 활성 컨테이너 확인
             if docker ps --filter "name=backend-blue" | grep backend-blue; then
                 ACTIVE=blue
