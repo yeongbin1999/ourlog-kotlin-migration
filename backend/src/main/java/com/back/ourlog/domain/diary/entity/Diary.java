@@ -174,8 +174,60 @@ public class Diary {
         comments.remove(comment);
     }
 
-    // Comment 코틀린 전환 작업으로 생성한 getter
+    // 코틀린 전환 작업으로 생성한 getter
     public Integer getId() {
         return id;
+    }
+
+    public User getUser() {
+        return user;
+    }
+
+    public Content getContent() {
+        return content;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public String getContentText() {
+        return contentText;
+    }
+
+    public Float getRating() {
+        return rating;
+    }
+
+    public Boolean getIsPublic() {
+        return isPublic;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public List<Comment> getComments() {
+        return comments;
+    }
+
+    public List<Like> getLikes() {
+        return likes;
+    }
+
+    public List<DiaryTag> getDiaryTags() {
+        return diaryTags;
+    }
+
+    public List<DiaryGenre> getDiaryGenres() {
+        return diaryGenres;
+    }
+
+    public List<DiaryOtt> getDiaryOtts() {
+        return diaryOtts;
     }
 }

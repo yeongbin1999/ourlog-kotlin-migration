@@ -45,6 +45,9 @@ enum class ErrorCode(
     GENRE_NOT_FOUND(HttpStatus.NOT_FOUND, "GENRE_001", "존재하지 않는 장르입니다."),
     OTT_NOT_FOUND(HttpStatus.NOT_FOUND, "OTT_001", "존재하지 않는 OTT입니다."),
 
+    // ======================== 외부 API 관련 ========================
+    EXTERNAL_API_ERROR(HttpStatus.SERVICE_UNAVAILABLE, "EXTERNAL_001", "외부 API 호출 중 오류가 발생했습니다."),
+
     // ======================== 댓글 관련 ========================
     COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "COMMENT_001", "존재하지 않는 댓글입니다."),
     COMMENT_DELETE_FORBIDDEN(HttpStatus.FORBIDDEN, "COMMENT_002", "댓글을 삭제할 권한이 없습니다."),

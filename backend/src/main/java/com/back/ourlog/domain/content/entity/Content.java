@@ -79,5 +79,12 @@ public class Content {
         );
     }
 
+    // 코틀린 전환을 위한 Getter 메서드 추가
+    public Integer getId() {
+        return id;
+    }
 
+    public LocalDateTime getReleasedAt() {
+        return releasedAt;
+    }
 }
