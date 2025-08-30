@@ -85,24 +85,22 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
-      - name: Get EC2 Instance ID
-        id: get_instance
-        run: |
-          INSTANCE_ID=$(aws ec2 describe-instances \
-            --filters "Name=tag:Name,Values=terra-ec2-1" "Name=instance-state-name,Values=running" \
-            --query "Reservations[].Instances[].InstanceId" --output text)
-          echo "INSTANCE_ID=$INSTANCE_ID" >> $GITHUB_ENV
-
       - name: Deploy Container via SSM (Blue-Green)
         uses: peterkimzz/aws-ssm-send-command@master
         with:
           aws-region: ${{ secrets.AWS_REGION }}
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          instance-ids: ${{ env.INSTANCE_ID }}
+          # 여기서 바로 EC2 인스턴스 조회 후 전달
+          instance-ids: ${{ steps.get_instance.outputs.instance_id }}
           working-directory: /
           comment: Deploy
           command: |
+            # EC2 인스턴스 ID 조회
+            INSTANCE_ID=$(aws ec2 describe-instances \
+              --filters "Name=tag:Name,Values=terra-ec2-1" "Name=instance-state-name,Values=running" \
+              --query "Reservations[].Instances[].InstanceId" --output text)
+
             IMAGE=ghcr.io/${{ github.repository_owner }}/${{ env.DOCKER_IMAGE_NAME }}:${{ needs.makeTagAndRelease.outputs.tag_name }}
 
             # 현재 활성 컨테이너 확인
