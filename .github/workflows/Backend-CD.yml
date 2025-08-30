@@ -90,7 +90,7 @@ jobs:
         id: get_instance
         run: |
           INSTANCE_ID=$(aws ec2 describe-instances \
-            --filters "Name=tag:Name,Values=terra-ec2-1" "Name=instance-state-name,Values=running" \
+            --filters "Name=tag:Name,Values=terra-ec2-web" "Name=instance-state-name,Values=running" \
             --query "Reservations[].Instances[].InstanceId" --output text)
           
           if [ -z "$INSTANCE_ID" ]; then
