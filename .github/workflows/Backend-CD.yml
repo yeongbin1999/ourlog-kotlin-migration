@@ -14,7 +14,7 @@ jobs:
   makeTagAndRelease:
     runs-on: ubuntu-latest
     outputs:
-      tag_name: ${{ steps.create_tag.outputs.new_tag }}
+      tag_name: ${{ steps.set_tag_output.outputs.new_tag }}
     steps:
       - uses: actions/checkout@v4
 
@@ -23,6 +23,11 @@ jobs:
         uses: mathieudutour/github-tag-action@v6.2
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set Tag Output
+        id: set_tag_output
+        run: |
+          echo "new_tag=${{ steps.create_tag.outputs.new_tag }}" >> $GITHUB_OUTPUT
 
       - name: Create Release
         id: create_release
@@ -76,6 +81,7 @@ jobs:
     needs: buildImageAndPush
     runs-on: ubuntu-latest
     env:
+      DOT_ENV: ${{ secrets.DOT_ENV }}
       DOCKER_IMAGE_NAME: ourlog-backend
     steps:
       - name: Configure AWS Credentials
@@ -85,7 +91,6 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
-      # EC2 ID 조회 및 환경변수 설정
       - name: Get EC2 Instance ID
         id: get_instance
         run: |
@@ -101,7 +106,6 @@ jobs:
           echo "EC2 ID: $INSTANCE_ID"
           echo "INSTANCE_ID=$INSTANCE_ID" >> $GITHUB_ENV
 
-      # Docker 컨테이너 배포 SSM
       - name: Deploy Container via SSM (Blue-Green)
         uses: peterkimzz/aws-ssm-send-command@master
         with:
@@ -114,6 +118,7 @@ jobs:
           command: |
             IMAGE=ghcr.io/${{ github.repository_owner }}/${{ env.DOCKER_IMAGE_NAME }}:${{ needs.makeTagAndRelease.outputs.tag_name }}
 
+            # .env 파일 생성
             mkdir -p /home/ubuntu/backend
             cat <<EOF > /home/ubuntu/backend/.env
             $DOT_ENV
