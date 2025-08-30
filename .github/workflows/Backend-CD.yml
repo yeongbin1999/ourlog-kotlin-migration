@@ -120,9 +120,8 @@ jobs:
 
             # .env 파일 생성
             mkdir -p /home/ubuntu/backend
-            cat <<EOF > /home/ubuntu/backend/.env
-            $DOT_ENV
-            EOF
+            echo "$DOT_ENV" > /home/ubuntu/backend/.env
+
 
             # 현재 활성 컨테이너 확인
             if docker ps --filter "name=backend-blue" | grep backend-blue; then
