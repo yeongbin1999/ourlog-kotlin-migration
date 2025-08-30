@@ -1,125 +1,120 @@
-package com.back.ourlog.external.tmdb.service;
+package com.back.ourlog.external.tmdb.service
 
-import com.back.ourlog.domain.content.dto.ContentSearchResultDto;
-import com.back.ourlog.domain.content.entity.ContentType;
-import com.back.ourlog.external.tmdb.client.TmdbClient;
-import com.back.ourlog.external.tmdb.dto.*;
-import com.back.ourlog.global.exception.CustomException;
-import com.back.ourlog.global.exception.ErrorCode;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.*;
+import com.back.ourlog.domain.content.dto.ContentSearchResultDto
+import com.back.ourlog.domain.content.entity.ContentType
+import com.back.ourlog.external.tmdb.client.TmdbClient
+import com.back.ourlog.external.tmdb.dto.TmdbGenreDto
+import com.back.ourlog.external.tmdb.dto.TmdbMovieDto
+import com.back.ourlog.global.exception.CustomException
+import com.back.ourlog.global.exception.ErrorCode
+import org.slf4j.LoggerFactory
+import org.springframework.stereotype.Service
+import java.time.LocalDate
+import java.time.LocalDateTime
 
 @Service
-@RequiredArgsConstructor
-public class TmdbService {
+class TmdbService(
+    private val tmdbClient: TmdbClient
+) {
 
-    private final TmdbClient tmdbClient;
+    private val log = LoggerFactory.getLogger(TmdbService::class.java)
 
-    private static final String POSTER_BASE_URL = "https://image.tmdb.org/t/p/w500";
-
-    public ContentSearchResultDto searchMovieByExternalId(String externalId) {
-        try {
-            String id = externalId.replace("tmdb-", "");
-            TmdbMovieDto movie = tmdbClient.fetchMovieById(id);
-            return toContentSearchResult(movie);
-        } catch (Exception e) {
-            throw new CustomException(ErrorCode.CONTENT_NOT_FOUND);
+    fun searchMovieByExternalId(externalId: String): ContentSearchResultDto {
+        return try {
+            val id = externalId.removePrefix("tmdb-")
+            val movie = tmdbClient.fetchMovieById(id)
+                ?: throw CustomException(ErrorCode.CONTENT_NOT_FOUND)
+            toContentSearchResult(movie)
+        } catch (e: Exception) {
+            throw CustomException(ErrorCode.CONTENT_NOT_FOUND)
         }
     }
 
-    public List<ContentSearchResultDto> searchMovieByTitle(String title) {
-        TmdbSearchResponse response = tmdbClient.searchMovie(title);
+    fun searchMovieByTitle(title: String): List<ContentSearchResultDto> {
+        val response = tmdbClient.searchMovie(title)
+        val movies = response?.results ?: emptyList()
 
-        return Optional.ofNullable(response)
-                .map(TmdbSearchResponse::getResults)
-                .orElse(List.of())
-                .stream()
-                .filter(movie -> movie.getTitle() != null &&
-                        movie.getTitle().toLowerCase().contains(title.toLowerCase()))
-                .sorted(Comparator.comparingInt(
-                        movie -> -1 * Optional.ofNullable(movie.getVoteCount()).orElse(0))) // 🔥 정렬 기준 변경
-                .limit(10)
-                .map(movie -> "tmdb-" + movie.getId())
-                .map(id -> {
-                    try {
-                        return searchMovieByExternalId(id);
-                    } catch (CustomException e) {
-                        return null;
-                    }
-                })
-                .filter(Objects::nonNull)
-                .toList();
+        return movies
+            .filterNotNull()
+            .filter { movie ->
+                movie.title?.lowercase()?.contains(title.lowercase()) == true
+            }
+            .sortedByDescending { it.voteCount ?: 0 }
+            .take(10)
+            .mapNotNull { movie ->
+                val id = "tmdb-${movie.id}"
+                try {
+                    searchMovieByExternalId(id)
+                } catch (e: CustomException) {
+                    null
+                }
+            }
     }
 
-    private ContentSearchResultDto toContentSearchResult(TmdbMovieDto movie) {
-        String directorName = fetchDirectorName(movie.getId());
-        List<String> genres = extractGenresFromTmdb(movie.getGenres());
+    private fun toContentSearchResult(movie: TmdbMovieDto): ContentSearchResultDto {
+        val directorName = fetchDirectorName(movie.id)
+        val genres = extractGenresFromTmdb(movie.genres ?: emptyList())
 
-
-        return new ContentSearchResultDto(
-                "tmdb-" + movie.getId(),
-                movie.getTitle(),
-                directorName,
-                movie.getDescription(),
-                POSTER_BASE_URL + movie.getPosterPath(),
-                parseDate(movie.getReleaseDate()),
-                ContentType.MOVIE,
-                genres
-        );
+        return ContentSearchResultDto(
+            externalId = "tmdb-${movie.id}",
+            title = movie.title,
+            creatorName = directorName,
+            description = movie.description,
+            posterUrl = POSTER_BASE_URL + movie.posterPath,
+            releasedAt = parseDate(movie.releaseDate),
+            type = ContentType.MOVIE,
+            genres = genres
+        )
     }
 
-    private String fetchDirectorName(int movieId) {
-        try {
-            TmdbCreditsResponse credits = tmdbClient.fetchCredits(movieId);
-            return credits.getCrew().stream()
-                    .filter(c -> "Director".equalsIgnoreCase(c.getJob()))
-                    .map(TmdbCrewDto::getName)
-                    .findFirst()
-                    .orElse(null);
-        } catch (Exception e) {
-            return null; // 실패하면 creatorName은 null로 유지
+    private fun fetchDirectorName(movieId: Int): String? {
+        return try {
+            val credits = tmdbClient.fetchCredits(movieId)
+            credits?.crew
+                ?.filterNotNull()
+                ?.firstOrNull { it.job.equals("Director", ignoreCase = true) }
+                ?.name
+        } catch (e: Exception) {
+            null
         }
     }
 
-    private LocalDateTime parseDate(String date) {
-        try {
-            return LocalDate.parse(date).atStartOfDay();
-        } catch (Exception e) {
-            return null;
+    private fun parseDate(date: String?): LocalDateTime? {
+        return try {
+            date?.let { LocalDate.parse(it).atStartOfDay() }
+        } catch (e: Exception) {
+            null
         }
     }
 
-    private static final Map<Integer, String> TMDB_GENRE_MAP = Map.ofEntries(
-            Map.entry(28, "액션"),
-            Map.entry(12, "모험"),
-            Map.entry(16, "애니메이션"),
-            Map.entry(35, "코미디"),
-            Map.entry(80, "범죄"),
-            Map.entry(99, "다큐멘터리"),
-            Map.entry(18, "드라마"),
-            Map.entry(10751, "가족"),
-            Map.entry(14, "판타지"),
-            Map.entry(36, "역사"),
-            Map.entry(27, "공포"),
-            Map.entry(10402, "음악"),
-            Map.entry(9648, "미스터리"),
-            Map.entry(10749, "로맨스"),
-            Map.entry(878, "SF"),
-            Map.entry(10770, "TV 영화"),
-            Map.entry(53, "스릴러"),
-            Map.entry(10752, "전쟁"),
-            Map.entry(37, "서부")
-    );
-
-    private List<String> extractGenresFromTmdb(List<TmdbGenreDto> genreDtos) {
-        return genreDtos.stream()
-                .map(dto -> TMDB_GENRE_MAP.get(dto.getId()))
-                .filter(Objects::nonNull)
-                .toList();
+    private fun extractGenresFromTmdb(genreDtos: List<TmdbGenreDto?>): List<String> {
+        return genreDtos
+            .mapNotNull { dto -> TMDB_GENRE_MAP[dto?.id] }
     }
 
+    companion object {
+        private const val POSTER_BASE_URL = "https://image.tmdb.org/t/p/w500"
+
+        private val TMDB_GENRE_MAP: Map<Int, String> = mapOf(
+            28 to "액션",
+            12 to "모험",
+            16 to "애니메이션",
+            35 to "코미디",
+            80 to "범죄",
+            99 to "다큐멘터리",
+            18 to "드라마",
+            10751 to "가족",
+            14 to "판타지",
+            36 to "역사",
+            27 to "공포",
+            10402 to "음악",
+            9648 to "미스터리",
+            10749 to "로맨스",
+            878 to "SF",
+            10770 to "TV 영화",
+            53 to "스릴러",
+            10752 to "전쟁",
+            37 to "서부"
+        )
+    }
 }

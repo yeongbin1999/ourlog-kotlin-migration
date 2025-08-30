@@ -1,11 +1,9 @@
-package com.back.ourlog.external.tmdb.dto;
+package com.back.ourlog.external.tmdb.dto
 
-import lombok.Getter;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 
-import java.util.List;
-
-@Getter
-public class TmdbSearchResponse {
-    private int page;
-    private List<TmdbMovieDto> results;
-}
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class TmdbSearchResponse(
+    val page: Int = 0,
+    val results: List<TmdbMovieDto?>? = null
+)

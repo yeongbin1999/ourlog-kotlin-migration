@@ -1,9 +1,9 @@
-package com.back.ourlog.external.tmdb.dto;
+package com.back.ourlog.external.tmdb.dto
 
-import lombok.Getter;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 
-@Getter
-public class TmdbGenreDto {
-    private int id;
-    private String name;
-}
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class TmdbGenreDto(
+    val id: Int = 0,
+    val name: String? = null
+)

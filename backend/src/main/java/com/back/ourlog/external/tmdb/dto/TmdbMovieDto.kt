@@ -1,33 +1,27 @@
-package com.back.ourlog.external.tmdb.dto;
+package com.back.ourlog.external.tmdb.dto
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Getter;
+import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 
-import java.util.List;
-
-@Getter
-public class TmdbMovieDto {
-
-    private int id;
-
-    private String title;
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class TmdbMovieDto(
+    val id: Int = 0,
+    val title: String? = null,
 
     @JsonProperty("overview")
-    private String description;
+    val description: String? = null,
 
     @JsonProperty("poster_path")
-    private String posterPath;
+    val posterPath: String? = null,
 
     @JsonProperty("release_date")
-    private String releaseDate;
+    val releaseDate: String? = null,
 
     @JsonProperty("vote_average")
-    private double voteAverage;
+    val voteAverage: Double = 0.0,
 
     @JsonProperty("vote_count")
-    private int voteCount;
+    val voteCount: Int = 0,
 
-    @JsonProperty("genres")
-    private List<TmdbGenreDto> genres;
-
-}
+    val genres: List<TmdbGenreDto?>? = null
+)

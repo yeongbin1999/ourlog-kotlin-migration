@@ -1,12 +1,8 @@
-package com.back.ourlog.external.tmdb.dto;
+package com.back.ourlog.external.tmdb.dto
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import lombok.Getter;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 
-import java.util.List;
-
-@Getter
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class TmdbCreditsResponse {
-    private List<TmdbCrewDto> crew;
-}
+data class TmdbCreditsResponse(
+    val crew: List<TmdbCrewDto?>? = null
+)
