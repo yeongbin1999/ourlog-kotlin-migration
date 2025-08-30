@@ -7,6 +7,7 @@ on:
     paths:
       - ".github/workflows/**"
       - "backend/**"
+      - "infra/docker/**"   # 👉 도커파일 위치 추가
 
 jobs:
   # Git 태그 & 릴리즈 생성
@@ -61,11 +62,12 @@ jobs:
       - name: Build & Push Docker Image
         uses: docker/build-push-action@v3
         with:
-          context: backend
+          context: .                     # 👉 프로젝트 루트
+          file: infra/docker/Dockerfile  # 👉 도커파일 경로 명시
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/$DOCKER_IMAGE_NAME:${{ needs.makeTagAndRelease.outputs.tag_name }}
-            ghcr.io/${{ github.repository_owner }}/$DOCKER_IMAGE_NAME:latest
+            ghcr.io/${{ github.repository_owner }}/${{ env.DOCKER_IMAGE_NAME }}:${{ needs.makeTagAndRelease.outputs.tag_name }}
+            ghcr.io/${{ github.repository_owner }}/${{ env.DOCKER_IMAGE_NAME }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -101,7 +103,7 @@ jobs:
           working-directory: /
           comment: Deploy
           command: |
-            IMAGE=ghcr.io/${{ github.repository_owner }}/$DOCKER_IMAGE_NAME:${{ needs.makeTagAndRelease.outputs.tag_name }}
+            IMAGE=ghcr.io/${{ github.repository_owner }}/${{ env.DOCKER_IMAGE_NAME }}:${{ needs.makeTagAndRelease.outputs.tag_name }}
 
             # 현재 활성 컨테이너 확인
             if docker ps --filter "name=backend-blue" | grep backend-blue; then
