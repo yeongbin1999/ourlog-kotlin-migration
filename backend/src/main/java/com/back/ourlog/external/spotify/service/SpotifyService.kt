@@ -29,7 +29,7 @@ class SpotifyService(
             val genres = spotifyClient.fetchGenresByArtistId(artistId).filterNotNull()
             toContentSearchResult(track, genres)
         } catch (e: Exception) {
-            throw CustomException(ErrorCode.CONTENT_NOT_FOUND)
+            throw CustomException(ErrorCode.EXTERNAL_API_ERROR)
         }
     }
 

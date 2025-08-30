@@ -5,12 +5,12 @@ import com.back.ourlog.domain.content.entity.ContentType
 import com.back.ourlog.external.tmdb.client.TmdbClient
 import com.back.ourlog.external.tmdb.dto.TmdbGenreDto
 import com.back.ourlog.external.tmdb.dto.TmdbMovieDto
+import com.back.ourlog.global.common.extension.getPosterUrl
+import com.back.ourlog.global.common.extension.parseReleaseDateOrNull
 import com.back.ourlog.global.exception.CustomException
 import com.back.ourlog.global.exception.ErrorCode
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
-import java.time.LocalDate
-import java.time.LocalDateTime
 
 @Service
 class TmdbService(
@@ -25,8 +25,11 @@ class TmdbService(
             val movie = tmdbClient.fetchMovieById(id)
                 ?: throw CustomException(ErrorCode.CONTENT_NOT_FOUND)
             toContentSearchResult(movie)
+        } catch (e: CustomException) {
+            throw e
         } catch (e: Exception) {
-            throw CustomException(ErrorCode.CONTENT_NOT_FOUND)
+            log.error("Failed to search movie by external id: {}. Reason: {}", externalId, e.message, e)
+            throw CustomException(ErrorCode.EXTERNAL_API_ERROR)
         }
     }
 
@@ -36,19 +39,10 @@ class TmdbService(
 
         return movies
             .filterNotNull()
-            .filter { movie ->
-                movie.title?.lowercase()?.contains(title.lowercase()) == true
-            }
-            .sortedByDescending { it.voteCount ?: 0 }
+            .filter { !it.posterPath.isNullOrBlank() }
+            .sortedByDescending { it.voteCount }
             .take(10)
-            .mapNotNull { movie ->
-                val id = "tmdb-${movie.id}"
-                try {
-                    searchMovieByExternalId(id)
-                } catch (e: CustomException) {
-                    null
-                }
-            }
+            .map { movieDto -> toContentSearchResult(movieDto) }
     }
 
     private fun toContentSearchResult(movie: TmdbMovieDto): ContentSearchResultDto {
@@ -60,8 +54,8 @@ class TmdbService(
             title = movie.title,
             creatorName = directorName,
             description = movie.description,
-            posterUrl = POSTER_BASE_URL + movie.posterPath,
-            releasedAt = parseDate(movie.releaseDate),
+            posterUrl = movie.getPosterUrl(),
+            releasedAt = movie.parseReleaseDateOrNull(),
             type = ContentType.MOVIE,
             genres = genres
         )
@@ -69,32 +63,22 @@ class TmdbService(
 
     private fun fetchDirectorName(movieId: Int): String? {
         return try {
-            val credits = tmdbClient.fetchCredits(movieId)
-            credits?.crew
+            tmdbClient.fetchCredits(movieId)
+                ?.crew
                 ?.filterNotNull()
                 ?.firstOrNull { it.job.equals("Director", ignoreCase = true) }
                 ?.name
         } catch (e: Exception) {
-            null
-        }
-    }
-
-    private fun parseDate(date: String?): LocalDateTime? {
-        return try {
-            date?.let { LocalDate.parse(it).atStartOfDay() }
-        } catch (e: Exception) {
+            log.warn("Could not fetch director name for movie ID: {}. Reason: {}", movieId, e.message)
             null
         }
     }
 
     private fun extractGenresFromTmdb(genreDtos: List<TmdbGenreDto?>): List<String> {
-        return genreDtos
-            .mapNotNull { dto -> TMDB_GENRE_MAP[dto?.id] }
+        return genreDtos.mapNotNull { dto -> TMDB_GENRE_MAP[dto?.id] }
     }
 
     companion object {
-        private const val POSTER_BASE_URL = "https://image.tmdb.org/t/p/w500"
-
         private val TMDB_GENRE_MAP: Map<Int, String> = mapOf(
             28 to "액션",
             12 to "모험",
