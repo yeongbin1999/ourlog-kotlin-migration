@@ -85,15 +85,21 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
-      # EC2 ID 조회 및 output 설정
+      # EC2 ID 조회 및 환경변수 설정
       - name: Get EC2 Instance ID
         id: get_instance
         run: |
           INSTANCE_ID=$(aws ec2 describe-instances \
             --filters "Name=tag:Name,Values=terra-ec2-1" "Name=instance-state-name,Values=running" \
             --query "Reservations[].Instances[].InstanceId" --output text)
+          
+          if [ -z "$INSTANCE_ID" ]; then
+            echo "❌ No running EC2 instance found"
+            exit 1
+          fi
+
           echo "EC2 ID: $INSTANCE_ID"
-          echo "::set-output name=INSTANCE_ID::$INSTANCE_ID"
+          echo "INSTANCE_ID=$INSTANCE_ID" >> $GITHUB_ENV
 
       # Docker 컨테이너 배포 SSM
       - name: Deploy Container via SSM (Blue-Green)
@@ -102,7 +108,7 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          instance-ids: ${{ steps.get_instance.outputs.INSTANCE_ID }}
+          instance-ids: ${{ env.INSTANCE_ID }}
           working-directory: /
           comment: Deploy
           command: |
