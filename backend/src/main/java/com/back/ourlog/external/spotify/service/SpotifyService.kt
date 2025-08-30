@@ -35,22 +35,31 @@ class SpotifyService(
 
     fun searchMusicByTitle(title: String): List<ContentSearchResultDto> {
         val response = spotifyClient.searchTrack(title)
-        val tracks = response?.tracks?.items ?: emptyList()
+        val tracks = response?.tracks?.items?.filterNotNull() ?: emptyList()
 
+        // 초기 검색 결과의 트랙 필터링 + 정렬
         return tracks
-            .filterNotNull()
-            .filter { track ->
-                track.name?.lowercase()?.contains(title.lowercase()) == true
-            }
+            .filter { it.name?.lowercase()?.contains(title.lowercase()) == true }
             .sortedByDescending { it.popularity }
             .take(10)
-            .mapNotNull { track ->
-                val externalId = "spotify-${track.id}"
-                try {
-                    searchMusicByExternalId(externalId)
-                } catch (e: CustomException) {
-                    null
+            .map { track ->
+                // 각 트랙에 대한 아티스트 ID
+                val artistId = track.artists?.firstOrNull()?.id
+
+                // 아티스트 ID가 있을 경우에만 장르 조회
+                val genres = if (artistId != null) {
+                    try {
+                        spotifyClient.fetchGenresByArtistId(artistId).filterNotNull()
+                    } catch (e: Exception) {
+                        log.error("아티스트 {}의 장르 조회 실패", artistId, e)
+                        emptyList() // 특정 아티스트 조회 실패 시에도 다음 로직이 진행되도록 처리
+                    }
+                } else {
+                    emptyList()
                 }
+
+                // 이미 가지고 있는 track 정보와 방금 조회한 genres로 DTO 직접 생성
+                toContentSearchResult(track, genres)
             }
     }
 
