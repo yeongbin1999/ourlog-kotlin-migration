@@ -7,7 +7,7 @@ on:
     paths:
       - ".github/workflows/**"
       - "backend/**"
-      - "infra/docker/**"   # 👉 도커파일 위치 추가
+      - "infra/docker/**"
 
 jobs:
   # Git 태그 & 릴리즈 생성
@@ -42,7 +42,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DOT_ENV: ${{ secrets.DOT_ENV }}
-      DOCKER_IMAGE_NAME: my-backend
+      DOCKER_IMAGE_NAME: ourlog-backend
     steps:
       - uses: actions/checkout@v4
 
@@ -62,8 +62,8 @@ jobs:
       - name: Build & Push Docker Image
         uses: docker/build-push-action@v3
         with:
-          context: .                     # 👉 프로젝트 루트
-          file: infra/docker/Dockerfile  # 👉 도커파일 경로 명시
+          context: .
+          file: infra/docker/Dockerfile
           push: true
           tags: |
             ghcr.io/${{ github.repository_owner }}/${{ env.DOCKER_IMAGE_NAME }}:${{ needs.makeTagAndRelease.outputs.tag_name }}
@@ -76,7 +76,7 @@ jobs:
     needs: buildImageAndPush
     runs-on: ubuntu-latest
     env:
-      DOCKER_IMAGE_NAME: my-backend
+      DOCKER_IMAGE_NAME: ourlog-backend
     steps:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
