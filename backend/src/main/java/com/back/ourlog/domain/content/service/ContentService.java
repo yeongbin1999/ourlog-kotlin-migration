@@ -43,7 +43,7 @@ public class ContentService {
     }
 
     public Content saveOrGet(ContentSearchResultDto result, ContentType type) {
-        return contentRepository.findByExternalIdAndType(result.externalId(), type)
+        return contentRepository.findByExternalIdAndType(result.getExternalId(), type)
                 .orElseGet(() -> contentRepository.save(Content.of(result)));
     }
 

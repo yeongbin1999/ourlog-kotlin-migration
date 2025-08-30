@@ -11,7 +11,7 @@ class Ott(
 ) {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Int = 0
+    val id: Int? = null
 
     constructor(name: String) : this(name, null)
 
