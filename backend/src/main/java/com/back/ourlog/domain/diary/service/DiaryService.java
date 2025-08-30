@@ -60,16 +60,16 @@ public class DiaryService {
         }
 
         // 외부 콘텐츠 검색
-        ContentSearchResultDto result = contentSearchFacade.search(req.type(), req.externalId());
+        ContentSearchResultDto result = contentSearchFacade.search(req.type, req.externalId);
         if (result == null || result.getExternalId() == null) {
             throw new CustomException(ErrorCode.CONTENT_NOT_FOUND);
         }
 
         // 콘텐츠 저장 or 조회
-        Content content = contentService.saveOrGet(result, req.type());
+        Content content = contentService.saveOrGet(result, req.type);
 
         // Diary 생성 (연관관계 포함)
-        Diary diary = diaryFactory.create(user, content, req.title(), req.contentText(), req.rating(), req.isPublic(), req.tagNames(), result.getGenres(), req.ottIds());
+        Diary diary = diaryFactory.create(user, content, req.title, req.contentText, req.rating, req.isPublic, req.tagNames, result.getGenres(), req.ottIds);
 
         // 저장
         return diaryRepository.save(diary);
@@ -87,24 +87,24 @@ public class DiaryService {
 
         // 콘텐츠 변경 처리
         Content oldContent = diary.getContent();
-        boolean contentChanged = !oldContent.getExternalId().equals(dto.externalId())
-                || !oldContent.getType().equals(dto.type());
+        boolean contentChanged = !oldContent.getExternalId().equals(dto.externalId)
+                || !oldContent.getType().equals(dto.type);
 
         if (contentChanged) {
-            ContentSearchResultDto result = contentSearchFacade.search(dto.type(), dto.externalId());
+            ContentSearchResultDto result = contentSearchFacade.search(dto.type, dto.externalId);
             if (result == null || result.getExternalId() == null) {
                 throw new CustomException(ErrorCode.CONTENT_NOT_FOUND);
             }
-            Content newContent = contentService.saveOrGet(result, dto.type());
+            Content newContent = contentService.saveOrGet(result, dto.type);
             diary.setContent(newContent);
             if (result.getGenres() != null) {
                 diary.updateGenres(result.getGenres(), genreService, libraryService);
             }
         }
 
-        diary.update(dto.title(), dto.contentText(), dto.rating(), dto.isPublic());
-        diary.updateTags(dto.tagNames(), tagRepository);
-        diary.updateOtts(dto.ottIds(), ottRepository);
+        diary.update(dto.title, dto.contentText, dto.rating, dto.isPublic);
+        diary.updateTags(dto.tagNames, tagRepository);
+        diary.updateOtts(dto.ottIds, ottRepository);
 
         diaryRepository.flush();
         objectRedisTemplate.delete("diaryDetail::" + diaryId);
