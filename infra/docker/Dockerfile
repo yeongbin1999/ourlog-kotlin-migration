@@ -13,9 +13,6 @@ RUN sed -i 's/\r$//' ./backend/gradlew && chmod +x ./backend/gradlew
 # 소스 복사
 COPY backend/src ./backend/src
 
-# (선택) gradle.properties가 있다면 복사
-# COPY backend/gradle.properties ./backend/
-
 # .env 복사
 COPY backend/.env ./backend/.env
 
@@ -32,7 +29,7 @@ FROM eclipse-temurin:21-jdk-jammy
 
 WORKDIR /app
 
-# 빌드 결과물 복사
+# 빌드 결과물과 .env 복사
 COPY --from=build /app/app.jar /app/app.jar
 COPY --from=build /app/backend/.env .env
 
@@ -41,4 +38,6 @@ ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75"
 
 # Spring Boot 프로파일 지정 및 포트 노출
 EXPOSE 8080
+
+# JAR 실행 시 .env 사용 가능
 ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -Dspring.profiles.active=prod -jar /app/app.jar"]
