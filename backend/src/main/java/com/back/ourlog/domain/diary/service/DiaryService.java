@@ -61,7 +61,7 @@ public class DiaryService {
 
         // 외부 콘텐츠 검색
         ContentSearchResultDto result = contentSearchFacade.search(req.type(), req.externalId());
-        if (result == null || result.externalId() == null) {
+        if (result == null || result.getExternalId() == null) {
             throw new CustomException(ErrorCode.CONTENT_NOT_FOUND);
         }
 
@@ -69,7 +69,7 @@ public class DiaryService {
         Content content = contentService.saveOrGet(result, req.type());
 
         // Diary 생성 (연관관계 포함)
-        Diary diary = diaryFactory.create(user, content, req.title(), req.contentText(), req.rating(), req.isPublic(), req.tagNames(), result.genres(), req.ottIds());
+        Diary diary = diaryFactory.create(user, content, req.title(), req.contentText(), req.rating(), req.isPublic(), req.tagNames(), result.getGenres(), req.ottIds());
 
         // 저장
         return diaryRepository.save(diary);
@@ -92,13 +92,13 @@ public class DiaryService {
 
         if (contentChanged) {
             ContentSearchResultDto result = contentSearchFacade.search(dto.type(), dto.externalId());
-            if (result == null || result.externalId() == null) {
+            if (result == null || result.getExternalId() == null) {
                 throw new CustomException(ErrorCode.CONTENT_NOT_FOUND);
             }
             Content newContent = contentService.saveOrGet(result, dto.type());
             diary.setContent(newContent);
-            if (result.genres() != null) {
-                diary.updateGenres(result.genres(), genreService, libraryService);
+            if (result.getGenres() != null) {
+                diary.updateGenres(result.getGenres(), genreService, libraryService);
             }
         }
 

@@ -12,7 +12,8 @@ import java.util.List;
 @Getter
 public class CustomUserDetails implements UserDetails {
 
-    private final Integer id;
+    // controller에서 .id로 접근하기 위해 public으로 임시로 변경 했습니다 - 노희철
+    public final Integer id;
     private final String email;
     private final String nickname;
     private final Role role;

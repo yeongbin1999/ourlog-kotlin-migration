@@ -13,7 +13,7 @@ class CommentRepositoryImpl(
 
         return queryFactory
             .selectFrom(comment)
-            .where(comment.diary.id.eq(diary.id))
+            .where(comment.diary.eq(diary))
             .orderBy(comment.createdAt.desc())
             .fetch()
     }

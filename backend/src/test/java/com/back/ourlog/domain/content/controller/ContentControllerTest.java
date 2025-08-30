@@ -12,6 +12,8 @@ import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.everyItem;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -90,7 +92,7 @@ class ContentControllerTest {
                 .andExpect(jsonPath("$.msg").value("콘텐츠 검색 성공"))
                 .andExpect(jsonPath("$.data").isArray())
                 .andExpect(jsonPath("$.data.length()").value(lessThanOrEqualTo(10)))
-                .andExpect(jsonPath("$.data[0].type").value("MUSIC"));
+                .andExpect(jsonPath("$.data[*].type").value(everyItem(equalTo("MUSIC"))));
     }
 
     @Test
