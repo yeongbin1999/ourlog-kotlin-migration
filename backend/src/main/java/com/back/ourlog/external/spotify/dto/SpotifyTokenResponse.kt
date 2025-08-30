@@ -1,17 +1,16 @@
-package com.back.ourlog.external.spotify.dto;
+package com.back.ourlog.external.spotify.dto
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Data;
+import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 
-@Data
-public class SpotifyTokenResponse {
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class SpotifyTokenResponse(
     @JsonProperty("access_token")
-    private String accessToken;
+    val accessToken: String? = null,
 
     @JsonProperty("token_type")
-    private String tokenType;
+    val tokenType: String? = null,
 
     @JsonProperty("expires_in")
-    private int expiresIn;
-
-}
+    val expiresIn: Int = 0
+)

@@ -1,92 +1,79 @@
-package com.back.ourlog.external.spotify.service;
+package com.back.ourlog.external.spotify.service
 
-import com.back.ourlog.domain.content.dto.ContentSearchResultDto;
-import com.back.ourlog.domain.content.entity.Content;
-import com.back.ourlog.domain.content.entity.ContentType;
-import com.back.ourlog.external.spotify.client.SpotifyClient;
-import com.back.ourlog.external.spotify.dto.SpotifySearchResponse;
-import com.back.ourlog.external.spotify.dto.TrackItem;
-import com.back.ourlog.global.exception.CustomException;
-import com.back.ourlog.global.exception.ErrorCode;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
+import com.back.ourlog.domain.content.dto.ContentSearchResultDto
+import com.back.ourlog.domain.content.entity.ContentType
+import com.back.ourlog.external.spotify.client.SpotifyClient
+import com.back.ourlog.external.spotify.dto.TrackItem
+import com.back.ourlog.global.exception.CustomException
+import com.back.ourlog.global.exception.ErrorCode
+import org.slf4j.LoggerFactory
+import org.springframework.stereotype.Service
+import java.time.LocalDate
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.*;
-
-@Slf4j
 @Service
-@RequiredArgsConstructor
-public class SpotifyService {
+class SpotifyService(
+    private val spotifyClient: SpotifyClient
+) {
 
-    private final SpotifyClient spotifyClient;
+    private val log = LoggerFactory.getLogger(SpotifyService::class.java)
 
-    public ContentSearchResultDto searchMusicByExternalId(String externalId) {
-        try {
-            String id = externalId.replace("spotify-", "");
-            TrackItem track = spotifyClient.getTrackById(id); // Spotify 단건 조회 API
+    fun searchMusicByExternalId(externalId: String): ContentSearchResultDto {
+        return try {
+            val id = externalId.removePrefix("spotify-")
+            val track = spotifyClient.getTrackById(id)
+                ?: throw CustomException(ErrorCode.CONTENT_NOT_FOUND)
 
-            if (track == null || track.getArtists() == null || track.getArtists().isEmpty()) {
-                throw new CustomException(ErrorCode.CONTENT_NOT_FOUND);
-            }
+            val artistId = track.artists?.firstOrNull()?.id
+                ?: throw CustomException(ErrorCode.CONTENT_NOT_FOUND)
 
-            String artistId = track.getArtists().get(0).getId();
-            List<String> genres = Optional.ofNullable(spotifyClient.fetchGenresByArtistId(artistId))
-                    .orElse(new ArrayList<>());
-
-            return toContentSearchResult(track, genres);
-        } catch (Exception e) {
-            throw new CustomException(ErrorCode.CONTENT_NOT_FOUND);
+            val genres = spotifyClient.fetchGenresByArtistId(artistId).filterNotNull()
+            toContentSearchResult(track, genres)
+        } catch (e: Exception) {
+            throw CustomException(ErrorCode.CONTENT_NOT_FOUND)
         }
     }
 
-    public List<ContentSearchResultDto> searchMusicByTitle(String title) {
-        SpotifySearchResponse response = spotifyClient.searchTrack(title);
+    fun searchMusicByTitle(title: String): List<ContentSearchResultDto> {
+        val response = spotifyClient.searchTrack(title)
+        val tracks = response?.tracks?.items ?: emptyList()
 
-        return Optional.ofNullable(response)
-                .map(SpotifySearchResponse::getTracks)
-                .map(SpotifySearchResponse.Tracks::getItems)
-                .orElse(List.of())
-                .stream()
-                // 제목이 정확히 포함된 것만 필터링
-                .filter(track -> track.getName() != null && track.getName().toLowerCase().contains(title.toLowerCase()))
-                // 인기순 정렬
-                .sorted(Comparator.comparingInt(TrackItem::getPopularity).reversed())
-                // 최대 10개만
-                .limit(10)
-                .map(track -> {
-                    String externalId = "spotify-" + track.getId();
-                    try {
-                        return searchMusicByExternalId(externalId);
-                    } catch (CustomException e) {
-                        return null; // 실패 시 제외
-                    }
-                })
-                .filter(Objects::nonNull)
-                .toList();
+        return tracks
+            .filterNotNull()
+            .filter { track ->
+                track.name?.lowercase()?.contains(title.lowercase()) == true
+            }
+            .sortedByDescending { it.popularity }
+            .take(10)
+            .mapNotNull { track ->
+                val externalId = "spotify-${track.id}"
+                try {
+                    searchMusicByExternalId(externalId)
+                } catch (e: CustomException) {
+                    null
+                }
+            }
     }
 
-    private ContentSearchResultDto toContentSearchResult(TrackItem trackItem, List<String> genres) {
-        String creatorName = trackItem.getArtists().get(0).getName();
-        String posterUrl = trackItem.getAlbum().getImages().isEmpty() ? null : trackItem.getAlbum().getImages().get(0).getUrl();
-        String releaseDate = trackItem.getAlbum().getReleaseDate();
+    private fun toContentSearchResult(trackItem: TrackItem, genres: List<String>): ContentSearchResultDto {
+        val creatorName = trackItem.artists?.firstOrNull()?.name
+        val posterUrl = trackItem.album?.images?.firstOrNull()?.url
+        val releaseDate = trackItem.album?.releaseDate
 
-        LocalDateTime releasedAt = null;
-        try {
-            releasedAt = LocalDate.parse(releaseDate).atStartOfDay();
-        } catch (Exception ignored) {}
+        val releasedAt = try {
+            releaseDate?.let { LocalDate.parse(it).atStartOfDay() }
+        } catch (ignored: Exception) {
+            null
+        }
 
-        return new ContentSearchResultDto(
-                "spotify-" + trackItem.getId(),
-                trackItem.getName(),
-                creatorName,
-                null,
-                posterUrl,
-                releasedAt,
-                ContentType.MUSIC,
-                genres
-        );
+        return ContentSearchResultDto(
+            externalId = "spotify-${trackItem.id}",
+            title = trackItem.name,
+            creatorName = creatorName,
+            description = null,
+            posterUrl = posterUrl,
+            releasedAt = releasedAt,
+            type = ContentType.MUSIC,
+            genres = genres
+        )
     }
 }

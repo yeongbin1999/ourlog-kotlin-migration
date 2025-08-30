@@ -1,13 +1,9 @@
-package com.back.ourlog.external.spotify.dto;
+package com.back.ourlog.external.spotify.dto
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 
-@Getter
-@NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class SpotifyArtist {
-    private String id;
-    private String name;
-}
+data class SpotifyArtist(
+    val id: String? = null,
+    val name: String? = null
+)

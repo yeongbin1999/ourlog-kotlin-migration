@@ -1,19 +1,11 @@
-package com.back.ourlog.external.spotify.dto;
+package com.back.ourlog.external.spotify.dto
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.fasterxml.jackson.annotation.JsonProperty
 
-import java.util.List;
-
-@Getter
-@NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class SpotifyAlbum {
-
+data class SpotifyAlbum(
     @JsonProperty("release_date")
-    private String releaseDate;
-
-    private List<SpotifyImage> images;
-}
+    val releaseDate: String? = null,
+    val images: List<SpotifyImage?>? = null
+)

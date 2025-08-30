@@ -1,12 +1,8 @@
-package com.back.ourlog.external.spotify.dto;
+package com.back.ourlog.external.spotify.dto
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 
-@Getter
-@NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class ExternalUrls {
-    private String spotify;
-}
+data class ExternalUrls(
+    val spotify: String? = null
+)

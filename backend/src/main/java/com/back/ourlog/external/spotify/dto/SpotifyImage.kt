@@ -1,12 +1,8 @@
-package com.back.ourlog.external.spotify.dto;
+package com.back.ourlog.external.spotify.dto
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 
-@Getter
-@NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class SpotifyImage {
-    private String url;
-}
+data class SpotifyImage(
+    val url: String? = null
+)
