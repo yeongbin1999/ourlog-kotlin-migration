@@ -1,36 +1,54 @@
-variable "prefix" {
-  description = "Prefix for all resources"
-  default     = "dev"
-}
-
 variable "region" {
-  description = "AWS region"
+  description = "AWS 리전"
+  type        = string
   default     = "ap-northeast-2"
 }
 
-variable "nickname" {
-  description = "사용자 닉네임"
-  default     = "jueunk617"
+variable "prefix" {
+  description = "리소스 이름 접두사"
+  type        = string
+  default     = "terra"
 }
 
-variable "password_1" {
-  description = "Docker Redis 및 기타 기본 비밀번호"
+variable "my_ip" {
+  description = "SSH 허용 IP"
+  type        = string
+  default     = "0.0.0.0/0"
+}
+
+variable "default_password" {
+  description = "초기/공통 비밀번호"
   type        = string
   sensitive   = true
 }
 
-variable "db_username" {
-  description = "RDS MySQL username"
-  default     = "admin"
+variable "mysql_user_list" {
+  type = list(object({
+    name       = string
+    host       = string
+    password   = string
+    privileges = string
+  }))
+  default = [
+    { name="local", host="127.0.0.1", password="local", privileges="ALL PRIVILEGES ON *.*" },
+    { name="local", host="172.18.%.%", password="local", privileges="ALL PRIVILEGES ON *.*" },
+    { name="ourlog", host="%", password="qwerty", privileges="ALL PRIVILEGES ON *.*" }
+  ]
 }
 
-variable "db_password" {
-  description = "RDS MySQL password"
+variable "app_db_name" {
+  description = "애플리케이션 DB 이름"
+  type        = string
+  default     = "appdb"
+}
+
+variable "github_token" {
+  description = "GitHub Container Registry 토큰"
   type        = string
   sensitive   = true
 }
 
-variable "db_name" {
-  description = "RDS MySQL DB name"
-  default     = "ourlog_db"
+variable "github_user" {
+  description = "GitHub 사용자/소유자 이름"
+  type        = string
 }

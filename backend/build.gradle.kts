@@ -67,7 +67,6 @@ dependencies {
     // --- Jakarta 추가 어노테이션 ---
     implementation("jakarta.annotation:jakarta.annotation-api:2.1.1")
 
-
     // --- Dotenv ---
     implementation("me.paulschwarz:spring-dotenv:4.0.0")
 
@@ -82,7 +81,6 @@ dependencies {
     // --- Querydsl ---
     implementation("io.github.openfeign.querydsl:querydsl-jpa:7.0")
     ksp("io.github.openfeign.querydsl:querydsl-ksp-codegen:7.0")
-
 }
 
 kotlin {
