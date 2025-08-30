@@ -71,7 +71,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # EC2 배포 via SSM (Blue-Green)
+  # EC2 배포 SSM (Blue-Green)
   deploy:
     needs: buildImageAndPush
     runs-on: ubuntu-latest
@@ -85,33 +85,24 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
-      # 1️⃣ EC2 ID 조회
+      # EC2 ID 조회 및 환경변수 설정
       - name: Get EC2 Instance ID
         id: get_instance
         run: |
           INSTANCE_ID=$(aws ec2 describe-instances \
             --filters "Name=tag:Name,Values=terra-ec2-1" "Name=instance-state-name,Values=running" \
             --query "Reservations[].Instances[].InstanceId" --output text)
-          echo "::set-output name=instance_id::$INSTANCE_ID"
+          echo "INSTANCE_ID=$INSTANCE_ID" >> $GITHUB_ENV
+          echo "EC2 ID: $INSTANCE_ID"
 
-      # 2️⃣ .env 파일 EC2로 복사
-      - name: Upload .env to EC2
-        run: |
-          aws ssm send-command \
-            --targets "Key=instanceIds,Values=${{ steps.get_instance.outputs.instance_id }}" \
-            --document-name "AWS-RunShellScript" \
-            --comment "Upload .env" \
-            --parameters 'commands=["mkdir -p /home/ubuntu/backend","echo \"$DOT_ENV\" > /home/ubuntu/backend/.env"]' \
-            --region ${{ secrets.AWS_REGION }}
-
-      # 3️⃣ Docker 컨테이너 배포 via SSM
+      # Docker 컨테이너 배포 SSM
       - name: Deploy Container via SSM (Blue-Green)
         uses: peterkimzz/aws-ssm-send-command@master
         with:
           aws-region: ${{ secrets.AWS_REGION }}
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          instance-ids: ${{ steps.get_instance.outputs.instance_id }}
+          instance-ids: ${{ env.INSTANCE_ID }}
           working-directory: /
           comment: Deploy
           command: |
@@ -153,8 +144,8 @@ jobs:
 
             # Nginx Proxy Manager 업스트림 전환
             NPM_TOKEN=$(curl -s -X POST http://127.0.0.1:81/api/tokens \
-            -H "Content-Type: application/json" \
-            -d "{\"identity\": \"${{ secrets.NPM_ID }}\", \"secret\": \"${{ secrets.NPM_PASSWORD }}\"}" | jq -r '.token')
+              -H "Content-Type: application/json" \
+              -d "{\"identity\": \"${{ secrets.NPM_ID }}\", \"secret\": \"${{ secrets.NPM_PASSWORD }}\"}" | jq -r '.token')
             
             PROXY_ID=$(curl -s -X GET "http://127.0.0.1:81/api/nginx/proxy-hosts" \
               -H "Authorization: Bearer $NPM_TOKEN" \
@@ -163,9 +154,9 @@ jobs:
             echo "🔎 Found Proxy Host ID: $PROXY_ID"
 
             curl -X PATCH "http://127.0.0.1:81/api/nginx/proxy-hosts/$PROXY_ID" \
-            -H "Authorization: Bearer $NPM_TOKEN" \
-            -H "Content-Type: application/json" \
-            -d "{\"forward_host\": \"127.0.0.1\", \"forward_port\": $PORT_INACTIVE}"
+              -H "Authorization: Bearer $NPM_TOKEN" \
+              -H "Content-Type: application/json" \
+              -d "{\"forward_host\": \"127.0.0.1\", \"forward_port\": $PORT_INACTIVE}"
 
             # 이전 컨테이너 종료
             docker stop backend-$ACTIVE || true
