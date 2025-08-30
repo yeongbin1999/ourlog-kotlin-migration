@@ -85,22 +85,36 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
+      # 1️⃣ EC2 ID 조회
+      - name: Get EC2 Instance ID
+        id: get_instance
+        run: |
+          INSTANCE_ID=$(aws ec2 describe-instances \
+            --filters "Name=tag:Name,Values=terra-ec2-1" "Name=instance-state-name,Values=running" \
+            --query "Reservations[].Instances[].InstanceId" --output text)
+          echo "::set-output name=instance_id::$INSTANCE_ID"
+
+      # 2️⃣ .env 파일 EC2로 복사
+      - name: Upload .env to EC2
+        run: |
+          aws ssm send-command \
+            --targets "Key=instanceIds,Values=${{ steps.get_instance.outputs.instance_id }}" \
+            --document-name "AWS-RunShellScript" \
+            --comment "Upload .env" \
+            --parameters 'commands=["mkdir -p /home/ubuntu/backend","echo \"$DOT_ENV\" > /home/ubuntu/backend/.env"]' \
+            --region ${{ secrets.AWS_REGION }}
+
+      # 3️⃣ Docker 컨테이너 배포 via SSM
       - name: Deploy Container via SSM (Blue-Green)
         uses: peterkimzz/aws-ssm-send-command@master
         with:
           aws-region: ${{ secrets.AWS_REGION }}
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          # 여기서 바로 EC2 인스턴스 조회 후 전달
           instance-ids: ${{ steps.get_instance.outputs.instance_id }}
           working-directory: /
           comment: Deploy
           command: |
-            # EC2 인스턴스 ID 조회
-            INSTANCE_ID=$(aws ec2 describe-instances \
-              --filters "Name=tag:Name,Values=terra-ec2-1" "Name=instance-state-name,Values=running" \
-              --query "Reservations[].Instances[].InstanceId" --output text)
-
             IMAGE=ghcr.io/${{ github.repository_owner }}/${{ env.DOCKER_IMAGE_NAME }}:${{ needs.makeTagAndRelease.outputs.tag_name }}
 
             # 현재 활성 컨테이너 확인
