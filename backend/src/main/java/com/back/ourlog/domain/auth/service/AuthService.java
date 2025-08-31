@@ -27,7 +27,7 @@ public class AuthService {
             throw new CustomException(ErrorCode.USER_DUPLICATE_EMAIL);
         }
 
-        User user = User.createNormalUser(
+        User user = User.Companion.createNormalUser(
                 request.email(),
                 passwordEncoder.encode(request.password()),
                 request.nickname(),
@@ -67,7 +67,7 @@ public class AuthService {
         return userRepository.findByProviderAndProviderId(provider, providerId)
                 .map(CustomUserDetails::new)
                 .orElseGet(() -> {
-                    User newUser = User.createSocialUser(
+                    User newUser = User.Companion.createSocialUser(
                             provider,
                             providerId,
                             null, // email은 없을 수 있으므로 null

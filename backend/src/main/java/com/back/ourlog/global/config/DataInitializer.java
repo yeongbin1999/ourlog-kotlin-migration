@@ -95,7 +95,7 @@ public class DataInitializer implements CommandLineRunner {
             String nickname = "유저" + i;
             String profile = "https://picsum.photos/200?random=" + i;
             String bio = "안녕하세요! 저는 " + nickname + " 입니다.";
-            users.add(User.createNormalUser(email, password, nickname, profile, bio));
+            users.add(User.Companion.createNormalUser(email, password, nickname, profile, bio));
         }
         return userRepository.saveAll(users);
     }

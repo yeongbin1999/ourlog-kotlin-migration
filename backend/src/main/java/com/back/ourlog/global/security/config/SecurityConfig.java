@@ -3,6 +3,7 @@ package com.back.ourlog.global.security.config;
 import com.back.ourlog.global.security.exception.CustomAccessDeniedHandler;
 import com.back.ourlog.global.security.exception.CustomAuthenticationEntryPoint;
 import com.back.ourlog.global.security.filter.JwtAuthenticationFilter;
+import com.back.ourlog.global.security.jwt.JwtAuthenticationProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -25,9 +26,16 @@ import java.util.List;
 @EnableGlobalMethodSecurity(prePostEnabled = true, jsr250Enabled = true)
 public class SecurityConfig {
 
-    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final JwtAuthenticationProvider jwtAuthenticationProvider;
     private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
     private final CustomAccessDeniedHandler customAccessDeniedHandler;
+
+    @Bean
+    public JwtAuthenticationFilter jwtAuthenticationFilter() {
+        return new JwtAuthenticationFilter(jwtAuthenticationProvider);
+    }
+
+
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -86,12 +94,13 @@ public class SecurityConfig {
                 )
 
                 // 5. JWT 필터 등록
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-
+                .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
                 // 6. CSP 보안 헤더 설정 (옵션)
                 .headers(headers -> headers
                         .contentSecurityPolicy(csp -> csp.policyDirectives("frame-ancestors 'self'"))
                 );
+
+
 
         return http.build();
     }

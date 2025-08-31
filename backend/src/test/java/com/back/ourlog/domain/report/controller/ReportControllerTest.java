@@ -16,6 +16,8 @@ import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.util.List;
 
@@ -37,14 +39,15 @@ class ReportControllerTest {
     @DisplayName("사용자 신고 요청 성공 테스트")
     @Test
     void reportUser_Success() throws Exception {
-        User user = User.builder()
-                .id(1)
-                .email("reporter@test.com")
-                .nickname("reporter")
-                .role(Role.USER)
-                .build();
+        User reporter = mock(User.class);
 
-        CustomUserDetails userDetails = new CustomUserDetails(user);
+        when(reporter.getId()).thenReturn(1);
+        when(reporter.getEmail()).thenReturn("reporter@test.com");
+        when(reporter.getRole()).thenReturn(Role.USER);
+
+        when(reporter.getPassword()).thenReturn("password");
+
+        CustomUserDetails userDetails = new CustomUserDetails(reporter);
 
         TestingAuthenticationToken authentication =
                 new TestingAuthenticationToken(userDetails, null, List.of());

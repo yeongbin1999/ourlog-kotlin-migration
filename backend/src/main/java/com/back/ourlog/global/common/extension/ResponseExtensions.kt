@@ -12,3 +12,7 @@ fun <T> T.toSuccessResponse(msg: String = "성공"): ResponseEntity<RsData<T>> =
 fun ErrorCode.toFailResponse(customMsg: String? = null): ResponseEntity<RsData<Nothing>> =
     ResponseEntity.status(this.status)
         .body(RsData.fail(this, customMsg))
+
+fun toSuccessResponseWithoutData(msg: String): ResponseEntity<RsData<Nothing>> { // ✅ Void -> Nothing
+    return ResponseEntity.ok(RsData.success(msg, null))
+}

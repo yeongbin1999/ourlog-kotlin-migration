@@ -34,14 +34,18 @@ public class UserService {
     }
 
     private User registerOAuthUser(OAuthAttributes attributes) {
-        User user = User.builder()
-                .email(attributes.getEmail())
-                .nickname(attributes.getName())
-                .provider(attributes.getProvider())
-                .providerId(attributes.getProviderId())
-                .profileImageUrl(attributes.getAttributes().get("profile_image") != null ?
-                        attributes.getAttributes().get("profile_image").toString() : null)
-                .build();
+        // profileImageUrl 값을 미리 변수로 추출하여 가독성을 높입니다.
+        Object profileImageObj = attributes.getAttributes().get("profile_image");
+        String profileImageUrl = (profileImageObj != null) ? profileImageObj.toString() : null;
+
+        // User.Companion.createSocialUser를 호출하고 파라미터를 순서에 맞게 전달합니다.
+        User user = User.Companion.createSocialUser(
+                attributes.getProvider(),
+                attributes.getProviderId(),
+                attributes.getEmail(),
+                attributes.getName(),
+                profileImageUrl
+        );
 
         return userRepository.save(user);
     }

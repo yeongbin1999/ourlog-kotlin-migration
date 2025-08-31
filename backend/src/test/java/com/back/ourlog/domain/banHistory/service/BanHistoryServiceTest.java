@@ -34,12 +34,12 @@ class BanHistoryServiceTest {
     @Mock private UserRepository userRepository;
     @Mock private StringRedisTemplate redisTemplate;
     @Mock private ValueOperations<String, String> valueOperations;
+    @Mock private User user;
 
     private ObjectMapper objectMapper;
     private BanHistoryService banHistoryService;
 
     private final Integer userId = 1;
-    private final User user = User.builder().id(userId).build();
 
     @BeforeEach
     void setUp() {
@@ -54,6 +54,8 @@ class BanHistoryServiceTest {
                 redisTemplate,
                 objectMapper
         );
+
+        when(user.getId()).thenReturn(userId);
     }
 
     @Test
