@@ -1,19 +1,21 @@
 package com.back.ourlog.domain.follow.Repository
 
+import com.back.ourlog.config.TestConfig
 import com.back.ourlog.domain.follow.entity.Follow
 import com.back.ourlog.domain.follow.enums.FollowStatus
 import com.back.ourlog.domain.follow.repository.FollowRepository
 import com.back.ourlog.domain.user.entity.User
 import com.back.ourlog.domain.user.repository.UserRepository
-
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest
+import org.springframework.context.annotation.Import
 
-@DataJpaTest // JPA 관련 테스트를 위한 어노테이션
+@DataJpaTest
+@Import(TestConfig::class)// JPA 관련 테스트를 위한 어노테이션
 class FollowRepositoryTest {
 
     @Autowired
@@ -46,7 +48,7 @@ class FollowRepositoryTest {
         followRepository.save(follow)
 
         // when - 테스트할 메서드 실행
-        val result = followRepository.findByFollowerIdAndFolloweeId(user1.id!!, user2.id!!)
+        val result = followRepository.findByFollowerIdAndFolloweeId(user1.id, user2.id)
 
         // then - 결과 검증
         // 결과가 null이 아니어야 합니다.
@@ -63,7 +65,7 @@ class FollowRepositoryTest {
         // 여기서는 아무런 Follow 관계도 저장하지 않습니다.
 
         // when - 테스트할 메서드 실행
-        val result = followRepository.findByFollowerIdAndFolloweeId(user1.id!!, user2.id!!)
+        val result = followRepository.findByFollowerIdAndFolloweeId(user1.id, user2.id)
 
         // then - 결과 검증
         // 결과가 null이어야 합니다.
@@ -86,7 +88,7 @@ class FollowRepositoryTest {
 
         // when - 테스트할 메서드 실행
         // user1을 기준으로 'ACCEPTED' 상태인 팔로잉 목록을 조회합니다.
-        val result = followRepository.findFollowingsByFollowerIdAndStatus(user1.id!!, FollowStatus.ACCEPTED)
+        val result = followRepository.findFollowingsByFollowerIdAndStatus(user1.id, FollowStatus.ACCEPTED)
 
         // then - 결과 검증
         // 결과 리스트의 크기는 2여야 합니다.
@@ -108,7 +110,7 @@ class FollowRepositoryTest {
 
         // when - 테스트할 메서드 실행
         // user1을 기준으로 'ACCEPTED' 상태인 팔로잉 목록을 조회합니다.
-        val result = followRepository.findFollowingsByFollowerIdAndStatus(user1.id!!, FollowStatus.ACCEPTED)
+        val result = followRepository.findFollowingsByFollowerIdAndStatus(user1.id, FollowStatus.ACCEPTED)
 
         // then - 결과 검증
         // 'ACCEPTED' 상태인 관계는 없으므로, 결과는 비어있는 리스트여야 합니다.
@@ -131,7 +133,7 @@ class FollowRepositoryTest {
 
         // when - 테스트할 메서드 실행
         // user1을 기준으로 'ACCEPTED' 상태인 팔로워 목록을 조회합니다.
-        val result = followRepository.findFollowersByFolloweeIdAndStatus(user1.id!!, FollowStatus.ACCEPTED)
+        val result = followRepository.findFollowersByFolloweeIdAndStatus(user1.id, FollowStatus.ACCEPTED)
 
         // then - 결과 검증
         // 결과 리스트의 크기는 2여야 합니다.
@@ -159,7 +161,7 @@ class FollowRepositoryTest {
 
         // when - 테스트할 메서드 실행
         // user1을 기준으로 'PENDING' 상태인 보낸 요청 목록을 조회합니다.
-        val result = followRepository.findSentPendingRequestsByFollowerIdAndStatus(user1.id!!, FollowStatus.PENDING)
+        val result = followRepository.findSentPendingRequestsByFollowerIdAndStatus(user1.id, FollowStatus.PENDING)
 
         // then - 결과 검증
         // 결과 리스트의 크기는 2여야 합니다.
@@ -180,7 +182,7 @@ class FollowRepositoryTest {
 
         // when - 테스트할 메서드 실행
         // user1을 기준으로 'PENDING' 상태인 보낸 요청 목록을 조회합니다.
-        val result = followRepository.findSentPendingRequestsByFollowerIdAndStatus(user1.id!!, FollowStatus.PENDING)
+        val result = followRepository.findSentPendingRequestsByFollowerIdAndStatus(user1.id, FollowStatus.PENDING)
 
         // then - 결과 검증
         // 'PENDING' 상태인 요청은 없으므로, 결과는 비어있는 리스트여야 합니다.
@@ -203,7 +205,7 @@ class FollowRepositoryTest {
 
         // when - 테스트할 메서드 실행
         // user1을 기준으로 'PENDING' 상태인 받은 요청 목록을 조회합니다.
-        val result = followRepository.findPendingRequestsByFolloweeIdAndStatus(user1.id!!, FollowStatus.PENDING)
+        val result = followRepository.findPendingRequestsByFolloweeIdAndStatus(user1.id, FollowStatus.PENDING)
 
         // then - 결과 검증
         // 결과 리스트의 크기는 2여야 합니다.
@@ -225,7 +227,7 @@ class FollowRepositoryTest {
 
         // when - 테스트할 메서드 실행
         // user1을 기준으로 'PENDING' 상태인 받은 요청 목록을 조회합니다.
-        val result = followRepository.findPendingRequestsByFolloweeIdAndStatus(user1.id!!, FollowStatus.PENDING)
+        val result = followRepository.findPendingRequestsByFolloweeIdAndStatus(user1.id, FollowStatus.PENDING)
 
         // then - 결과 검증
         // 'PENDING' 상태인 요청은 없으므로, 결과는 비어있는 리스트여야 합니다.
