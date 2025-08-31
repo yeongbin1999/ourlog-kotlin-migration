@@ -54,6 +54,7 @@ terraform.tfvars
 *.tfstate.*
 
 infra/terraform/.terraform/
+infra/terraform/terraform.tfvars
 
 # Crash logs & override
 crash.log

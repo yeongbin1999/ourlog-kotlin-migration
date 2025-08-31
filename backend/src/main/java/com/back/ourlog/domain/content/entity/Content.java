@@ -66,18 +66,25 @@ public class Content {
 
     public static Content of(ContentSearchResultDto result) {
         // 영화(MOVIE)일 때만 description 저장
-        String description = result.type() == ContentType.MOVIE ? result.description() : null;
+        String description = result.getType() == ContentType.MOVIE ? result.getDescription() : null;
 
         return new Content(
-                result.title(),
-                result.type(),
-                result.creatorName(),
+                result.getTitle(),
+                result.getType(),
+                result.getCreatorName(),
                 description,
-                result.posterUrl(),
-                result.releasedAt(),
-                result.externalId()
+                result.getPosterUrl(),
+                result.getReleasedAt(),
+                result.getExternalId()
         );
     }
 
+    // 코틀린 전환을 위한 Getter 메서드 추가
+    public Integer getId() {
+        return id;
+    }
 
+    public LocalDateTime getReleasedAt() {
+        return releasedAt;
+    }
 }
