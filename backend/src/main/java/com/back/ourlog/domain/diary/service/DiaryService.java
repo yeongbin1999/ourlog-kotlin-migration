@@ -81,7 +81,7 @@ public class DiaryService {
                 .orElseThrow(DiaryNotFoundException::new);
 
         // 작성자 검증
-        if (!diary.getUser().getId().equals(user.getId())) {
+        if (diary.getUser().getId() != user.getId()) {
             throw new CustomException(ErrorCode.AUTH_FORBIDDEN);
         }
 
@@ -141,7 +141,7 @@ public class DiaryService {
         }
 
         if (!diary.getIsPublic() &&
-                (currentUser == null || !diary.getUser().getId().equals(currentUser.getId()))) {
+                (currentUser == null || diary.getUser().getId() != currentUser.getId())) {
             throw new CustomException(ErrorCode.AUTH_FORBIDDEN);
         }
 
@@ -155,7 +155,7 @@ public class DiaryService {
                 .orElseThrow(() -> new CustomException(ErrorCode.DIARY_NOT_FOUND));
 
         // 작성자 검증
-        if (!diary.getUser().getId().equals(user.getId())) {
+        if (diary.getUser().getId() != user.getId()) {
             throw new CustomException(ErrorCode.AUTH_FORBIDDEN);
         }
 
