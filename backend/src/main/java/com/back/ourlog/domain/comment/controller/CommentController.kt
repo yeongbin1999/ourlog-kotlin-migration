@@ -45,7 +45,7 @@ class CommentController(
     @Operation(summary = "댓글 수정")
     fun updateComment(
         @RequestBody req: CommentUpdateRequestDto
-    ): ResponseEntity<RsData<Void>> {
+    ): ResponseEntity<RsData<Nothing>> {
         val user = rq.currentUser
 
         commentService.checkCanUpdate(user, req.id)
@@ -59,7 +59,7 @@ class CommentController(
     @Operation(summary = "댓글 삭제")
     fun deleteComment(
         @PathVariable("commentId") commentId: Int
-    ): ResponseEntity<RsData<Void>> {
+    ): ResponseEntity<RsData<Nothing>> {
         val user = rq.currentUser
 
         commentService.checkCanDelete(user, commentId)
