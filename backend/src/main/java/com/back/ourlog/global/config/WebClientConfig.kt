@@ -25,4 +25,12 @@ class WebClientConfig {
             .baseUrl("accounts.spotify.com")
             .build()
     }
+
+    // 국립중앙도서관 API 호출을 위한 WebClient
+    @Bean
+    fun libraryWebClient(): WebClient {
+        return WebClient.builder()
+            .baseUrl("https://www.nl.go.kr")
+            .build()
+    }
 }
