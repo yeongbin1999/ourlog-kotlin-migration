@@ -71,7 +71,7 @@ class DiaryServiceTest {
         mockMvc.perform(post("/api/v1/diaries")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(requestDto)))
-                .andExpect(status().isCreated());
+                .andExpect(status().isOk());
 
         Diary savedDiary = diaryRepository.findTopByOrderByIdDesc().orElseThrow();
 
@@ -102,7 +102,7 @@ class DiaryServiceTest {
         mockMvc.perform(post("/api/v1/diaries")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
-                .andExpect(status().isCreated());
+                .andExpect(status().isOk());
 
         Diary savedDiary = diaryRepository.findTopByOrderByIdDesc().orElseThrow();
 
@@ -141,7 +141,7 @@ class DiaryServiceTest {
         mockMvc.perform(post("/api/v1/diaries")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
-                .andExpect(status().isCreated());
+                .andExpect(status().isOk());
 
         Diary savedDiary = diaryRepository.findTopByOrderByIdDesc().orElseThrow();
 
