@@ -1,6 +1,7 @@
 package com.back.ourlog.domain.comment.service
 
 import com.back.ourlog.domain.comment.dto.CommentResponseDto
+import com.back.ourlog.domain.comment.entity.Comment
 import com.back.ourlog.domain.comment.repository.CommentRepository
 import com.back.ourlog.domain.diary.repository.DiaryRepository
 import com.back.ourlog.domain.user.entity.User
@@ -39,15 +40,19 @@ class CommentService(
     }
 
     @Transactional
-    fun update(id: Int, content: String) {
+    fun update(user: User?, id: Int, content: String) {
         val comment = commentRepository.findByIdOrThrow(id, ErrorCode.COMMENT_NOT_FOUND)
+
+        checkCanAccess(user, comment, ErrorCode.COMMENT_UPDATE_FORBIDDEN)
 
         comment.update(content)
     }
 
     @Transactional
-    fun delete(id: Int) {
+    fun delete(user: User?, id: Int) {
         val comment = commentRepository.findByIdOrThrow(id, ErrorCode.COMMENT_NOT_FOUND)
+
+        checkCanAccess(user, comment, ErrorCode.COMMENT_DELETE_FORBIDDEN)
 
         // (Diary, User) 와 Comment 연관관계 제거
         comment.diary.deleteComment(comment)
@@ -55,23 +60,10 @@ class CommentService(
         comment.user.deleteComment(comment)
     }
 
-    @Transactional(readOnly = true)
-    fun checkCanDelete(user: User?, commentId: Int) {
+    private fun checkCanAccess(user: User?, comment: Comment, errorCode: ErrorCode) {
         val user = user.getOrThrow(ErrorCode.USER_NOT_FOUND)
 
-        val comment = commentRepository.findByIdOrThrow(commentId, ErrorCode.COMMENT_NOT_FOUND)
-
         comment.user.takeIf { it == user }
-            ?: throw CustomException(ErrorCode.COMMENT_DELETE_FORBIDDEN)
-    }
-
-    @Transactional(readOnly = true)
-    fun checkCanUpdate(user: User?, commentId: Int) {
-        val user = user.getOrThrow(ErrorCode.USER_NOT_FOUND)
-
-        val comment = commentRepository.findByIdOrThrow(commentId, ErrorCode.COMMENT_NOT_FOUND)
-
-        comment.user.takeIf { it == user }
-            ?: throw CustomException(ErrorCode.COMMENT_UPDATE_FORBIDDEN)
+            ?:throw CustomException(errorCode)
     }
 }

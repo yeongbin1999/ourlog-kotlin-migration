@@ -48,9 +48,7 @@ class CommentController(
     ): ResponseEntity<RsData<Nothing>> {
         val user = rq.currentUser
 
-        commentService.checkCanUpdate(user, req.id)
-
-        commentService.update(req.id, req.content)
+        commentService.update(user, req.id, req.content)
 
         return toSuccessResponseWithoutData("${req.id}번 댓글이 수정되었습니다.")
     }
@@ -62,9 +60,7 @@ class CommentController(
     ): ResponseEntity<RsData<Nothing>> {
         val user = rq.currentUser
 
-        commentService.checkCanDelete(user, commentId)
-
-        commentService.delete(commentId)
+        commentService.delete(user, commentId)
 
         return toSuccessResponseWithoutData("${commentId}번 댓글이 삭제되었습니다.")
     }
