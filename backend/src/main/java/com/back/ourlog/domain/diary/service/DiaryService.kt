@@ -19,6 +19,7 @@ import com.back.ourlog.domain.tag.repository.TagRepository
 import com.back.ourlog.domain.user.entity.User
 import com.back.ourlog.external.common.ContentSearchFacade
 import com.back.ourlog.external.library.service.LibraryService
+import com.back.ourlog.global.config.cache.CacheNames
 import com.back.ourlog.global.exception.CustomException
 import com.back.ourlog.global.exception.ErrorCode
 import com.back.ourlog.global.rq.Rq
@@ -75,6 +76,7 @@ class DiaryService(
     }
 
     @Transactional
+    @CacheEvict(cacheNames = [CacheNames.DIARY_DETAIL], key = "#diaryId")
     fun update(diaryId: Int, dto: DiaryUpdateRequestDto, user: User): DiaryResponseDto {
         val diary = diaryRepository.findById(diaryId).orElseThrow { DiaryNotFoundException() }
 
@@ -110,30 +112,24 @@ class DiaryService(
     }
 
     @Cacheable(
-        cacheNames = ["diaryDetail"],
+        cacheNames = [CacheNames.DIARY_DETAIL],
         key = "#diaryId",
-        // result가 비공개면 캐시하지 않음
         unless = "#result == null || #result.isPublic == false"
     )
     @Transactional(readOnly = true)
     fun getDiaryDetail(diaryId: Int): DiaryDetailDto {
-        // 상세 전용 fetch join 쿼리로 N+1 예방
         val diary = diaryRepository.findWithAllById(diaryId)
-            .orElseThrow { DiaryNotFoundException() }
+            .orElseThrow { CustomException(ErrorCode.DIARY_NOT_FOUND) }
 
-        // 권한 체크
-        // 캐시 전에 반드시 수행됨.
-        // 캐시 히트 시 메서드 본문은 실행되지 않으므로 위 unless로 비공개 미캐시를 보장해야 권한 우회가 없음
         val currentUser = runCatching { rq.currentUser }.getOrNull()
-        if (!diary.isPublic && (currentUser == null || diary.user.id != currentUser.id)) {
-            throw CustomException(ErrorCode.AUTH_FORBIDDEN)
-        }
+        val isOwner = currentUser?.id == diary.user.id
+        if (!diary.isPublic && !isOwner) throw CustomException(ErrorCode.AUTH_FORBIDDEN)
 
         return DiaryDetailDto.from(diary)
     }
 
     @Transactional
-    @CacheEvict(value = ["diaryDetail"], key = "#diaryId")
+    @CacheEvict(value = [CacheNames.DIARY_DETAIL], key = "#diaryId")
     fun delete(diaryId: Int, user: User) {
         val diary = diaryRepository.findById(diaryId)
             .orElseThrow { CustomException(ErrorCode.DIARY_NOT_FOUND) }
