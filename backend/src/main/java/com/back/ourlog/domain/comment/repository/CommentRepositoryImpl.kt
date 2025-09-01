@@ -3,6 +3,7 @@ package com.back.ourlog.domain.comment.repository
 import com.back.ourlog.domain.comment.entity.Comment
 import com.back.ourlog.domain.comment.entity.QComment
 import com.back.ourlog.domain.diary.entity.Diary
+import com.back.ourlog.domain.user.entity.QUser
 import com.querydsl.jpa.impl.JPAQueryFactory
 
 class CommentRepositoryImpl(
@@ -10,9 +11,11 @@ class CommentRepositoryImpl(
 ) : CommentRepositoryCustom {
     override fun findQByDiaryOrderByCreatedAtDesc(diary: Diary): List<Comment> {
         val comment = QComment.comment
+        val user = QUser.user
 
         return queryFactory
             .selectFrom(comment)
+            .join(comment.user, user).fetchJoin()
             .where(comment.diary.eq(diary))
             .orderBy(comment.createdAt.desc())
             .fetch()
