@@ -28,22 +28,22 @@ class DiaryController(
     private val diaryService: DiaryService,
     private val rq: Rq
 ) {
+
     @PostMapping
     @Operation(summary = "감상일기 등록", description = "감상일기를 작성합니다.")
-    fun writeDiary(
+    fun createDiary(
         @RequestBody @Valid req: DiaryWriteRequestDto
     ): ResponseEntity<RsData<DiaryResponseDto>> {
         val user = rq.currentUser ?: throw CustomException(ErrorCode.AUTH_UNAUTHORIZED)
-        val diary = diaryService.writeWithContentSearch(req, user)
-        return DiaryResponseDto.from(diary).toSuccessResponse("감상일기가 등록되었습니다.")
+        return diaryService.writeWithContentSearch(req, user)
+            .toSuccessResponse("감상일기가 등록되었습니다.")
     }
 
     @GetMapping("/{diaryId}")
     @Operation(summary = "감상일기 조회", description = "감상일기를 조회합니다.")
-    fun getDiary(@PathVariable diaryId: Int): ResponseEntity<RsData<DiaryDetailDto>> {
-        val diaryDetailDto = diaryService.getDiaryDetail(diaryId)
-        return diaryDetailDto.toSuccessResponse("${diaryId}번 감상일기가 조회되었습니다.")
-    }
+    fun getDiary(@PathVariable diaryId: Int): ResponseEntity<RsData<DiaryDetailDto>> =
+        diaryService.getDiaryDetail(diaryId)
+            .toSuccessResponse("${diaryId}번 감상일기가 조회되었습니다.")
 
     @PutMapping("/{diaryId}")
     @Operation(summary = "감상일기 수정", description = "감상일기를 수정합니다.")
@@ -52,8 +52,8 @@ class DiaryController(
         @RequestBody @Valid req: DiaryUpdateRequestDto
     ): ResponseEntity<RsData<DiaryResponseDto>> {
         val user = rq.currentUser ?: throw CustomException(ErrorCode.AUTH_UNAUTHORIZED)
-        val result = diaryService.update(diaryId, req, user)
-        return result.toSuccessResponse("일기 수정 완료")
+        return diaryService.update(diaryId, req, user)
+            .toSuccessResponse("일기 수정 완료")
     }
 
     @DeleteMapping("/{diaryId}")
@@ -65,13 +65,12 @@ class DiaryController(
     }
 
     @GetMapping("/users/{userId}")
-    @Operation(summary = "내 다이어리 목록 조회", description = "사용자의 감상일기 목록을 페이징 조회합니다.")
-    fun getMyDiaries(
+    @Operation(summary = "사용자 다이어리 목록 조회", description = "사용자의 감상일기 목록을 페이징 조회합니다.")
+    fun listUserDiaries(
         @PathVariable userId: Int,
-        @PageableDefault(size = 10, sort = ["createdAt"], direction = Sort.Direction.DESC) pageable: Pageable
-    ): ResponseEntity<RsData<Page<DiaryResponseDto>>> {
-        val requester = rq.currentUser
-        val result = diaryService.getDiariesByUser(userId, pageable, requester)
-        return result.toSuccessResponse("다이어리 목록 조회 성공")
-    }
+        @PageableDefault(size = 10, sort = ["createdAt"], direction = Sort.Direction.DESC)
+        pageable: Pageable
+    ): ResponseEntity<RsData<Page<DiaryResponseDto>>> =
+        diaryService.getDiariesByUser(userId, pageable, rq.currentUser)
+            .toSuccessResponse("다이어리 목록 조회 성공")
 }

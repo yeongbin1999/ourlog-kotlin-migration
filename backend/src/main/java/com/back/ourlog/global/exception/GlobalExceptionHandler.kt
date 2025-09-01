@@ -2,7 +2,9 @@ package com.back.ourlog.global.exception
 
 import com.back.ourlog.global.common.dto.RsData
 import com.back.ourlog.global.common.extension.toFailResponse
+import org.springframework.dao.OptimisticLockingFailureException
 import org.springframework.http.ResponseEntity
+import org.springframework.orm.ObjectOptimisticLockingFailureException
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.MissingServletRequestParameterException
 import org.springframework.web.bind.annotation.ExceptionHandler
@@ -39,6 +41,15 @@ class GlobalExceptionHandler {
         val message = "필수 요청 파라미터 '$paramName'가 누락되었습니다."
 
         return ErrorCode.BAD_REQUEST.toFailResponse(message)
+    }
+
+    // 낙관적 락 충돌 → 409
+    @ExceptionHandler(
+        ObjectOptimisticLockingFailureException::class,
+        OptimisticLockingFailureException::class
+    )
+    fun handleOptimisticLock(e: Exception): ResponseEntity<RsData<Nothing>> {
+        return ErrorCode.CONFLICT_VERSION.toFailResponse("다른 사용자가 먼저 수정했습니다. 새로고침 후 다시 시도해 주세요.")
     }
 
     // 예상 못한 예외 → SERVER_ERROR

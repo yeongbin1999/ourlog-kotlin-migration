@@ -61,6 +61,9 @@ class Diary(
     @OneToMany(mappedBy = "diary", cascade = [CascadeType.ALL], orphanRemoval = true)
     var diaryOtts: MutableList<DiaryOtt> = mutableListOf()
 
+    @Version
+    var version: Long? = null
+
     fun update(title: String, contentText: String, rating: Float, isPublic: Boolean) {
         this.title = title
         this.contentText = contentText
