@@ -32,10 +32,13 @@ class CommentService(
 
     @Transactional(readOnly = true)
     fun getComments(diaryId: Int): List<CommentResponseDto> {
-        val diary = diaryRepository.findByIdOrThrow(diaryId, ErrorCode.DIARY_NOT_FOUND)
+        val comments = commentRepository.findQByDiaryIdOrderByCreatedAtDesc(diaryId)
+            // 댓글이 없는 경우 - 다이어리의 존재 여부 확인
+            .takeIf { it.isEmpty() && !diaryRepository.existsById(diaryId) }
+            ?: throw CustomException(ErrorCode.DIARY_NOT_FOUND)
 
         // 최신 순으로 나열된 댓글 정보
-        return commentRepository.findQByDiaryOrderByCreatedAtDesc(diary)
+        return comments
             .map { CommentResponseDto(it) }
     }
 
@@ -60,6 +63,7 @@ class CommentService(
         comment.user.deleteComment(comment)
     }
 
+    // 유저가 접근(삭제 or 수정) 가능한지 여부 체크
     private fun checkCanAccess(user: User?, comment: Comment, errorCode: ErrorCode) {
         val user = user.getOrThrow(ErrorCode.USER_NOT_FOUND)
 
