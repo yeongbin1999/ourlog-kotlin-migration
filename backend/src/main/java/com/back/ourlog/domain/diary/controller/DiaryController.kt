@@ -70,7 +70,8 @@ class DiaryController(
         @PathVariable userId: Int,
         @PageableDefault(size = 10, sort = ["createdAt"], direction = Sort.Direction.DESC) pageable: Pageable
     ): ResponseEntity<RsData<Page<DiaryResponseDto>>> {
-        val diaries = diaryService.getDiariesByUser(userId, pageable)
-        return diaries.toSuccessResponse("내 다이어리 목록 조회 성공")
+        val requester = rq.currentUser
+        val result = diaryService.getDiariesByUser(userId, pageable, requester)
+        return result.toSuccessResponse("다이어리 목록 조회 성공")
     }
 }

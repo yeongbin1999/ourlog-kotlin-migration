@@ -146,8 +146,14 @@ class DiaryService(
         redisTemplate.delete("$CACHE_KEY_PREFIX$diaryId")
     }
 
-    fun getDiariesByUser(userId: Int, pageable: Pageable): Page<DiaryResponseDto> {
-        val diaries = diaryRepository.findByUserId(userId, pageable)
+    @Transactional(readOnly = true)
+    fun getDiariesByUser(userId: Int, pageable: Pageable, requester: User?): Page<DiaryResponseDto> {
+        val isOwner = requester?.id == userId
+        val diaries = if (isOwner) {
+            diaryRepository.findByUserId(userId, pageable)
+        } else {
+            diaryRepository.findByUserIdAndIsPublicTrue(userId, pageable)
+        }
         return diaries.map { DiaryResponseDto.from(it) }
     }
 

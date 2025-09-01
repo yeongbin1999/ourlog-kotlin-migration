@@ -8,4 +8,5 @@ import org.springframework.data.jpa.repository.JpaRepository
 interface DiaryRepository : JpaRepository<Diary, Int> {
     fun findTopByOrderByIdDesc(): Diary?
     fun findByUserId(userId: Int, pageable: Pageable): Page<Diary>
+    fun findByUserIdAndIsPublicTrue(userId: Int, pageable: Pageable): Page<Diary>
 }
