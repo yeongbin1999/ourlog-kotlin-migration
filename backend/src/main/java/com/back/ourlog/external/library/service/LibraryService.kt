@@ -6,43 +6,36 @@ import com.back.ourlog.external.library.dto.LibraryBookDto
 import com.back.ourlog.external.library.dto.LibraryResponse
 import com.back.ourlog.global.exception.CustomException
 import com.back.ourlog.global.exception.ErrorCode
-import com.fasterxml.jackson.databind.ObjectMapper
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.cache.annotation.Cacheable
 import org.springframework.stereotype.Service
-import org.springframework.web.client.RestTemplate
-import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
+import org.springframework.web.reactive.function.client.WebClient
+import org.springframework.web.reactive.function.client.bodyToMono
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 @Service
 class LibraryService(
-    private val restTemplate: RestTemplate,
-    private val objectMapper: ObjectMapper,
+    private val libraryWebClient: WebClient,
 
     @Value("\${library.api-key}")
     private val libraryApiKey: String
 ) {
+    private val logger = LoggerFactory.getLogger(javaClass)
 
     companion object {
-        // 패턴 및 정규식 상수 정의
         private val ISBN_10_PATTERN = "\\d{10}".toRegex()
         private val ISBN_13_PATTERN = "\\d{13}".toRegex()
         private const val DATE_PATTERN = "yyyyMMdd"
-        private const val AUTHOR_PREFIX_PATTERN = "(원작자|저자|지은이|글|그림|편저|엮은이)\\s*[:：]\\s*"
-        private const val AUTHOR_SUFFIX_PATTERN = "\\s*;\\s*$"
-        private const val GENRE_SEPARATOR_PATTERN = "[,:;]"
-        private const val SINGLE_DIGIT_PATTERN = "^\\d$"
 
         private val DATE_FORMATTER: DateTimeFormatter = DateTimeFormatter.ofPattern(DATE_PATTERN)
-        private val AUTHOR_PREFIX_REGEX = AUTHOR_PREFIX_PATTERN.toRegex()
-        private val AUTHOR_SUFFIX_REGEX = AUTHOR_SUFFIX_PATTERN.toRegex()
-        private val GENRE_SEPARATOR_REGEX = GENRE_SEPARATOR_PATTERN.toRegex()
-        private val SINGLE_DIGIT_REGEX = SINGLE_DIGIT_PATTERN.toRegex()
+        private val AUTHOR_PREFIX_REGEX = "(원작자|저자|지은이|글|그림|편저|엮은이)\\s*[:：]\\s*".toRegex()
+        private val AUTHOR_SUFFIX_REGEX = "\\s*;\\s*$".toRegex()
+        private val GENRE_SEPARATOR_REGEX = "[,:;]".toRegex()
+        private val SINGLE_DIGIT_REGEX = "^\\d$".toRegex()
 
-        // KDC 코드 → 장르명 매핑 테이블
         private val KDC_GENRE_MAP = mapOf(
             "0" to "총류",
             "1" to "철학",
@@ -57,7 +50,6 @@ class LibraryService(
         )
     }
 
-    // 외부 ID(ISBN, CONTROL_NO)로 단일 도서 조회
     @Cacheable(
         value = ["libraryBooks"],
         key = "#externalId",
@@ -65,21 +57,22 @@ class LibraryService(
         unless = "#result == null"
     )
     fun searchBookByExternalId(externalId: String): ContentSearchResultDto {
-        return try {
+        try {
             val key = externalId.removePrefix("library-")
             val results: List<LibraryBookDto> = when {
                 key.matches(ISBN_10_PATTERN) || key.matches(ISBN_13_PATTERN) -> searchByIsbn(key)
                 else -> searchByControlNo(key)
             }
-            results.firstOrNull()?.mapToSearchResultDto()
+            return results.firstOrNull()?.mapToSearchResultDto()
                 ?: throw CustomException(ErrorCode.CONTENT_NOT_FOUND)
+        } catch (e: CustomException) {
+            throw e
         } catch (e: Exception) {
-            // 캐시 오류 시 직접 API 호출로 폴백
-            throw CustomException(ErrorCode.CONTENT_NOT_FOUND)
+            logger.error("Failed to search book by external ID: {}", externalId, e)
+            throw CustomException(ErrorCode.EXTERNAL_API_ERROR)
         }
     }
 
-    // 제목으로 도서 검색 (최대 10개 반환)
     @Cacheable(
         value = ["librarySearchResults"],
         key = "'title:' + #title.trim()",
@@ -90,21 +83,60 @@ class LibraryService(
             getResultFromLibrary(title.trim())
                 .take(10)
                 .mapNotNull { book ->
-                    runCatching {
-                        book.mapToSearchResultDto()
-                    }.getOrNull()
+                    runCatching { book.mapToSearchResultDto() }.getOrNull()
                 }
         } catch (e: Exception) {
+            logger.error("Failed to search book by title: {}", title, e)
             emptyList()
         }
     }
+
+    private fun callLibraryApi(queryParam: String, errorContext: String): List<LibraryBookDto> {
+        val response = libraryWebClient.get()
+            .uri { uriBuilder ->
+                uriBuilder.path("/seoji/SearchApi.do")
+                    .queryParam("cert_key", libraryApiKey)
+                    .queryParam("result_style", "json")
+                    .queryParam("page_no", 1)
+                    .queryParam("page_size", 10)
+                    .query(queryParam)
+                    .build()
+            }
+            .retrieve()
+            .bodyToMono<LibraryResponse>()
+            .doOnError { e -> logger.error("$errorContext 중 WebClient 오류 발생", e) }
+            .onErrorMap { e -> CustomException(ErrorCode.EXTERNAL_API_ERROR) }
+            .block() // 기존 동기 방식 유지를 위해 block() 사용
+
+        return response?.docs ?: emptyList()
+    }
+
+    private fun getResultFromLibrary(title: String): List<LibraryBookDto> =
+        callLibraryApi("title=$title", "도서관 API 제목 검색")
+
+    private fun getResultFromLibraryByIsbn(isbn: String): List<LibraryBookDto> =
+        callLibraryApi("isbn=$isbn", "도서관 API ISBN 검색")
+
+    private fun getResultFromLibraryByControlNo(controlNo: String): List<LibraryBookDto> =
+        callLibraryApi("control_no=$controlNo", "도서관 API CONTROL_NO 검색")
+
+
+    private fun searchByIsbn(isbn: String): List<LibraryBookDto> =
+        getResultFromLibraryByIsbn(isbn).filter { book ->
+            book.isbn?.replace("-", "")?.trim() == isbn
+        }
+
+    private fun searchByControlNo(controlNo: String): List<LibraryBookDto> =
+        getResultFromLibraryByControlNo(controlNo).filter { book ->
+            book.controlNo?.trim() == controlNo
+        }
 
     private fun LibraryBookDto.mapToSearchResultDto(): ContentSearchResultDto =
         ContentSearchResultDto(
             externalId = "library-${getLibraryExternalId()}",
             title = title?.trim(),
             creatorName = author?.cleanAuthorName(),
-            description = null, // 도서관 API는 설명을 제공하지 않음
+            description = null,
             posterUrl = titleUrl,
             releasedAt = publishPredate?.parseToLocalDateTime(),
             type = ContentType.BOOK,
@@ -121,7 +153,6 @@ class LibraryService(
             runCatching { LocalDate.parse(it, DATE_FORMATTER).atStartOfDay() }.getOrNull()
         }
 
-    // 장르 추출 (SUBJECT 우선, 없으면 KDC 코드 활용)
     private fun LibraryBookDto.extractGenres(): List<String> = when {
         !subject.isNullOrBlank() ->
             subject.split(GENRE_SEPARATOR_REGEX)
@@ -134,54 +165,10 @@ class LibraryService(
         else -> emptyList()
     }
 
-    // 도서의 고유 ExternalId 생성 (ISBN > CONTROL_NO > TITLE 해시)
     private fun LibraryBookDto.getLibraryExternalId(): String =
         isbn?.replace("-", "")?.trim()
             ?: controlNo?.trim()
             ?: title?.trim().orEmpty().hashCode().toString()
 
-    private fun searchByIsbn(isbn: String): List<LibraryBookDto> =
-        getResultFromLibraryByIsbn(isbn).filter { book ->
-            book.isbn?.replace("-", "")?.trim() == isbn
-        }
-
-    private fun searchByControlNo(controlNo: String): List<LibraryBookDto> =
-        getResultFromLibraryByControlNo(controlNo).filter { book ->
-            book.controlNo?.trim() == controlNo
-        }
-
-    private fun getResultFromLibrary(title: String): List<LibraryBookDto> =
-        callLibraryApi("title=${title.urlEncode()}", "도서관 API 응답 처리")
-
-    private fun getResultFromLibraryByIsbn(isbn: String): List<LibraryBookDto> =
-        callLibraryApi("isbn=${isbn.urlEncode()}", "도서관 API ISBN 검색")
-
-    private fun getResultFromLibraryByControlNo(controlNo: String): List<LibraryBookDto> =
-        callLibraryApi("control_no=${controlNo.urlEncode()}", "도서관 API CONTROL_NO 검색")
-
-    // 공통 API 호출 메서드 (JSON → DTO 변환)
-    private fun callLibraryApi(queryParam: String, errorContext: String): List<LibraryBookDto> = try {
-        val url = buildApiUrl(queryParam)
-        val responseData = restTemplate.getForObject(url, String::class.java)
-            ?: throw RuntimeException("$errorContext 중 빈 응답")
-
-        val response = objectMapper.readValue(responseData, LibraryResponse::class.java)
-        response.docs
-    } catch (e: Exception) {
-        throw RuntimeException("$errorContext 중 오류 발생", e)
-    }
-
-    private fun buildApiUrl(queryParam: String): String = buildString {
-        append("https://www.nl.go.kr/seoji/SearchApi.do?")
-        append("cert_key=$libraryApiKey")
-        append("&result_style=json")
-        append("&page_no=1")
-        append("&page_size=10")
-        append("&$queryParam")
-    }
-
-    private fun String.urlEncode(): String = URLEncoder.encode(this, StandardCharsets.UTF_8)
-
     fun mapKdcToGenre(kdc: String): String = KDC_GENRE_MAP[kdc] ?: "기타"
-
 }

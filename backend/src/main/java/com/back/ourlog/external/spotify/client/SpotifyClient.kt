@@ -90,19 +90,27 @@ class SpotifyClient(
             .block()
     }
 
-    fun fetchGenresByArtistId(artistId: String): List<String> {
-        val response = dataClient.get()
-            .uri("/v1/artists/{id}", artistId) // Path Variable을 안전하게 사용
+    fun getSeveralArtists(artistIds: List<String>): SpotifySeveralArtistsResponse? {
+        // ID 목록이 비어있으면 API를 호출하지 않음
+        if (artistIds.isEmpty()) return null
+
+        // ID 목록을 쉼표로 구분된 문자열로 변환
+        val ids = artistIds.joinToString(",")
+
+        return dataClient.get()
+            .uri { uriBuilder ->
+                uriBuilder.path("/v1/artists")
+                    .queryParam("ids", ids)
+                    .build()
+            }
             .header(HttpHeaders.AUTHORIZATION, "Bearer ${getAccessToken()}")
             .retrieve()
-            .bodyToMono<SpotifyArtist>()
+            .bodyToMono<SpotifySeveralArtistsResponse>()
             .onErrorResume { e ->
-                log.error("Spotify 아티스트 장르 조회 실패: ", e)
+                log.error("Spotify 여러 아티스트 정보 조회 실패: ", e)
                 Mono.empty()
             }
             .block()
-
-        return response?.genres ?: emptyList()
     }
 
     fun getTrackById(id: String): TrackItem? {

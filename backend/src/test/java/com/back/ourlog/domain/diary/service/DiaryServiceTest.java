@@ -73,7 +73,8 @@ class DiaryServiceTest {
                         .content(objectMapper.writeValueAsString(requestDto)))
                 .andExpect(status().isOk());
 
-        Diary savedDiary = diaryRepository.findTopByOrderByIdDesc().orElseThrow();
+        Diary savedDiary = diaryRepository.findTopByOrderByIdDesc();
+        assertThat(savedDiary).isNotNull();
 
         assertThat(savedDiary.getDiaryTags()).hasSize(2);
         assertThat(savedDiary.getDiaryTags())
@@ -104,7 +105,8 @@ class DiaryServiceTest {
                         .content(body))
                 .andExpect(status().isOk());
 
-        Diary savedDiary = diaryRepository.findTopByOrderByIdDesc().orElseThrow();
+        Diary savedDiary = diaryRepository.findTopByOrderByIdDesc();
+        assertThat(savedDiary).isNotNull();
 
         assertThat(savedDiary.getDiaryGenres()).isNotEmpty();
     }
@@ -143,7 +145,8 @@ class DiaryServiceTest {
                         .content(body))
                 .andExpect(status().isOk());
 
-        Diary savedDiary = diaryRepository.findTopByOrderByIdDesc().orElseThrow();
+        Diary savedDiary = diaryRepository.findTopByOrderByIdDesc();
+        assertThat(savedDiary).isNotNull();
 
         assertThat(savedDiary.getDiaryOtts()).hasSize(2);
         assertThat(savedDiary.getDiaryOtts())
