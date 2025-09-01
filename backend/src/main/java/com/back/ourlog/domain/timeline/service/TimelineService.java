@@ -42,8 +42,8 @@ public class TimelineService {
                         diary.getContentText(),
                         diary.getCreatedAt().toString(),
                         diary.getContent().getPosterUrl(),
-                        likeRepository.countByDiaryId(diary.getId()),   // 좋아요 개수..
-                        commentRepository.countByDiaryId(diary.getId()),    // 댓글 개수..
+                        likeRepository.countByDiaryId(diary.getId()),
+                        commentRepository.countByDiaryId(diary.getId()),
                         currentUserId != null && likeRepository.existsByUserIdAndDiaryId(currentUserId, diary.getId()),
                         new TimelineResponse.UserSummary(
                                 diary.getUser().getId(),

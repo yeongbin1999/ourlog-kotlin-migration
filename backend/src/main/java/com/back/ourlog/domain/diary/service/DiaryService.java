@@ -30,7 +30,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.util.Arrays;
 
 @Service
@@ -87,6 +86,7 @@ public class DiaryService {
 
         // 콘텐츠 변경 처리
         Content oldContent = diary.getContent();
+
         boolean contentChanged = !oldContent.getExternalId().equals(dto.externalId)
                 || !oldContent.getType().equals(dto.type);
 
@@ -95,8 +95,10 @@ public class DiaryService {
             if (result == null || result.getExternalId() == null) {
                 throw new CustomException(ErrorCode.CONTENT_NOT_FOUND);
             }
+
             Content newContent = contentService.saveOrGet(result, dto.type);
             diary.setContent(newContent);
+
             if (result.getGenres() != null) {
                 diary.updateGenres(result.getGenres(), genreService, libraryService);
             }
@@ -105,10 +107,8 @@ public class DiaryService {
         diary.update(dto.title, dto.contentText, dto.rating, dto.isPublic);
         diary.updateTags(dto.tagNames, tagRepository);
         diary.updateOtts(dto.ottIds, ottRepository);
-
         diaryRepository.flush();
         objectRedisTemplate.delete("diaryDetail::" + diaryId);
-
         return DiaryMapper.toResponseDto(diary);
     }
 
@@ -122,6 +122,7 @@ public class DiaryService {
                     .orElseThrow(DiaryNotFoundException::new);
         } else {
             Object cached = objectRedisTemplate.opsForValue().get(cacheKey);
+
             if (cached != null) {
                 return objectMapper.convertValue(cached, DiaryDetailDto.class);
             } else {
@@ -140,7 +141,7 @@ public class DiaryService {
         } catch (Exception ignored) {
         }
 
-        if (!diary.getIsPublic() &&
+        if (!diary.isPublic() &&
                 (currentUser == null || diary.getUser().getId() != currentUser.getId())) {
             throw new CustomException(ErrorCode.AUTH_FORBIDDEN);
         }

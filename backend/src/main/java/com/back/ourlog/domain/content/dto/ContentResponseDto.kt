@@ -1,30 +1,29 @@
-package com.back.ourlog.domain.content.dto;
+package com.back.ourlog.domain.content.dto
 
-import com.back.ourlog.domain.content.entity.Content;
-import com.back.ourlog.domain.content.entity.ContentType;
-import lombok.Data;
+import com.back.ourlog.domain.content.entity.Content
+import com.back.ourlog.domain.content.entity.ContentType
+import java.time.LocalDateTime
 
-import java.time.LocalDateTime;
-
-@Data
-public class ContentResponseDto {
-    private int id;
-    private String externalId;
-    private ContentType type;
-    private String posterUrl;
-    private String title;
-    private String creatorName;
-    private String description;
-    private LocalDateTime releasedAt;
-
-    public ContentResponseDto(Content content) {
-        this.id = content.getId();
-        this.externalId = content.getExternalId();
-        this.type = content.getType();
-        this.posterUrl = content.getPosterUrl();
-        this.title = content.getTitle();
-        this.creatorName = content.getCreatorName();
-        this.description = content.getDescription();
-        this.releasedAt = content.getReleasedAt();
+data class ContentResponseDto(
+    val id: Int,
+    val externalId: String?,
+    val type: ContentType?,
+    val posterUrl: String?,
+    val title: String?,
+    val creatorName: String?,
+    val description: String?,
+    val releasedAt: LocalDateTime?
+) {
+    companion object {
+        fun from(content: Content): ContentResponseDto = ContentResponseDto(
+            id = content.id ?: -1,
+            externalId = content.externalId,
+            type = content.type,
+            posterUrl = content.posterUrl,
+            title = content.title,
+            creatorName = content.creatorName,
+            description = content.description,
+            releasedAt = content.releasedAt
+        )
     }
 }

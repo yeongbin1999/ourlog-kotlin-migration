@@ -1,233 +1,134 @@
-package com.back.ourlog.domain.diary.entity;
+package com.back.ourlog.domain.diary.entity
 
-import com.back.ourlog.domain.comment.entity.Comment;
-import com.back.ourlog.domain.content.entity.Content;
-import com.back.ourlog.domain.content.entity.ContentType;
-import com.back.ourlog.domain.genre.entity.DiaryGenre;
-import com.back.ourlog.domain.genre.entity.Genre;
-import com.back.ourlog.domain.genre.service.GenreService;
-import com.back.ourlog.domain.like.entity.Like;
-import com.back.ourlog.domain.ott.entity.DiaryOtt;
-import com.back.ourlog.domain.ott.entity.Ott;
-import com.back.ourlog.domain.ott.repository.OttRepository;
-import com.back.ourlog.domain.tag.entity.DiaryTag;
-import com.back.ourlog.domain.tag.entity.Tag;
-import com.back.ourlog.domain.tag.repository.TagRepository;
-import com.back.ourlog.domain.user.entity.User;
-import com.back.ourlog.external.library.service.LibraryService;
-import com.back.ourlog.global.exception.CustomException;
-import com.back.ourlog.global.exception.ErrorCode;
-import jakarta.persistence.*;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import com.back.ourlog.domain.comment.entity.Comment
+import com.back.ourlog.domain.content.entity.Content
+import com.back.ourlog.domain.content.entity.ContentType
+import com.back.ourlog.domain.genre.entity.DiaryGenre
+import com.back.ourlog.domain.genre.service.GenreService
+import com.back.ourlog.domain.like.entity.Like
+import com.back.ourlog.domain.ott.entity.DiaryOtt
+import com.back.ourlog.domain.ott.repository.OttRepository
+import com.back.ourlog.domain.tag.entity.DiaryTag
+import com.back.ourlog.domain.tag.entity.Tag
+import com.back.ourlog.domain.tag.repository.TagRepository
+import com.back.ourlog.domain.user.entity.User
+import com.back.ourlog.external.library.service.LibraryService
+import com.back.ourlog.global.exception.CustomException
+import com.back.ourlog.global.exception.ErrorCode
+import jakarta.persistence.*
+import org.springframework.data.annotation.CreatedDate
+import org.springframework.data.annotation.LastModifiedDate
+import org.springframework.data.jpa.domain.support.AuditingEntityListener
+import java.time.LocalDateTime
 
 @Entity
-@Getter
-@NoArgsConstructor
-@EntityListeners(AuditingEntityListener.class)
-@EqualsAndHashCode(onlyExplicitlyIncluded = true)
-public class Diary {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+@EntityListeners(AuditingEntityListener::class)
+class Diary(
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = true) // User 완성되면 false 활성화
-    private User user;
+    @JoinColumn(name = "user_id", nullable = false)
+    var user: User,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "content_id", nullable = false)
-    private Content content;
+    var content: Content,
 
-    private String title;
-    private String contentText;
-    private Float rating;
-    private Boolean isPublic;
+    var title: String,
+    var contentText: String,
+    var rating: Float,
+    var isPublic: Boolean
+) {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    var id: Int = 0
 
     @CreatedDate
     @Column(updatable = false)
-    private LocalDateTime createdAt;
+    lateinit var createdAt: LocalDateTime
 
     @LastModifiedDate
-    private LocalDateTime updatedAt;
+    lateinit var updatedAt: LocalDateTime
 
-    @OneToMany(mappedBy = "diary", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Comment> comments = new ArrayList<>();
+    @OneToMany(mappedBy = "diary", cascade = [CascadeType.ALL], orphanRemoval = true)
+    var comments: MutableList<Comment> = mutableListOf()
 
-    @OneToMany(mappedBy = "diary", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Like> likes = new ArrayList<>();
+    @OneToMany(mappedBy = "diary", cascade = [CascadeType.ALL], orphanRemoval = true)
+    var likes: MutableList<Like> = mutableListOf()
 
-    @OneToMany(mappedBy = "diary", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<DiaryTag> diaryTags = new ArrayList<>();
+    @OneToMany(mappedBy = "diary", cascade = [CascadeType.ALL], orphanRemoval = true)
+    var diaryTags: MutableList<DiaryTag> = mutableListOf()
 
-    @OneToMany(mappedBy = "diary", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<DiaryGenre> diaryGenres = new ArrayList<>();
+    @OneToMany(mappedBy = "diary", cascade = [CascadeType.ALL], orphanRemoval = true)
+    var diaryGenres: MutableList<DiaryGenre> = mutableListOf()
 
-    @OneToMany(mappedBy = "diary", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<DiaryOtt> diaryOtts = new ArrayList<>();
+    @OneToMany(mappedBy = "diary", cascade = [CascadeType.ALL], orphanRemoval = true)
+    var diaryOtts: MutableList<DiaryOtt> = mutableListOf()
 
-    public Diary(User user, Content content, String title, String contentText, Float rating, Boolean isPublic) {
-        this.user = user;
-        this.content = content;
-        this.title = title;
-        this.contentText = contentText;
-        this.rating = rating;
-        this.isPublic = isPublic;
+    fun update(title: String, contentText: String, rating: Float, isPublic: Boolean) {
+        this.title = title
+        this.contentText = contentText
+        this.rating = rating
+        this.isPublic = isPublic
     }
 
-    public void update(String title, String contentText, float rating, boolean isPublic) {
-        this.title = title;
-        this.contentText = contentText;
-        this.rating = rating;
-        this.isPublic = isPublic;
+    fun updateTags(newTagNames: List<String>, tagRepository: TagRepository) {
+        val currentNames = diaryTags.map { it.tag.name }
+        val toRemove = diaryTags.filter { it.tag.name !in newTagNames }
+        diaryTags.removeAll(toRemove)
+
+        val toAdd = newTagNames.filter { it !in currentNames }
+        toAdd.forEach { tagName ->
+            val tag = tagRepository.findByName(tagName) ?: tagRepository.save(Tag(tagName))
+            diaryTags.add(DiaryTag(this, tag))
+        }
     }
 
-    public void updateTags(List<String> newTagNames, TagRepository tagRepository) {
-        List<DiaryTag> current = this.getDiaryTags();
-        List<String> currentNames = current.stream()
-                .map(dt -> dt.getTag().getName())
-                .toList();
+    fun updateGenres(
+        newGenreNames: List<String>,
+        genreService: GenreService,
+        libraryService: LibraryService
+    ) {
+        val currentNames = diaryGenres.map { it.genre.name }
+        val mappedNames = newGenreNames.map {
+            if (content.type == ContentType.BOOK)
+                libraryService.mapKdcToGenre(it)
+            else it
+        }
 
-        List<DiaryTag> toRemove = current.stream()
-                .filter(dt -> !newTagNames.contains(dt.getTag().getName()))
-                .toList();
-        this.getDiaryTags().removeAll(toRemove);
+        val toRemove = diaryGenres.filter { it.genre.name !in mappedNames }
+        diaryGenres.removeAll(toRemove)
 
-        List<String> toAdd = newTagNames.stream()
-                .filter(name -> !currentNames.contains(name))
-                .toList();
+        val toAdd = mappedNames.filter { it !in currentNames }
+        toAdd.forEach { name ->
+            val genre = genreService.findOrCreateByName(name)
+            diaryGenres.add(DiaryGenre(this, genre))
+        }
+    }
 
-        for (String tagName : toAdd) {
-            Tag tag = tagRepository.findByName(tagName);
-            if (tag == null) {
-                tag = tagRepository.save(new Tag(tagName));
+    fun updateOtts(newOttIds: List<Int>, ottRepository: OttRepository) {
+        if (content.type != ContentType.MOVIE) {
+            diaryOtts.clear()
+            return
+        }
+
+        diaryOtts.clear()
+
+        newOttIds.forEach { ottId ->
+            val ott = ottRepository.findById(ottId).orElseThrow {
+                CustomException(ErrorCode.OTT_NOT_FOUND)
             }
-            this.getDiaryTags().add(new DiaryTag(this, tag));
+            diaryOtts.add(DiaryOtt(this, ott))
         }
     }
 
-    public void updateGenres(List<String> newGenreNames, GenreService genreService, LibraryService libraryService) {
-        List<DiaryGenre> current = this.getDiaryGenres();
-        List<String> currentNames = current.stream()
-                .map(dg -> dg.getGenre().getName())
-                .toList();
-
-        ContentType contentType = this.getContent().getType();
-        List<String> mappedGenreNames = newGenreNames.stream()
-                .map(name -> contentType == ContentType.BOOK ? libraryService.mapKdcToGenre(name) : name)
-                .toList();
-
-        List<DiaryGenre> toRemove = current.stream()
-                .filter(dg -> !mappedGenreNames.contains(dg.getGenre().getName()))
-                .toList();
-        this.getDiaryGenres().removeAll(toRemove);
-
-        List<String> toAdd = mappedGenreNames.stream()
-                .filter(name -> !currentNames.contains(name))
-                .toList();
-
-        toAdd.forEach(name -> {
-            Genre genre = genreService.findOrCreateByName(name);
-            this.getDiaryGenres().add(new DiaryGenre(this, genre));
-        });
+    fun addComment(user: User, content: String): Comment {
+        val comment = Comment(this, user, content)
+        comments.add(comment)
+        return comment
     }
 
-    public void updateOtts(List<Integer> newOttIds, OttRepository ottRepository) {
-        if (this.getContent().getType() != ContentType.MOVIE) {
-            this.diaryOtts.clear();
-            return;
-        }
-
-        if (newOttIds == null) {
-            newOttIds = new ArrayList<>();
-        }
-
-        this.diaryOtts.clear();
-
-        for (Integer ottId : newOttIds) {
-            Ott ott = ottRepository.findById(ottId)
-                    .orElseThrow(() -> new CustomException(ErrorCode.OTT_NOT_FOUND));
-            this.diaryOtts.add(new DiaryOtt(this, ott));
-        }
-    }
-
-    public void setContent(Content content) {
-        this.content = content;
-    }
-
-    public Comment addComment(User user, String content) {
-        Comment comment = new Comment(this, user, content);
-        comments.add(comment);
-
-        return comment;
-    }
-
-    public void deleteComment(Comment comment) {
-        comments.remove(comment);
-    }
-
-    // 코틀린 전환 작업으로 생성한 getter
-    public Integer getId() {
-        return id;
-    }
-
-    public User getUser() {
-        return user;
-    }
-
-    public Content getContent() {
-        return content;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public String getContentText() {
-        return contentText;
-    }
-
-    public Float getRating() {
-        return rating;
-    }
-
-    public Boolean getIsPublic() {
-        return isPublic;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public List<Comment> getComments() {
-        return comments;
-    }
-
-    public List<Like> getLikes() {
-        return likes;
-    }
-
-    public List<DiaryTag> getDiaryTags() {
-        return diaryTags;
-    }
-
-    public List<DiaryGenre> getDiaryGenres() {
-        return diaryGenres;
-    }
-
-    public List<DiaryOtt> getDiaryOtts() {
-        return diaryOtts;
+    fun deleteComment(comment: Comment) {
+        comments.remove(comment)
     }
 }

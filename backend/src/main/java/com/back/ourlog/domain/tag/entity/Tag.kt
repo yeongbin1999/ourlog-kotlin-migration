@@ -9,7 +9,7 @@ class Tag(
 ) {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Int? = null
+    val id: Int = 0
 
     @OneToMany(mappedBy = "tag", cascade = [CascadeType.ALL], orphanRemoval = true)
     val diaryTags: MutableList<DiaryTag> = mutableListOf()

@@ -1,90 +1,66 @@
-package com.back.ourlog.domain.content.entity;
+package com.back.ourlog.domain.content.entity
 
-import com.back.ourlog.domain.content.dto.ContentSearchResultDto;
-import com.back.ourlog.domain.diary.entity.Diary;
-import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import com.back.ourlog.domain.content.dto.ContentSearchResultDto
+import com.back.ourlog.domain.diary.entity.Diary
+import jakarta.persistence.*
+import org.springframework.data.annotation.CreatedDate
+import org.springframework.data.annotation.LastModifiedDate
+import org.springframework.data.jpa.domain.support.AuditingEntityListener
+import java.time.LocalDateTime
 
 @Entity
-@Getter
-@NoArgsConstructor
-@EntityListeners(AuditingEntityListener.class)
-public class Content {
-    @Id
-    @GeneratedValue(strategy = jakarta.persistence.GenerationType.IDENTITY)
-    private Integer id;
-
-    private String title;
+@EntityListeners(AuditingEntityListener::class)
+class Content(
+    var title: String?,
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private ContentType type;
+    var type: ContentType,
 
     @Column(name = "creator_name")
-    private String creatorName;
+    var creatorName: String?,
 
     @Column(length = 1000)
-    private String description;
+    var description: String?,
 
-    private String posterUrl;
+    var posterUrl: String?,
+
+    var releasedAt: LocalDateTime?,
+
+    var externalId: String?
+) {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    val id: Int = 0
 
     @CreatedDate
     @Column(updatable = false)
-    private LocalDateTime createdAt;
+    var createdAt: LocalDateTime? = null
 
     @LastModifiedDate
-    private LocalDateTime updatedAt;
+    var updatedAt: LocalDateTime? = null
 
-    private LocalDateTime releasedAt;
-    private String externalId;
+    @OneToMany(mappedBy = "content", cascade = [CascadeType.ALL], orphanRemoval = true)
+    val diaries: MutableList<Diary> = mutableListOf()
 
-    @OneToMany(mappedBy = "content", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Diary> diaries = new ArrayList<>();
-
-    public Content(String title, ContentType type, String creatorName, String description, String posterUrl, LocalDateTime releasedAt, String externalId) {
-        this.title = title;
-        this.type = type;
-        this.creatorName = creatorName;
-        this.description = description;
-        this.posterUrl = posterUrl;
-        this.releasedAt = releasedAt;
-        this.externalId = externalId;
+    fun update(externalId: String?, type: ContentType) {
+        this.externalId = externalId
+        this.type = type
     }
 
-    public void update(String externalId, ContentType type) {
-        this.externalId = externalId;
-        this.type = type;
-    }
+    companion object {
+        fun of(result: ContentSearchResultDto): Content {
+            val description = if (result.type == ContentType.MOVIE) result.description else null
 
-    public static Content of(ContentSearchResultDto result) {
-        // 영화(MOVIE)일 때만 description 저장
-        String description = result.getType() == ContentType.MOVIE ? result.getDescription() : null;
-
-        return new Content(
-                result.getTitle(),
-                result.getType(),
-                result.getCreatorName(),
-                description,
-                result.getPosterUrl(),
-                result.getReleasedAt(),
-                result.getExternalId()
-        );
-    }
-
-    // 코틀린 전환을 위한 Getter 메서드 추가
-    public Integer getId() {
-        return id;
-    }
-
-    public LocalDateTime getReleasedAt() {
-        return releasedAt;
+            return Content(
+                title = result.title,
+                type = result.type,
+                creatorName = result.creatorName,
+                description = description,
+                posterUrl = result.posterUrl,
+                releasedAt = result.releasedAt,
+                externalId = result.externalId
+            )
+        }
     }
 }

@@ -1,32 +1,27 @@
-package com.back.ourlog.domain.content.dto;
+package com.back.ourlog.domain.content.dto
 
-import com.back.ourlog.domain.content.entity.Content;
-import com.back.ourlog.domain.content.entity.ContentType;
-import lombok.Builder;
-import lombok.Getter;
+import com.back.ourlog.domain.content.entity.Content
+import com.back.ourlog.domain.content.entity.ContentType
+import java.time.LocalDateTime
 
-import java.time.LocalDateTime;
-
-@Getter
-@Builder
-public class ContentDto {
-    private String title;
-    private ContentType type;
-    private String creatorName;
-    private String description;
-    private String posterUrl;
-    private LocalDateTime releasedAt;
-    private String externalId;
-
-    public static ContentDto from(Content content) {
-        return ContentDto.builder()
-                .title(content.getTitle())
-                .creatorName(content.getCreatorName())
-                .description(content.getDescription())
-                .posterUrl(content.getPosterUrl())
-                .releasedAt(content.getReleasedAt())
-                .externalId(content.getExternalId())
-                .type(content.getType())
-                .build();
+data class ContentDto(
+    val title: String?,
+    val type: ContentType?,
+    val creatorName: String?,
+    val description: String?,
+    val posterUrl: String?,
+    val releasedAt: LocalDateTime?,
+    val externalId: String?
+) {
+    companion object {
+        fun from(content: Content): ContentDto = ContentDto(
+            title = content.title,
+            type = content.type,
+            creatorName = content.creatorName,
+            description = content.description,
+            posterUrl = content.posterUrl,
+            releasedAt = content.releasedAt,
+            externalId = content.externalId
+        )
     }
 }

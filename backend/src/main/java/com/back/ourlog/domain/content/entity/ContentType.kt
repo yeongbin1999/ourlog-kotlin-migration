@@ -1,6 +1,6 @@
-package com.back.ourlog.domain.content.entity;
+package com.back.ourlog.domain.content.entity
 
-public enum ContentType {
+enum class ContentType {
     MOVIE,
     BOOK,
     MUSIC

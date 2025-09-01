@@ -1,50 +1,46 @@
-package com.back.ourlog.domain.content.service;
+package com.back.ourlog.domain.content.service
 
-import com.back.ourlog.domain.content.dto.ContentResponseDto;
-import com.back.ourlog.domain.content.dto.ContentSearchResultDto;
-import com.back.ourlog.domain.content.entity.Content;
-import com.back.ourlog.domain.content.entity.ContentType;
-import com.back.ourlog.domain.content.repository.ContentRepository;
-import com.back.ourlog.domain.diary.entity.Diary;
-import com.back.ourlog.domain.diary.repository.DiaryRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-
-import java.time.LocalDateTime;
+import com.back.ourlog.domain.content.dto.ContentResponseDto
+import com.back.ourlog.domain.content.dto.ContentSearchResultDto
+import com.back.ourlog.domain.content.entity.Content
+import com.back.ourlog.domain.content.entity.ContentType
+import com.back.ourlog.domain.content.repository.ContentRepository
+import com.back.ourlog.domain.diary.repository.DiaryRepository
+import com.back.ourlog.global.exception.CustomException
+import com.back.ourlog.global.exception.ErrorCode
+import org.springframework.stereotype.Service
+import java.time.LocalDateTime
 
 @Service
-@RequiredArgsConstructor
-public class ContentService {
-    private final DiaryRepository diaryRepository;
-    private final ContentRepository contentRepository;
+class ContentService(
+    private val diaryRepository: DiaryRepository,
+    private val contentRepository: ContentRepository
+) {
 
-    // 외부 API 연동하면 externalId, type 기준으로 정보 갱신하도록 수정
-    public Content getOrCreateContent(String externalId, ContentType type) {
+    fun getOrCreateContent(externalId: String, type: ContentType): Content {
         return contentRepository.findByExternalIdAndType(externalId, type)
-                .orElseGet(() -> {
-                    Content content = new Content(
-                            "제목 없음",
-                            type,
-                            "제작자",
-                            null,
-                            null,
-                            LocalDateTime.now(),
-                            externalId
-                    );
-                    return contentRepository.save(content);
-                });
+            ?: contentRepository.save(
+                Content(
+                    title = "제목 없음",
+                    type = type,
+                    creatorName = "제작자",
+                    description = null,
+                    posterUrl = null,
+                    releasedAt = LocalDateTime.now(),
+                    externalId = externalId
+                )
+            )
     }
 
-    public ContentResponseDto getContent(int diaryId) {
-        Diary diary = diaryRepository.findById(diaryId).orElseThrow();
-        Content content = diary.getContent();
+    fun getContent(diaryId: Int): ContentResponseDto =
+        ContentResponseDto.from(
+            diaryRepository.findById(diaryId)
+                .orElseThrow { CustomException(ErrorCode.DIARY_NOT_FOUND) }
+                .content
+        )
 
-        return new ContentResponseDto(content);
+    fun saveOrGet(result: ContentSearchResultDto, type: ContentType): Content {
+        return contentRepository.findByExternalIdAndType(result.externalId, type)
+            ?: contentRepository.save(Content.of(result))
     }
-
-    public Content saveOrGet(ContentSearchResultDto result, ContentType type) {
-        return contentRepository.findByExternalIdAndType(result.getExternalId(), type)
-                .orElseGet(() -> contentRepository.save(Content.of(result)));
-    }
-
 }
