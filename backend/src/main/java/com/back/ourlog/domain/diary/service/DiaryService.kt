@@ -1,170 +1,196 @@
-package com.back.ourlog.domain.diary.service;
+package com.back.ourlog.domain.diary.service
 
-import com.back.ourlog.domain.content.dto.ContentSearchResultDto;
-import com.back.ourlog.domain.content.entity.Content;
-import com.back.ourlog.domain.content.service.ContentService;
-import com.back.ourlog.domain.diary.dto.DiaryDetailDto;
-import com.back.ourlog.domain.diary.dto.DiaryResponseDto;
-import com.back.ourlog.domain.diary.dto.DiaryUpdateRequestDto;
-import com.back.ourlog.domain.diary.dto.DiaryWriteRequestDto;
-import com.back.ourlog.domain.diary.entity.Diary;
-import com.back.ourlog.domain.diary.exception.DiaryNotFoundException;
-import com.back.ourlog.domain.diary.factory.DiaryFactory;
-import com.back.ourlog.domain.diary.mapper.DiaryMapper;
-import com.back.ourlog.domain.diary.repository.DiaryRepository;
-import com.back.ourlog.domain.genre.service.GenreService;
-import com.back.ourlog.domain.ott.repository.OttRepository;
-import com.back.ourlog.domain.tag.repository.TagRepository;
-import com.back.ourlog.domain.user.entity.User;
-import com.back.ourlog.external.common.ContentSearchFacade;
-import com.back.ourlog.external.library.service.LibraryService;
-import com.back.ourlog.global.exception.CustomException;
-import com.back.ourlog.global.exception.ErrorCode;
-import com.back.ourlog.global.rq.Rq;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.core.env.Environment;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import java.util.Arrays;
+import com.back.ourlog.domain.content.entity.ContentType
+import com.back.ourlog.domain.content.service.ContentService
+import com.back.ourlog.domain.diary.dto.DiaryDetailDto
+import com.back.ourlog.domain.diary.dto.DiaryResponseDto
+import com.back.ourlog.domain.diary.dto.DiaryUpdateRequestDto
+import com.back.ourlog.domain.diary.dto.DiaryWriteRequestDto
+import com.back.ourlog.domain.diary.entity.Diary
+import com.back.ourlog.domain.diary.exception.DiaryNotFoundException
+import com.back.ourlog.domain.diary.repository.DiaryRepository
+import com.back.ourlog.domain.genre.entity.DiaryGenre
+import com.back.ourlog.domain.genre.service.GenreService
+import com.back.ourlog.domain.ott.entity.DiaryOtt
+import com.back.ourlog.domain.ott.repository.OttRepository
+import com.back.ourlog.domain.tag.entity.DiaryTag
+import com.back.ourlog.domain.tag.entity.Tag
+import com.back.ourlog.domain.tag.repository.TagRepository
+import com.back.ourlog.domain.user.entity.User
+import com.back.ourlog.external.common.ContentSearchFacade
+import com.back.ourlog.external.library.service.LibraryService
+import com.back.ourlog.global.exception.CustomException
+import com.back.ourlog.global.exception.ErrorCode
+import com.back.ourlog.global.rq.Rq
+import com.fasterxml.jackson.databind.ObjectMapper
+import org.springframework.cache.annotation.CacheEvict
+import org.springframework.core.env.Environment
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
+import org.springframework.data.redis.core.RedisTemplate
+import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 @Service
-@RequiredArgsConstructor
-public class DiaryService {
-
-    private final DiaryRepository diaryRepository;
-    private final ContentService contentService;
-    private final GenreService genreService;
-    private final TagRepository tagRepository;
-    private final OttRepository ottRepository;
-    private final ContentSearchFacade contentSearchFacade;
-    private final LibraryService libraryService;
-    private final DiaryFactory diaryFactory;
-    private final ObjectMapper objectMapper;
-    private final RedisTemplate<String, Object> objectRedisTemplate;
-    private final Environment env;
-    private final Rq rq;
-
-    private static final String CACHE_KEY_PREFIX = "diaryDetail::";
-
-    @Transactional
-    public Diary writeWithContentSearch(DiaryWriteRequestDto req, User user) {
-        // 로그인 사용자 필수 체크
-        if (user == null) {
-            throw new CustomException(ErrorCode.AUTH_UNAUTHORIZED);
-        }
-
-        // 외부 콘텐츠 검색
-        ContentSearchResultDto result = contentSearchFacade.search(req.type, req.externalId);
-        if (result == null || result.getExternalId() == null) {
-            throw new CustomException(ErrorCode.CONTENT_NOT_FOUND);
-        }
-
-        // 콘텐츠 저장 or 조회
-        Content content = contentService.saveOrGet(result, req.type);
-
-        // Diary 생성 (연관관계 포함)
-        Diary diary = diaryFactory.create(user, content, req.title, req.contentText, req.rating, req.isPublic, req.tagNames, result.getGenres(), req.ottIds);
-
-        // 저장
-        return diaryRepository.save(diary);
+class DiaryService(
+    private val diaryRepository: DiaryRepository,
+    private val contentService: ContentService,
+    private val genreService: GenreService,
+    private val tagRepository: TagRepository,
+    private val ottRepository: OttRepository,
+    private val contentSearchFacade: ContentSearchFacade,
+    private val libraryService: LibraryService,
+    private val redisTemplate: RedisTemplate<String, Any>,
+    private val objectMapper: ObjectMapper,
+    private val env: Environment,
+    private val rq: Rq
+) {
+    companion object {
+        private const val CACHE_KEY_PREFIX = "diaryDetail::"
     }
 
     @Transactional
-    public DiaryResponseDto update(int diaryId, DiaryUpdateRequestDto dto, User user) {
-        Diary diary = diaryRepository.findById(diaryId)
-                .orElseThrow(DiaryNotFoundException::new);
+    fun writeWithContentSearch(req: DiaryWriteRequestDto, user: User): Diary {
+        val result = contentSearchFacade.search(req.type, req.externalId)
+            ?: throw CustomException(ErrorCode.CONTENT_NOT_FOUND)
+
+        val content = contentService.saveOrGet(result, req.type)
+
+        val diary = Diary(
+            user = user,
+            content = content,
+            title = req.title,
+            contentText = req.contentText,
+            rating = req.rating,
+            isPublic = req.isPublic
+        )
+
+        // 연관관계 설정
+        updateTags(diary, req.tagNames)
+        updateGenres(diary, result.genres, content.type)
+        updateOtts(diary, req.ottIds, content.type)
+
+        return diaryRepository.save(diary)
+    }
+
+    @Transactional
+    fun update(diaryId: Int, dto: DiaryUpdateRequestDto, user: User): DiaryResponseDto {
+        val diary = diaryRepository.findById(diaryId).orElseThrow { DiaryNotFoundException() }
 
         // 작성자 검증
-        if (diary.getUser().getId() != user.getId()) {
-            throw new CustomException(ErrorCode.AUTH_FORBIDDEN);
-        }
+        if (diary.user.id != user.id) throw CustomException(ErrorCode.AUTH_FORBIDDEN)
 
-        // 콘텐츠 변경 처리
-        Content oldContent = diary.getContent();
-
-        boolean contentChanged = !oldContent.getExternalId().equals(dto.externalId)
-                || !oldContent.getType().equals(dto.type);
+        // 콘텐츠 변경 여부 확인
+        val contentChanged =
+            diary.content.externalId != dto.externalId || diary.content.type != dto.type
 
         if (contentChanged) {
-            ContentSearchResultDto result = contentSearchFacade.search(dto.type, dto.externalId);
-            if (result == null || result.getExternalId() == null) {
-                throw new CustomException(ErrorCode.CONTENT_NOT_FOUND);
-            }
+            val result = contentSearchFacade.search(dto.type, dto.externalId)
+                ?: throw CustomException(ErrorCode.CONTENT_NOT_FOUND)
 
-            Content newContent = contentService.saveOrGet(result, dto.type);
-            diary.setContent(newContent);
+            val newContent = contentService.saveOrGet(result, dto.type)
+            diary.content = newContent
 
-            if (result.getGenres() != null) {
-                diary.updateGenres(result.getGenres(), genreService, libraryService);
-            }
+            // 콘텐츠 변경 시 장르 재계산
+            updateGenres(diary, result.genres, newContent.type)
         }
 
-        diary.update(dto.title, dto.contentText, dto.rating, dto.isPublic);
-        diary.updateTags(dto.tagNames, tagRepository);
-        diary.updateOtts(dto.ottIds, ottRepository);
-        diaryRepository.flush();
-        objectRedisTemplate.delete("diaryDetail::" + diaryId);
-        return DiaryMapper.toResponseDto(diary);
+        // 기본 필드 수정
+        diary.update(dto.title, dto.contentText, dto.rating, dto.isPublic)
+
+        // 연관관계 동기화
+        updateTags(diary, dto.tagNames)
+        updateOtts(diary, dto.ottIds, diary.content.type)
+
+        diaryRepository.flush()
+        redisTemplate.delete("$CACHE_KEY_PREFIX$diaryId")
+
+        return DiaryResponseDto.from(diary)
     }
 
-    public DiaryDetailDto getDiaryDetail(Integer diaryId) {
-        String cacheKey = CACHE_KEY_PREFIX + diaryId;
+    fun getDiaryDetail(diaryId: Int): DiaryDetailDto {
+        val cacheKey = "$CACHE_KEY_PREFIX$diaryId"
 
-        // 다이어리 조회
-        Diary diary;
-        if (Arrays.asList(env.getActiveProfiles()).contains("test")) {
-            diary = diaryRepository.findById(diaryId)
-                    .orElseThrow(DiaryNotFoundException::new);
-        } else {
-            Object cached = objectRedisTemplate.opsForValue().get(cacheKey);
+        // 항상 엔티티 먼저 조회하여 비공개 권한 체크 선행
+        val diary = diaryRepository.findById(diaryId).orElseThrow { DiaryNotFoundException() }
 
+        val currentUser = runCatching { rq.currentUser }.getOrNull()
+        if (!diary.isPublic && (currentUser == null || diary.user.id != currentUser.id)) {
+            throw CustomException(ErrorCode.AUTH_FORBIDDEN)
+        }
+
+        val isTest = env.activeProfiles.any { it == "test" }
+        if (!isTest) {
+            val cached = redisTemplate.opsForValue().get(cacheKey)
             if (cached != null) {
-                return objectMapper.convertValue(cached, DiaryDetailDto.class);
-            } else {
-                diary = diaryRepository.findById(diaryId)
-                        .orElseThrow(DiaryNotFoundException::new);
-                DiaryDetailDto detailDto = DiaryDetailDto.of(diary);
-                objectRedisTemplate.opsForValue().set(cacheKey, detailDto);
-                return detailDto;
+                return objectMapper.convertValue(cached, DiaryDetailDto::class.java)
             }
         }
 
-        // 비공개 글 접근 제한
-        User currentUser = null;
-        try {
-            currentUser = rq.getCurrentUser();
-        } catch (Exception ignored) {
+        val dto = DiaryDetailDto.from(diary)
+        if (!isTest) {
+            redisTemplate.opsForValue().set(cacheKey, dto)
         }
-
-        if (!diary.isPublic() &&
-                (currentUser == null || diary.getUser().getId() != currentUser.getId())) {
-            throw new CustomException(ErrorCode.AUTH_FORBIDDEN);
-        }
-
-        return DiaryDetailDto.of(diary);
+        return dto
     }
 
     @Transactional
-    @CacheEvict(value = "diaryDetail", key = "#diaryId")
-    public void delete(int diaryId, User user) {
-        Diary diary = diaryRepository.findById(diaryId)
-                .orElseThrow(() -> new CustomException(ErrorCode.DIARY_NOT_FOUND));
+    @CacheEvict(value = ["diaryDetail"], key = "#diaryId")
+    fun delete(diaryId: Int, user: User) {
+        val diary = diaryRepository.findById(diaryId)
+            .orElseThrow { CustomException(ErrorCode.DIARY_NOT_FOUND) }
 
-        // 작성자 검증
-        if (diary.getUser().getId() != user.getId()) {
-            throw new CustomException(ErrorCode.AUTH_FORBIDDEN);
-        }
+        if (diary.user.id != user.id) throw CustomException(ErrorCode.AUTH_FORBIDDEN)
 
-        diaryRepository.delete(diary);
+        diaryRepository.delete(diary)
+        redisTemplate.delete("$CACHE_KEY_PREFIX$diaryId")
     }
 
-    public Page<DiaryResponseDto> getDiariesByUser(Integer userId, Pageable pageable) {
-        Page<Diary> diaries = diaryRepository.findByUserId(userId, pageable);
-        return diaries.map(DiaryMapper::toResponseDto);
+    fun getDiariesByUser(userId: Int, pageable: Pageable): Page<DiaryResponseDto> {
+        val diaries = diaryRepository.findByUserId(userId, pageable)
+        return diaries.map { DiaryResponseDto.from(it) }
+    }
+
+    /* -------------------- 연관관계 업데이트 -------------------- */
+
+    // 이름 기반 upsert & 동기화
+    private fun updateTags(diary: Diary, requestedNames: List<String>) {
+        val currentNames = diary.diaryTags.map { it.tag.name }.toMutableSet()
+
+        // 제거
+        diary.diaryTags.removeIf { it.tag.name !in requestedNames }
+
+        // 추가
+        requestedNames
+            .filterNot { it in currentNames }
+            .forEach { name ->
+                val tag: Tag = tagRepository.findByName(name) ?: tagRepository.save(Tag(name))
+                diary.diaryTags.add(DiaryTag(diary, tag))
+            }
+    }
+
+    // BOOK이면 KDC→장르 매핑, null이면 변경 없음
+    private fun updateGenres(diary: Diary, rawNames: List<String>?, type: ContentType) {
+        rawNames ?: return
+        val mapped = rawNames.map { n -> if (type == ContentType.BOOK) libraryService.mapKdcToGenre(n) else n }
+        val current = diary.diaryGenres.map { it.genre.name }.toMutableSet()
+
+        diary.diaryGenres.removeIf { it.genre.name !in mapped }
+        mapped
+            .filterNot { it in current }
+            .forEach { name -> diary.diaryGenres.add(DiaryGenre(diary, genreService.findOrCreateByName(name))) }
+    }
+
+    // MOVIE일 때만 유지, 그 외에는 모두 비움
+    private fun updateOtts(diary: Diary, ottIds: List<Int>, type: ContentType) {
+        if (type != ContentType.MOVIE) {
+            diary.diaryOtts.clear()
+            return
+        }
+        diary.diaryOtts.clear()
+        ottIds.forEach { id ->
+            val ott = ottRepository.findById(id).orElseThrow { CustomException(ErrorCode.OTT_NOT_FOUND) }
+            diary.diaryOtts.add(DiaryOtt(diary, ott))
+        }
     }
 }
