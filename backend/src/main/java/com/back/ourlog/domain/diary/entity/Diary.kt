@@ -8,6 +8,7 @@ import com.back.ourlog.domain.ott.entity.DiaryOtt
 import com.back.ourlog.domain.tag.entity.DiaryTag
 import com.back.ourlog.domain.user.entity.User
 import jakarta.persistence.*
+import org.hibernate.annotations.BatchSize
 import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.annotation.LastModifiedDate
 import org.springframework.data.jpa.domain.support.AuditingEntityListener
@@ -48,12 +49,15 @@ class Diary(
     @OneToMany(mappedBy = "diary", cascade = [CascadeType.ALL], orphanRemoval = true)
     var likes: MutableList<Like> = mutableListOf()
 
+    @BatchSize(size = 50)
     @OneToMany(mappedBy = "diary", cascade = [CascadeType.ALL], orphanRemoval = true)
     var diaryTags: MutableList<DiaryTag> = mutableListOf()
 
+    @BatchSize(size = 50)
     @OneToMany(mappedBy = "diary", cascade = [CascadeType.ALL], orphanRemoval = true)
     var diaryGenres: MutableList<DiaryGenre> = mutableListOf()
 
+    @BatchSize(size = 50)
     @OneToMany(mappedBy = "diary", cascade = [CascadeType.ALL], orphanRemoval = true)
     var diaryOtts: MutableList<DiaryOtt> = mutableListOf()
 

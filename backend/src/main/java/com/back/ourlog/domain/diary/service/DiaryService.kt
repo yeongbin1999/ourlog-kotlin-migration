@@ -24,6 +24,7 @@ import com.back.ourlog.global.exception.ErrorCode
 import com.back.ourlog.global.rq.Rq
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.springframework.cache.annotation.CacheEvict
+import org.springframework.cache.annotation.Cacheable
 import org.springframework.core.env.Environment
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
@@ -108,30 +109,27 @@ class DiaryService(
         return DiaryResponseDto.from(diary)
     }
 
+    @Cacheable(
+        cacheNames = ["diaryDetail"],
+        key = "#diaryId",
+        // result가 비공개면 캐시하지 않음
+        unless = "#result == null || #result.isPublic == false"
+    )
+    @Transactional(readOnly = true)
     fun getDiaryDetail(diaryId: Int): DiaryDetailDto {
-        val cacheKey = "$CACHE_KEY_PREFIX$diaryId"
+        // 상세 전용 fetch join 쿼리로 N+1 예방
+        val diary = diaryRepository.findWithAllById(diaryId)
+            .orElseThrow { DiaryNotFoundException() }
 
-        // 항상 엔티티 먼저 조회하여 비공개 권한 체크 선행
-        val diary = diaryRepository.findById(diaryId).orElseThrow { DiaryNotFoundException() }
-
+        // 권한 체크
+        // 캐시 전에 반드시 수행됨.
+        // 캐시 히트 시 메서드 본문은 실행되지 않으므로 위 unless로 비공개 미캐시를 보장해야 권한 우회가 없음
         val currentUser = runCatching { rq.currentUser }.getOrNull()
         if (!diary.isPublic && (currentUser == null || diary.user.id != currentUser.id)) {
             throw CustomException(ErrorCode.AUTH_FORBIDDEN)
         }
 
-        val isTest = env.activeProfiles.any { it == "test" }
-        if (!isTest) {
-            val cached = redisTemplate.opsForValue().get(cacheKey)
-            if (cached != null) {
-                return objectMapper.convertValue(cached, DiaryDetailDto::class.java)
-            }
-        }
-
-        val dto = DiaryDetailDto.from(diary)
-        if (!isTest) {
-            redisTemplate.opsForValue().set(cacheKey, dto)
-        }
-        return dto
+        return DiaryDetailDto.from(diary)
     }
 
     @Transactional
@@ -147,14 +145,20 @@ class DiaryService(
     }
 
     @Transactional(readOnly = true)
-    fun getDiariesByUser(userId: Int, pageable: Pageable, requester: User?): Page<DiaryResponseDto> {
+    fun getDiariesByUser(
+        userId: Int,
+        pageable: Pageable,
+        requester: User?
+    ): Page<DiaryResponseDto> {
         val isOwner = requester?.id == userId
-        val diaries = if (isOwner) {
-            diaryRepository.findByUserId(userId, pageable)
+
+        val page = if (isOwner) {
+            diaryRepository.findPageByUserIdWithToOne(userId, pageable)
         } else {
-            diaryRepository.findByUserIdAndIsPublicTrue(userId, pageable)
+            diaryRepository.findPagePublicByUserIdWithToOne(userId, pageable)
         }
-        return diaries.map { DiaryResponseDto.from(it) }
+
+        return page.map { DiaryResponseDto.from(it) }
     }
 
     /* -------------------- 연관관계 업데이트 -------------------- */

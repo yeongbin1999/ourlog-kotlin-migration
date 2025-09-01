@@ -10,6 +10,7 @@ data class DiaryDetailDto(
     val tagNames: List<String>,
     val genreNames: List<String>,
     val ottNames: List<String>,
+    val isPublic: Boolean
 ) : Serializable {
     companion object {
         fun from(diary: Diary): DiaryDetailDto {
@@ -22,7 +23,8 @@ data class DiaryDetailDto(
                 contentText = diary.contentText,
                 tagNames = tagNames,
                 genreNames = genreNames,
-                ottNames = ottNames
+                ottNames = ottNames,
+                isPublic = diary.isPublic
             )
         }
     }

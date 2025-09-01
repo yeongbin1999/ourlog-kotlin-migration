@@ -1,8 +1,10 @@
 package com.back.ourlog.domain.tag.entity
 
 import jakarta.persistence.*
+import org.hibernate.annotations.BatchSize
 
 @Entity
+@BatchSize(size = 50)
 class Tag(
     @Column(unique = true, nullable = false)
     var name: String
