@@ -1,6 +1,8 @@
 package com.back.ourlog.domain.diary.dto
 
 import com.back.ourlog.domain.diary.entity.Diary
+import com.back.ourlog.global.exception.CustomException
+import com.back.ourlog.global.exception.ErrorCode
 import java.time.LocalDateTime
 
 data class DiaryDto(
@@ -15,14 +17,14 @@ data class DiaryDto(
     val modifiedAt: LocalDateTime
 ) {
     constructor(diary: Diary) : this(
-        diary.id,
-        diary.user.id,
-        diary.content.id,
-        diary.title,
-        diary.contentText,
-        diary.rating,
-        diary.isPublic,
-        diary.createdAt,
-        diary.updatedAt
+        id = diary.id,
+        userId = (diary.user ?: throw CustomException(ErrorCode.USER_NOT_FOUND)).id,
+        contentId = diary.content.id,
+        title = diary.title,
+        contentText = diary.contentText,
+        rating = diary.rating,
+        isPublic = diary.isPublic,
+        createdAt = diary.createdAt,
+        modifiedAt = diary.updatedAt
     )
 }

@@ -51,21 +51,14 @@ class TimelineServiceTest {
 
         user1 = userRepository.findByEmail("user1@test.com")
                 .orElseGet(() -> userRepository.save(
-                        User.builder()
-                                .email("user1@test.com")
-                                .password("pw")
-                                .nickname("유저1")
-                                .build()
+                        User.Companion.createNormalUser("user1@test.com", "pw", "유저1", null, null)
                 ));
 
         user2 = userRepository.findByEmail("user2@test.com")
                 .orElseGet(() -> userRepository.save(
-                        User.builder()
-                                .email("user2@test.com")
-                                .password("pw")
-                                .nickname("유저2")
-                                .build()
+                        User.Companion.createNormalUser("user2@test.com", "pw", "유저2", null, null)
                 ));
+
 
         content = contentRepository.save(new Content(
                 "테스트 콘텐츠",
@@ -77,6 +70,7 @@ class TimelineServiceTest {
                 "external-id"
         ));
     }
+
 
 
     @Test

@@ -70,7 +70,7 @@ class DiaryController(
     @PreAuthorize("#userId == authentication.principal.id")
     fun deleteDiary(
         @PathVariable diaryId: Int
-    ): ResponseEntity<RsData<Void>> {
+    ): ResponseEntity<RsData<Nothing>> {
         val user = rq.currentUser ?: throw CustomException(ErrorCode.AUTH_UNAUTHORIZED)
 
         diaryService.delete(diaryId, user)

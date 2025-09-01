@@ -59,6 +59,7 @@ enum class ErrorCode(
     CANNOT_FOLLOW_SELF(HttpStatus.BAD_REQUEST, "FOLLOW_003", "자기 자신은 팔로우할 수 없습니다."),
     FOLLOW_ALREADY_REJECTED(HttpStatus.BAD_REQUEST, "FOLLOW_004", "이미 거절한 팔로우 요청입니다."),
     FOLLOW_ALREADY_ACCEPTED(HttpStatus.BAD_REQUEST, "FOLLOW_005", "이미 수락된 팔로우 요청입니다."),
+    FOLLOW_REQUEST_EXISTS(HttpStatus.BAD_REQUEST, "FOLLOW_006", "이미 상대방의 팔로우 요청이 있습니다. 요청을 수락해주세요."),
 
     // ======================== 서버/시스템 관련 ========================
     SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "SERVER_500", "서버 내부 오류가 발생했습니다."),

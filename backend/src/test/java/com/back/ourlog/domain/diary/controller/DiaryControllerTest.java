@@ -70,7 +70,7 @@ class DiaryControllerTest {
         // 테스트용 유저 저장
         testUser = userRepository.findByEmail("user1@test.com")
                 .orElseGet(() -> userRepository.save(
-                        User.createNormalUser(
+                        User.Companion.createNormalUser(
                                 "user1@test.com",
                                 passwordEncoder.encode("1234"),
                                 "테스트유저",

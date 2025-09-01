@@ -16,6 +16,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 
@@ -27,19 +29,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class BanHistoryServiceTest {
 
     @Mock private BanHistoryRepository banHistoryRepository;
     @Mock private UserRepository userRepository;
     @Mock private StringRedisTemplate redisTemplate;
     @Mock private ValueOperations<String, String> valueOperations;
+    @Mock private User user;
 
     private ObjectMapper objectMapper;
     private BanHistoryService banHistoryService;
 
     private final Integer userId = 1;
-    private final User user = User.builder().id(userId).build();
 
     @BeforeEach
     void setUp() {
@@ -54,6 +56,8 @@ class BanHistoryServiceTest {
                 redisTemplate,
                 objectMapper
         );
+
+        when(user.getId()).thenReturn(userId);
     }
 
     @Test

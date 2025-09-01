@@ -33,6 +33,7 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
 
+
     // --- Spring Boot 기본 ---
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
@@ -79,6 +80,11 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter:5.12.2")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.12.2")
     testImplementation("org.springframework.security:spring-security-test")
+    testImplementation("org.mockito.kotlin:mockito-kotlin:5.2.1")
+
+    // --- Querydsl ---
+    implementation("io.github.openfeign.querydsl:querydsl-jpa:7.0")
+    ksp("io.github.openfeign.querydsl:querydsl-ksp-codegen:7.0")
 
     // --- Querydsl ---
     implementation("io.github.openfeign.querydsl:querydsl-jpa:7.0")
