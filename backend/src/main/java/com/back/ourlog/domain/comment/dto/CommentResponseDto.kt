@@ -7,7 +7,7 @@ data class CommentResponseDto(
     val id: Int,
     val userId: Int,
     val nickname: String,
-    val profileImageUrl: String ?,
+    val profileImageUrl: String?,
     val content: String,
     val createdAt: LocalDateTime
 ) {

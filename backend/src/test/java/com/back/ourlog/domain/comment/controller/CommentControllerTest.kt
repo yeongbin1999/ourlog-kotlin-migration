@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.data.repository.findByIdOrNull
 import org.springframework.http.MediaType
 import org.springframework.security.test.context.support.WithUserDetails
 import org.springframework.test.context.ActiveProfiles
@@ -124,8 +125,8 @@ class CommentControllerTest @Autowired constructor(
             .andExpect(jsonPath("$.msg").value("1번 댓글이 수정되었습니다."))
 
         // 실제 1번 댓글의 content 가 변했는지 확인
-        val comment = commentRepository.findById(1).get()
-        assertThat(comment.content).isEqualTo("안녕하시렵니까?")
+        val comment = commentRepository.findByIdOrNull(1)
+        assertThat(comment!!.content).isEqualTo("안녕하시렵니까?")
     }
 
     @Test
