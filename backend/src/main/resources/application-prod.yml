@@ -17,5 +17,5 @@ cookie:
 
 app:
   sql:
-    lineMonthly: "DATE_FORMAT(d.created_at, '%Y-%m')"
-    lineDaily: "DATE_FORMAT(d.created_at, '%Y-%m-%d')"
+    lineMonthly: "DATE_FORMAT({0}, '%Y-%m')"
+    lineDaily: "DATE_FORMAT({0}, '%Y-%m-%d')"
