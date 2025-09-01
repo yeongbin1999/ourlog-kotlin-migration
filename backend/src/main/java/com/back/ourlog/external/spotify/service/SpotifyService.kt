@@ -18,7 +18,7 @@ class SpotifyService(
     private val log = LoggerFactory.getLogger(SpotifyService::class.java)
 
     fun searchMusicByExternalId(externalId: String): ContentSearchResultDto {
-        return try {
+        try {
             val id = externalId.removePrefix("spotify-")
             val track = spotifyClient.getTrackById(id)
                 ?: throw CustomException(ErrorCode.CONTENT_NOT_FOUND)
@@ -26,60 +26,56 @@ class SpotifyService(
             val artistId = track.artists?.firstOrNull()?.id
                 ?: throw CustomException(ErrorCode.CONTENT_NOT_FOUND)
 
-            val genres = spotifyClient.fetchGenresByArtistId(artistId).filterNotNull()
-            toContentSearchResult(track, genres)
+            val artistInfo = spotifyClient.getSeveralArtists(listOf(artistId))
+            val genres = artistInfo?.artists?.firstOrNull()?.genres?.filterNotNull() ?: emptyList()
+
+            return toContentSearchResult(track, genres)
+        } catch (e: CustomException) {
+            throw e
         } catch (e: Exception) {
+            log.error("Failed to search music by external ID: {}", externalId, e)
             throw CustomException(ErrorCode.EXTERNAL_API_ERROR)
         }
     }
 
     fun searchMusicByTitle(title: String): List<ContentSearchResultDto> {
         val response = spotifyClient.searchTrack(title)
-        val tracks = response?.tracks?.items?.filterNotNull() ?: emptyList()
+        val tracks = response?.tracks?.items?.filterNotNull() ?: return emptyList()
 
-        // 초기 검색 결과의 트랙 필터링 + 정렬
-        return tracks
-            .filter { it.name?.lowercase()?.contains(title.lowercase()) == true }
+        val validTracks = tracks
+            .filter { it.name?.lowercase()?.contains(title.lowercase()) == true && it.artists?.firstOrNull()?.id != null }
             .sortedByDescending { it.popularity }
             .take(10)
-            .map { track ->
-                // 각 트랙에 대한 아티스트 ID
-                val artistId = track.artists?.firstOrNull()?.id
 
-                // 아티스트 ID가 있을 경우에만 장르 조회
-                val genres = if (artistId != null) {
-                    try {
-                        spotifyClient.fetchGenresByArtistId(artistId).filterNotNull()
-                    } catch (e: Exception) {
-                        log.error("아티스트 {}의 장르 조회 실패", artistId, e)
-                        emptyList() // 특정 아티스트 조회 실패 시에도 다음 로직이 진행되도록 처리
-                    }
-                } else {
-                    emptyList()
-                }
+        if (validTracks.isEmpty()) return emptyList()
 
-                // 이미 가지고 있는 track 정보와 방금 조회한 genres로 DTO 직접 생성
-                toContentSearchResult(track, genres)
-            }
+        val artistIds = validTracks.mapNotNull { it.artists?.firstOrNull()?.id }.distinct()
+
+        // 단 한 번의 API 호출로 모든 아티스트의 장르 정보를 가져옴
+        val artistsResponse = spotifyClient.getSeveralArtists(artistIds)
+
+        val artistGenresMap = artistsResponse?.artists?.filterNotNull()?.associate {
+            it.id!! to (it.genres?.filterNotNull() ?: emptyList())
+        } ?: emptyMap()
+
+        return validTracks.map { track ->
+            val artistId = track.artists?.firstOrNull()?.id
+            val genres = artistGenresMap[artistId] ?: emptyList()
+            toContentSearchResult(track, genres)
+        }
     }
 
     private fun toContentSearchResult(trackItem: TrackItem, genres: List<String>): ContentSearchResultDto {
-        val creatorName = trackItem.artists?.firstOrNull()?.name
-        val posterUrl = trackItem.album?.images?.firstOrNull()?.url
-        val releaseDate = trackItem.album?.releaseDate
-
-        val releasedAt = try {
-            releaseDate?.let { LocalDate.parse(it).atStartOfDay() }
-        } catch (ignored: Exception) {
-            null
+        val releasedAt = trackItem.album?.releaseDate?.let {
+            runCatching { LocalDate.parse(it).atStartOfDay() }.getOrNull()
         }
 
         return ContentSearchResultDto(
             externalId = "spotify-${trackItem.id}",
             title = trackItem.name,
-            creatorName = creatorName,
+            creatorName = trackItem.artists?.firstOrNull()?.name,
             description = null,
-            posterUrl = posterUrl,
+            posterUrl = trackItem.album?.images?.firstOrNull()?.url,
             releasedAt = releasedAt,
             type = ContentType.MUSIC,
             genres = genres

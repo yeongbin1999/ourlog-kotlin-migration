@@ -23,5 +23,7 @@ data class TmdbMovieDto(
     @JsonProperty("vote_count")
     val voteCount: Int = 0,
 
-    val genres: List<TmdbGenreDto?>? = null
+    val genres: List<TmdbGenreDto?>? = null,
+
+    val credits: TmdbCreditsResponse? = null
 )

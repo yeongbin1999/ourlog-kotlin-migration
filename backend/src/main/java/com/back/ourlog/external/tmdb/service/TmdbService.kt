@@ -22,7 +22,7 @@ class TmdbService(
     fun searchMovieByExternalId(externalId: String): ContentSearchResultDto {
         return try {
             val id = externalId.removePrefix("tmdb-")
-            val movie = tmdbClient.fetchMovieById(id)
+            val movie = tmdbClient.fetchMovieById(id, "credits")
                 ?: throw CustomException(ErrorCode.CONTENT_NOT_FOUND)
             toContentSearchResult(movie)
         } catch (e: CustomException) {
@@ -34,8 +34,8 @@ class TmdbService(
     }
 
     fun searchMovieByTitle(title: String): List<ContentSearchResultDto> {
-        val response = tmdbClient.searchMovie(title)
-        val movies = response?.results ?: emptyList()
+        val response = tmdbClient.searchMovie(title, "credits")
+        val movies = response?.results ?: return emptyList()
 
         return movies
             .filterNotNull()
@@ -46,7 +46,11 @@ class TmdbService(
     }
 
     private fun toContentSearchResult(movie: TmdbMovieDto): ContentSearchResultDto {
-        val directorName = fetchDirectorName(movie.id)
+        val directorName = movie.credits?.crew
+            ?.filterNotNull()
+            ?.firstOrNull { it.job.equals("Director", ignoreCase = true) }
+            ?.name
+
         val genres = extractGenresFromTmdb(movie.genres ?: emptyList())
 
         return ContentSearchResultDto(
@@ -59,19 +63,6 @@ class TmdbService(
             type = ContentType.MOVIE,
             genres = genres
         )
-    }
-
-    private fun fetchDirectorName(movieId: Int): String? {
-        return try {
-            tmdbClient.fetchCredits(movieId)
-                ?.crew
-                ?.filterNotNull()
-                ?.firstOrNull { it.job.equals("Director", ignoreCase = true) }
-                ?.name
-        } catch (e: Exception) {
-            log.warn("Could not fetch director name for movie ID: {}. Reason: {}", movieId, e.message)
-            null
-        }
     }
 
     private fun extractGenresFromTmdb(genreDtos: List<TmdbGenreDto?>): List<String> {
