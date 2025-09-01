@@ -18,7 +18,6 @@ import org.springframework.transaction.annotation.Transactional
 import org.springframework.util.StopWatch
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 
 @Service
 @Transactional(readOnly = true)
@@ -28,12 +27,13 @@ class StatisticsService(
 
     private val log = LoggerFactory.getLogger(javaClass)
 
-    companion object {
-        const val NO_DATA_MESSAGE = "없음"
-        const val ZERO_COUNT = 0L
-    }
-
-    /** 통계 카드 조회 */
+    /**
+     * 통계 카드 정보를 조합하여 반환한다.
+     * - 총 감상 수, 평균 평점, 선호 타입 및 감정 통계를 한 번에 조회
+     *
+     * @param userId 통계를 조회할 사용자 ID
+     * @return StatisticsCardDto 사용자별 통계 카드 DTO
+     */
     fun getStatisticsCardByUserId(userId: Int): StatisticsCardDto = StatisticsCardDto(
             getTotalDiaryCount(userId),
             getAverageRating(userId),
@@ -41,130 +41,157 @@ class StatisticsService(
             getFavoriteEmotionAndCount(userId)
         )
 
-    /** 총 다이어리 개수 */
+    /**
+     * 사용자별 총 다이어리 개수를 조회한다.
+     *
+     * @param userId 사용자 ID
+     * @return 다이어리 총 개수, 없으면 0L
+     */
     private fun getTotalDiaryCount(userId: Int): Long = statisticsRepository.getTotalDiaryCountByUserId(userId)
 
-    /** 평균 평점 (없으면 0.0) */
+    /**
+     * 사용자별 평균 평점을 조회한다.
+     *
+     * @param userId 사용자 ID
+     * @return 평균 평점 (없으면 0.0)
+     */
     private fun getAverageRating(userId: Int): Double = statisticsRepository.getAverageRatingByUserId(userId)
 
-    /** 좋아하는 타입 및 개수 (없으면 new(없음, 0L)) */
+    /**
+     * 사용자별 선호 콘텐츠 타입과 해당 개수를 조회한다.
+     *
+     * @param userId 사용자 ID
+     * @return FavoriteTypeAndCountDto(타입, 개수), 없으면 FavoriteTypeAndCountDto("없음", 0L)
+     */
     private fun getFavoriteTypeAndCount(userId: Int): FavoriteTypeAndCountDto  = statisticsRepository.findFavoriteTypeAndCountByUserId(userId)
 
-    /** 좋아하는 감정(Tag) 및 개수 (없으면 new(없음, 0L)) */
+    /**
+     * 사용자별 선호 감정 태그와 해당 개수를 조회한다.
+     *
+     * @param userId 사용자 ID
+     * @return FavoriteEmotionAndCountDto(감정, 개수), 없으면 FavoriteEmotionAndCountDto("없음", 0L)
+     */
     private fun getFavoriteEmotionAndCount(userId: Int): FavoriteEmotionAndCountDto  = statisticsRepository.findFavoriteEmotionAndCountByUserId(userId)
 
-    /** 특정 회원의 최근 6개월 월 별 감상 수 조회 */
-    fun getLast6MonthsDiaryCountsByUser(userId: Int?): List<MonthlyDiaryCount> {
-        val startMonth = LocalDate.now().minusMonths(5).withDayOfMonth(1)
-
-        // DB조회: 결과는 작성된 달에만 존재
-        val counts = statisticsRepository.count6MonthlyDiaryByUserId(userId, startMonth.atStartOfDay())
-
-        // Map으로 매핑 (period -> views)
-        val countMap = counts.associate { it.period to it.views }
-
-        val formatter = DateTimeFormatter.ofPattern("yyyy-MM")
-
-        // 6개월 범위 내 모든 월에 대해 조회수 매핑, 없는 달은 0으로 초기화
-        return (0..5).map { i ->
-            val period = startMonth.plusMonths(i.toLong()).format(formatter)
-            val views = countMap.getOrDefault(period, ZERO_COUNT)
-            MonthlyDiaryCount(period, views)
-        }
+    /**
+     * 사용자별 최근 6개월 월 별 감상 수를 조회한다
+     *
+     * @param userId 사용자 ID
+     * @return List<MonthlyDiaryCount> 최근 6개월 월 별 감상 수 리스트, 없으면 빈 리스트
+     */
+    fun getLast6MonthsDiaryCountsByUser(userId: Int): List<MonthlyDiaryCount> {
+        val startMonth = LocalDate.now().minusMonths(5).withDayOfMonth(1).atStartOfDay()
+        return statisticsRepository.count6MonthlyDiaryByUserId(userId, startMonth)
     }
 
-    /** 특정 회원의 콘텐츠 타입 분포 조회 */
-    fun getTypeDistributionByUser(userId: Int): List<TypeCountDto> {
-        val result = statisticsRepository.findTypeCountsByUserId(userId)
-        return if (result.isNullOrEmpty()) {
-            listOf(TypeCountDto(NO_DATA_MESSAGE, ZERO_COUNT))
-        } else result
-    }
+    /**
+     * 사용자별 콘텐츠 타입 분포를 조회한다
+     *
+     * @param userId 사용자 ID
+     * @return List<TypeCountDto> 콘텐츠 타입별 감상 수 리스트, 없으면 빈 리스트
+     */
+    fun getTypeDistributionByUser(userId: Int): List<TypeCountDto> = statisticsRepository.findTypeCountsByUserId(userId)
 
-    /** 특정 회원의 콘텐츠 타입 그래프 조회 */
+
+    /**
+     * 사용자별 콘텐츠 타입 추이 그래프, 콘텐츠 타입 순위 조회
+     *
+     * @param userId 사용자 ID
+     * @param period 조회 기간 옵션
+     * @return TypeGraphResponse(타입별 추이 그래프 리스트, 타입별 순위 리스트), 없으면 빈 리스트
+     */
     fun getTypeGraph(userId: Int, period: PeriodOption): TypeGraphResponse {
-        val now = LocalDateTime.now()
-        val start = calculateStart(period, now)
-        val end = now.plusDays(1)
+        val timeSet = TimeSet(period)
 
         val line = when (period) {
-            PeriodOption.LAST_MONTH, PeriodOption.LAST_WEEK -> statisticsRepository.findTypeLineDaily(userId, start, end)
-            else -> statisticsRepository.findTypeLineMonthly(userId, start, end)
+            PeriodOption.LAST_MONTH, PeriodOption.LAST_WEEK -> statisticsRepository.findTypeLineDaily(userId, timeSet.start, timeSet.end)
+            else -> statisticsRepository.findTypeLineMonthly(userId, timeSet.start, timeSet.end)
         }
 
-        val ranking = statisticsRepository.findTypeRanking(userId, start, end)
+        val ranking = statisticsRepository.findTypeRanking(userId, timeSet.start, timeSet.end)
 
         return TypeGraphResponse(line, ranking)
     }
 
-    /** 특정 회원의 장르 타입 그래프 조회 */
+    /**
+     * 사용자별 선호 장르 추이 그래프, 선호 장르 순위 조회
+     *
+     * @param userId 사용자 ID
+     * @param period 조회 기간 옵션
+     * @return GenreGraphResponse(장르별 추이 그래프 리스트, 장르별 순위 리스트), 없으면 빈 리스트
+     */
     fun getGenreGraph(userId: Int, period: PeriodOption): GenreGraphResponse {
-        val stopWatch = StopWatch()
-        val now = LocalDateTime.now()
-        val start = calculateStart(period, now)
-        val end = now.plusDays(1)
+        val timeSet = TimeSet(period)
 
-        val line: List<GenreLineGraphDto>
-        when (period) {
-            PeriodOption.LAST_MONTH, PeriodOption.LAST_WEEK -> {
-                stopWatch.start("findGenreLineDaily")
-                line = statisticsRepository.findGenreLineDaily(userId, start, end)
-                stopWatch.stop()
-            }
-            else -> {
-                stopWatch.start("findGenreLineMonthly")
-                line = statisticsRepository.findGenreLineMonthly(userId, start, end)
-                stopWatch.stop()
-            }
+        val line = when (period) {
+            PeriodOption.LAST_MONTH, PeriodOption.LAST_WEEK -> statisticsRepository.findGenreLineDaily(userId, timeSet.start, timeSet.end)
+            else -> statisticsRepository.findGenreLineMonthly(userId, timeSet.start, timeSet.end)
         }
 
-        stopWatch.start("findGenreRanking")
-        val ranking = statisticsRepository.findGenreRanking(userId, start, end)
-        stopWatch.stop()
+        val ranking = statisticsRepository.findGenreRanking(userId, timeSet.start, timeSet.end)
 
-        log.info("StatisticsService.getGenreGraph - StopWatch: {}", stopWatch.prettyPrint())
         return GenreGraphResponse(line, ranking)
     }
 
-    /** 특정 회원의 감정 그래프 조회 */
+    /**
+     * 사용자별 감정 추이 그래프, 감정 순위 조회
+     *
+     * @param userId 사용자 ID
+     * @param period 조회 기간 옵션
+     * @return EmotionGraphResponse(감정별 추이 그래프 리스트, 감정별 순위 리스트), 없으면 빈 리스트
+     */
     fun getEmotionGraph(userId: Int, period: PeriodOption): EmotionGraphResponse {
-        val now = LocalDateTime.now()
-        val start = calculateStart(period, now)
-        val end = now.plusDays(1)
+        val timeSet = TimeSet(period)
 
         val line = when (period) {
-            PeriodOption.LAST_MONTH, PeriodOption.LAST_WEEK -> statisticsRepository.findEmotionLineDaily(userId, start, end)
-            else -> statisticsRepository.findEmotionLineMonthly(userId, start, end)
+            PeriodOption.LAST_MONTH, PeriodOption.LAST_WEEK -> statisticsRepository.findEmotionLineDaily(userId, timeSet.start, timeSet.end)
+            else -> statisticsRepository.findEmotionLineMonthly(userId, timeSet.start, timeSet.end)
         }
 
-        val ranking = statisticsRepository.findEmotionRanking(userId, start, end)
+        val ranking = statisticsRepository.findEmotionRanking(userId, timeSet.start, timeSet.end)
 
         return EmotionGraphResponse(line, ranking)
     }
 
-    /** 특정 회원의 OTT 그래프 조회 */
+    /**
+     * 사용자별 OTT 추이 그래프, OTT 순위 조회
+     *
+     * @param userId 사용자 ID
+     * @param period 조회 기간 옵션
+     * @return OttGraphResponse(OTT별 추이 그래프 리스트, OTT별 순위 리스트), 없으면 빈 리스트
+     */
     fun getOttGraph(userId: Int, period: PeriodOption): OttGraphResponse {
-        val now = LocalDateTime.now()
-        val start = calculateStart(period, now)
-        val end = now.plusDays(1)
+        val timeSet = TimeSet(period)
 
         val line = when (period) {
-            PeriodOption.LAST_MONTH, PeriodOption.LAST_WEEK -> statisticsRepository.findOttLineDaily(userId, start, end)
-            else -> statisticsRepository.findOttLineMonthly(userId, start, end)
+            PeriodOption.LAST_MONTH, PeriodOption.LAST_WEEK -> statisticsRepository.findOttLineDaily(userId, timeSet.start, timeSet.end)
+            else -> statisticsRepository.findOttLineMonthly(userId, timeSet.start, timeSet.end)
         }
 
-        val ranking = statisticsRepository.findOttRanking(userId, start, end)
+        val ranking = statisticsRepository.findOttRanking(userId, timeSet.start, timeSet.end)
 
         return OttGraphResponse(line, ranking)
     }
 
-    private fun calculateStart(period: PeriodOption, now: LocalDateTime): LocalDateTime {
-        return when (period) {
-            PeriodOption.THIS_YEAR -> now.withDayOfYear(1)
-            PeriodOption.LAST_6_MONTHS -> now.minusMonths(5).withDayOfMonth(1)
-            PeriodOption.LAST_MONTH -> now.minusMonths(1).withDayOfMonth(1)
-            PeriodOption.LAST_WEEK -> now.minusWeeks(1)
-            else -> LocalDateTime.of(1970, 1, 1, 0, 0)
+    /**
+     * 기간 옵션에 따른 시작, 끝 날짜 계산
+     * - end는 항상 현재 시간 + 1일 (오늘 포함)
+     */
+    class TimeSet(
+        val period: PeriodOption
+    ) {
+        val now = LocalDateTime.now()
+        val start = calculateStart(period, now)
+        val end = now.plusDays(1)
+
+        private fun calculateStart(period: PeriodOption, now: LocalDateTime): LocalDateTime {
+            return when (period) {
+                PeriodOption.THIS_YEAR -> now.withDayOfYear(1)
+                PeriodOption.LAST_6_MONTHS -> now.minusMonths(5).withDayOfMonth(1)
+                PeriodOption.LAST_MONTH -> now.minusMonths(1).withDayOfMonth(1)
+                PeriodOption.LAST_WEEK -> now.minusWeeks(1)
+                else -> LocalDateTime.of(1970, 1, 1, 0, 0)
+            }
         }
     }
 }

@@ -76,8 +76,8 @@ cookie:
 app:
   base-url: ${BASE_URL:http://localhost:8080}
   sql:
-    lineMonthly: "FORMATDATETIME(d.created_at, 'yyyy-MM')"
-    lineDaily: "FORMATDATETIME(d.created_at, 'yyyy-MM-dd')"
+    lineMonthly: "FORMATDATETIME({0}, 'yyyy-MM')"
+    lineDaily: "FORMATDATETIME({0}, 'yyyy-MM-dd')"
 
 spotify:
   client-id: ${SPOTIFY_CLIENT_ID}
