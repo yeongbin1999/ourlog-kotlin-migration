@@ -12,16 +12,16 @@ import { axiosInstance } from "@/lib/api-client"
 
 async function fetchCard(): Promise<StatisticsCardDto> {
     const res = await axiosInstance.get('/api/v1/statistics/card');
-    return res.data;
+    return res.data.data;
 }
 async function fetchMonthlyDiaryGraph(): Promise<MonthlyDiaryCount[]> {
     const res = await axiosInstance.get('/api/v1/statistics/monthly-diary-graph');
-    const data = res.data;
+    const data = res.data.data;
     return Array.isArray(data) ? data : [];
 }
 async function fetchTypeDistribution(): Promise<TypeCountDto[]> {
     const res = await axiosInstance.get('/api/v1/statistics/type-distribution');
-    const data = res.data;
+    const data = res.data.data;
     return Array.isArray(data) ? data : [];
 }
 async function fetchTypeGraph(period: string): Promise<TypeGraphResponse> {
@@ -37,7 +37,7 @@ async function fetchTypeGraph(period: string): Promise<TypeGraphResponse> {
   const periodOption = periodMap[period] || "ALL";
   
   const res = await axiosInstance.get(`/api/v1/statistics/type-graph?period=${periodOption}`);
-  return res.data;
+  return res.data.data;
 }
 async function fetchGenreGraph(period: string): Promise<GenreGraphResponse> {
   const periodMap: Record<string, string> = {
@@ -49,7 +49,7 @@ async function fetchGenreGraph(period: string): Promise<GenreGraphResponse> {
   };
   const periodOption = periodMap[period] || "ALL";
   const res = await axiosInstance.get(`/api/v1/statistics/genre-graph?period=${periodOption}`);
-  return res.data;
+  return res.data.data;
 }
 
 async function fetchEmotionGraph(period: string): Promise<EmotionGraphResponse> {
@@ -62,7 +62,7 @@ async function fetchEmotionGraph(period: string): Promise<EmotionGraphResponse> 
   };
   const periodOption = periodMap[period] || "ALL";
   const res = await axiosInstance.get(`/api/v1/statistics/emotion-graph?period=${periodOption}`);
-  return res.data;
+  return res.data.data;
 }
 
 async function fetchOttGraph(period: string): Promise<OttGraphResponse> {
@@ -75,7 +75,7 @@ async function fetchOttGraph(period: string): Promise<OttGraphResponse> {
   };
   const periodOption = periodMap[period] || "ALL";
   const res = await axiosInstance.get(`/api/v1/statistics/ott-graph?period=${periodOption}`);
-  return res.data;
+  return res.data.data;
 }
 
 // 새로운 타입 정의
@@ -95,13 +95,21 @@ type TypeGraphResponse = {
   typeRanking: TypeRankDto[];
 };
 
+type FavoriteTypeAndCountDto = {
+    favoriteType: string;
+    favoriteTypeCount: number;
+};
+
+type FavoriteEmotionAndCountDto = {
+    favoriteEmotion: string;
+    favoriteEmotionCount: number;
+};
+
 type StatisticsCardDto = {
-  totalDiaryCount: number;
-  averageRating: number;
-  favoriteType: string;
-  favoriteTypeCount: number;
-  favoriteEmotion: string;
-  favoriteEmotionCount: number;
+    totalDiaryCount: number;
+    averageRating: number;
+    favoriteTypeAndCountDto: FavoriteTypeAndCountDto;
+    favoriteEmotionAndCountDto: FavoriteEmotionAndCountDto;
 };
 
 type MonthlyDiaryCount = { period: string; views: number };
@@ -525,8 +533,8 @@ const CustomTooltip = ({ active, payload, label, highlightedLine }: CustomToolti
                             <CardTitle className="text-sm font-medium opacity-90">선호 장르</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{card?.favoriteType}</div>
-                            <p className="text-xs opacity-75 mt-1">{card?.favoriteTypeCount}회 감상</p>
+                            <div className="text-2xl font-bold">{card?.favoriteTypeAndCountDto?.favoriteType}</div>
+                            <p className="text-xs opacity-75 mt-1">{card?.favoriteTypeAndCountDto?.favoriteTypeCount}회 감상</p>
                         </CardContent>
                     </Card>
 
@@ -536,10 +544,10 @@ const CustomTooltip = ({ active, payload, label, highlightedLine }: CustomToolti
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold flex items-center gap-1">
-                                {card?.favoriteEmotion}
+                                {card?.favoriteEmotionAndCountDto?.favoriteEmotion}
                                 {/* <Heart className="h-5 w-5 fill-current" /> */}
                             </div>
-                            <p className="text-xs opacity-75 mt-1">{card?.favoriteEmotionCount}회 경험</p>
+                            <p className="text-xs opacity-75 mt-1">{card?.favoriteEmotionAndCountDto?.favoriteEmotionCount}회 경험</p>
                         </CardContent>
                     </Card>
                 </div>
