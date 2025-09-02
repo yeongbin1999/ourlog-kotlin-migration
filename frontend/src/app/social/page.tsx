@@ -6,6 +6,14 @@ import TimelineCard from "../social/components/TimelineCard";
 import { TimelineItem } from "../social/types/timeline";
 import "bootstrap/dist/css/bootstrap.min.css";
 
+interface TimelineResponse {
+  resultCode: string;
+  msg: string;
+  data: TimelineItem[];
+  isSuccess: boolean;
+  isFail: boolean;
+}
+
 export default function TimelinePage() {
   const [items, setItems] = useState<TimelineItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -18,8 +26,8 @@ export default function TimelinePage() {
         if (!res.ok) throw new Error("Failed to fetch timeline");
         return res.json();
       })
-      .then((data: TimelineItem[]) => {
-        setItems(data);
+      .then((data: TimelineResponse) => {
+        setItems(data.data);
       })
       .catch((err) => {
         console.error(err);
@@ -30,8 +38,6 @@ export default function TimelinePage() {
 
   return (
     <main className="container mt-5">
-
-
       {loading && <p>⏳ 불러오는 중...</p>}
       {error && <p className="text-danger">{error}</p>}
 
