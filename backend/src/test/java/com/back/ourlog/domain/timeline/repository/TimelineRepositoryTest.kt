@@ -35,7 +35,7 @@ class TimelineRepositoryTest {
     @Test
     fun `findPublicDiaries는 공개된 일기만 생성일자 내림차순으로 조회한다`() {
         // Arrange (Given)
-        val user = userRepository.save(User(nickname = "testUser", email = "test@test.com"))
+        val user = userRepository.save(User(nickname = "testUser", password = "1234", email = "test@test.com"))
 
         // 2. Diary를 만들기 전, 의존성인 Content 객체를 먼저 생성하고 저장합니다.
         val content = contentRepository.save(

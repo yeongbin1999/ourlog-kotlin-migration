@@ -23,11 +23,11 @@ class User(
     @Column(unique = true, length = 50, nullable = false)
     val email: String,
 
-    @Column(nullable = false, length = 50)
-    var nickname: String,
-
     @Column(nullable = false, length = 100)
     var password: String,
+
+    @Column(nullable = false, length = 50)
+    var nickname: String,
 
     @Column(nullable = false, length = 20)
     var provider: String = "local",
@@ -40,7 +40,7 @@ class User(
 ) {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Int = 0
+    var id: Int = 0
 
     @CreatedDate
     @Column(updatable = false)

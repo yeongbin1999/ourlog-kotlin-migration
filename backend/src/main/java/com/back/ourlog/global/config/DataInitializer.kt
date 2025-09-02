@@ -21,7 +21,6 @@ import com.back.ourlog.domain.tag.entity.DiaryTag
 import com.back.ourlog.domain.tag.entity.Tag
 import com.back.ourlog.domain.tag.repository.TagRepository
 import com.back.ourlog.domain.user.entity.User
-import com.back.ourlog.domain.user.entity.User.Companion.createNormalUser
 import com.back.ourlog.domain.user.repository.UserRepository
 import jakarta.transaction.Transactional
 import org.springframework.boot.CommandLineRunner
@@ -46,7 +45,7 @@ class DataInitializer(
     private val passwordEncoder: PasswordEncoder
 ) : CommandLineRunner {
 
-    private val random = kotlin.random.Random(42)
+    private val random = Random(42L) // 항상 동일한 랜덤 패턴
 
     @Transactional
     override fun run(vararg args: String?) {
@@ -70,76 +69,65 @@ class DataInitializer(
         println("✅ 더미 데이터 생성 완료!")
     }
 
-    private fun createTags(): MutableList<Tag> =
-        tagRepository.saveAll(
-            listOf("힐링", "감동", "로맨스", "스릴러", "코미디", "액션", "음악", "철학")
-                .map { Tag(it) }
-        )
+    private fun createTags(): List<Tag> =
+        tagRepository.saveAll(listOf("힐링", "감동", "로맨스", "스릴러", "코미디", "액션", "음악", "철학").map { Tag(it) })
 
-    private fun createGenres(): MutableList<Genre> =
-        genreRepository.saveAll(
-            listOf("드라마", "SF", "판타지", "애니메이션", "다큐멘터리")
-                .map { Genre(it) }
-        )
+    private fun createGenres(): List<Genre> =
+        genreRepository.saveAll(listOf("드라마", "SF", "판타지", "애니메이션", "다큐멘터리").map { Genre(it) })
 
-    private fun createOtts(): MutableList<Ott> =
-        ottRepository.saveAll(
-            listOf("Netflix", "Disney+", "Prime Video", "TVING", "Watcha")
-                .map {
-                    Ott(it, "https://logo.com/${it.lowercase().replace("+", "")}")
-                }
-        )
+    private fun createOtts(): List<Ott> =
+        ottRepository.saveAll(listOf("Netflix", "Disney+", "Prime Video", "TVING", "Watcha")
+            .map { Ott(it, "https://logo.com/${it.lowercase().replace("+", "")}") })
 
-    private fun createUsers(count: Int): MutableList<User> {
-        val users = (1..count).map { i ->
+    private fun createUsers(count: Int): List<User> {
+        val users = mutableListOf<User>()
+        for (i in 1..count) {
             val email = "user$i@test.com"
             val password = passwordEncoder.encode("password$i")
             val nickname = "유저$i"
             val profile = "https://picsum.photos/200?random=$i"
             val bio = "안녕하세요! 저는 $nickname 입니다."
-            createNormalUser(email, password, nickname, profile, bio)
+            users.add(User.createNormalUser(email, password, nickname, profile, bio))
         }
         return userRepository.saveAll(users)
     }
 
-    private fun createContents(count: Int): MutableList<Content> =
-        contentRepository.saveAll(
-            (1..count).map { i ->
-                Content(
-                    title = "콘텐츠 $i",
-                    type = ContentType.values()[random.nextInt(ContentType.values().size)],
-                    creatorName = "제작자 ${(i % 5) + 1}",
-                    description = "이것은 콘텐츠 $i 에 대한 설명입니다.",
-                    posterUrl = "https://picsum.photos/300?content=$i",
-                    releasedAt = LocalDateTime.now().minusDays(random.nextLong(1000)),
-                    externalId = "EXT-$i"
-                )
-            }
-        )
+    private fun createContents(count: Int): List<Content> {
+        val contents = mutableListOf<Content>()
+        for (i in 1..count) {
+            val title = "콘텐츠 $i"
+            val type = ContentType.values()[random.nextInt(ContentType.values().size)]
+            val creatorName = "제작자 ${i % 5 + 1}"
+            val description = "이것은 $title 에 대한 설명입니다."
+            val posterUrl = "https://picsum.photos/300?content=$i"
+            val releasedAt = LocalDateTime.now().minusDays(random.nextInt(1000).toLong())
+            val externalId = "EXT-$i"
+            contents.add(Content(title, type, creatorName, description, posterUrl, releasedAt, externalId))
+        }
+        return contentRepository.saveAll(contents)
+    }
 
-    private fun createDiaries(users: List<User>, contents: List<Content>, count: Int): MutableList<Diary> =
-        diaryRepository.saveAll(
-            (1..count).map {
-                val user = users.random(random)
-                val content = contents.random(random)
-                Diary(
-                    user = user,
-                    content = content,
-                    title = "다이어리 $it",
-                    contentText = "이것은 다이어리 $it 의 본문 내용입니다.",
-                    rating = (random.nextInt(5) + 1).toFloat(),
-                    isPublic = random.nextBoolean()
-                )
-            }
-        )
+    private fun createDiaries(users: List<User>, contents: List<Content>, count: Int): List<Diary> {
+        val diaries = mutableListOf<Diary>()
+        for (i in 1..count) {
+            val user = users[random.nextInt(users.size)]
+            val content = contents[random.nextInt(contents.size)]
+            val title = "다이어리 $i"
+            val contentText = "이것은 다이어리 $i 의 본문 내용입니다."
+            val rating = random.nextInt(5) + 1f
+            val isPublic = random.nextBoolean()
+            diaries.add(Diary(user, content, title, contentText, rating, isPublic))
+        }
+        return diaryRepository.saveAll(diaries)
+    }
 
     private fun createFollows(users: List<User>) {
         val follows = mutableListOf<Follow>()
-        users.forEach { follower ->
+        for (follower in users) {
             val followCount = 3 + random.nextInt(3)
             val alreadyFollowed = mutableSetOf<User>()
             repeat(followCount) {
-                val followee = users.random(random)
+                val followee = users[random.nextInt(users.size)]
                 if (followee != follower && alreadyFollowed.add(followee)) {
                     follows.add(Follow(follower, followee))
                     follower.increaseFollowingsCount()
@@ -154,19 +142,20 @@ class DataInitializer(
         val comments = mutableListOf<Comment>()
         val likes = mutableListOf<Like>()
 
-        diaries.forEach { diary ->
+        for (diary in diaries) {
             repeat(2 + random.nextInt(3)) {
-                val commenter = users.random(random)
+                val commenter = users[random.nextInt(users.size)]
                 comments.add(Comment(diary, commenter, "이 다이어리 정말 좋네요! ${UUID.randomUUID()}"))
             }
+
+            val alreadyLiked = mutableSetOf<User>()
             repeat(1 + random.nextInt(5)) {
-                val liker = users.random(random)
-                if (!likes.any { it.user == liker && it.diary == diary }) {
+                val liker = users[random.nextInt(users.size)]
+                if (alreadyLiked.add(liker)) {
                     likes.add(Like(liker, diary))
                 }
             }
         }
-
         commentRepository.saveAll(comments)
         likeRepository.saveAll(likes)
     }
@@ -177,7 +166,7 @@ class DataInitializer(
         genres: List<Genre>,
         otts: List<Ott>
     ) {
-        diaries.forEach { diary ->
+        for (diary in diaries) {
             diary.diaryTags.addAll(tags.shuffled(random).take(1 + random.nextInt(3)).map { DiaryTag(diary, it) })
             diary.diaryGenres.addAll(genres.shuffled(random).take(1 + random.nextInt(2)).map { DiaryGenre(diary, it) })
             diary.diaryOtts.addAll(otts.shuffled(random).take(1 + random.nextInt(2)).map { DiaryOtt(diary, it) })
