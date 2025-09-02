@@ -35,7 +35,7 @@ export default function CommentMenuButton({
       </button>
 
       {open && (
-        <div className="absolute right-0 top-12 w-36 bg-white border border-gray-200 rounded-2xl shadow-xl z-30 overflow-hidden animate-in fade-in duration-200">
+        <div className="absolute right-10 top-0 w-30 bg-white border border-gray-200 rounded-2xl shadow-xl z-10 overflow-hidden animate-in fade-in duration-200">
           <button
             onClick={() => {
               setOpen(false);
