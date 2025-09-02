@@ -32,11 +32,25 @@ type TimelineItem = BaseTimelineItem & {
   posterUrl?: string;
   releasedAt?: string;
   imageUrl?: string;
+
+  // 일부 백엔드에서 snake_case로 올 수 있는 필드 대비(캐스팅 회피)
+  content_type?: string;
+
+  // UI에서 참조하는 부가 필드(없으면 Optional)
+  content?: string;
+  likeCount?: number;
+  isLiked?: boolean;
+  commentCount?: number;
+  user?: {
+    nickname: string;
+    profileImageUrl?: string | null;
+  };
+  createdAt: string;
 };
 
 const TAG_COLORS = [
   "bg-blue-50 text-gray-800 border-blue-100",
-  "bg-blue-50 text-gray-800 border-blue-100", 
+  "bg-blue-50 text-gray-800 border-blue-100",
   "bg-blue-50 text-gray-800 border-blue-100",
   "bg-blue-50 text-gray-800 border-blue-100",
   "bg-blue-50 text-gray-800 border-blue-100",
@@ -50,9 +64,7 @@ const getTagColor = (i: number) => TAG_COLORS[i % TAG_COLORS.length];
 const typeLabel = (raw?: string) => {
   const key = (raw ?? "").toUpperCase();
   return (
-    { MOVIE: "🎬 영화", BOOK: "📚 도서", MUSIC: "🎵 음악" }[key] ??
-    raw ??
-    ""
+    { MOVIE: "🎬 영화", BOOK: "📚 도서", MUSIC: "🎵 음악" }[key] ?? raw ?? ""
   );
 };
 
@@ -70,7 +82,6 @@ function RatingStars({ rating }: { rating: number }) {
           ★
         </span>
       ))}
-
     </div>
   );
 }
@@ -82,7 +93,9 @@ function TagPills({ tags = [] as string[] }) {
       {tags.slice(0, 8).map((t, i) => (
         <span
           key={`${t}-${i}`}
-          className={`px-3 py-1 rounded-full text-xs font-semibold shadow-sm transition-all duration-200 hover:scale-105 border ${getTagColor(i)}`}
+          className={`px-3 py-1 rounded-full text-xs font-semibold shadow-sm transition-all duration-200 hover:scale-105 border ${getTagColor(
+            i
+          )}`}
         >
           {t.startsWith("#") ? t : `#${t}`}
         </span>
@@ -96,31 +109,21 @@ export default function TimelineCard({ item }: { item: TimelineItem }) {
 
   // meta 우선 선택
   const meta: ContentMeta =
-    item.contentMeta ??
-    item.contentInfo ??
-    item.contentDetail ??
-    item.contentObj ??
-    {};
+    item.contentMeta ?? item.contentInfo ?? item.contentDetail ?? item.contentObj ?? {};
 
-  // 타입 결정
-  const _typeRaw =
-    meta.type ||
-    item.type ||
-    item.contentType ||
-    (item as any)?.content_type;
-
+  // 타입 결정(명시 필드 + snake_case 필드까지 커버)
+  const _typeRaw = meta.type || item.type || item.contentType || item.content_type;
   const _typeText = typeLabel(_typeRaw);
 
   // 포스터/날짜/제목
   const poster =
     meta.posterUrl || item.posterUrl || item.imageUrl || "/images/no-image.png";
   const released = meta.releasedAt || item.releasedAt || item.createdAt || "";
-  const title = meta.title || item.title || "제목 없음";
+  const title = meta.title || (item as { title?: string }).title || "제목 없음";
   const preview = item.content ? item.content.slice(0, 100) : "";
 
   // 사용자 입력 태그 우선
-  const tags =
-    (item.tagNames && item.tagNames.length ? item.tagNames : item.tags) || [];
+  const tags = (item.tagNames && item.tagNames.length ? item.tagNames : item.tags) || [];
 
   // 평점(없으면 0)
   const rating = typeof item.rating === "number" ? item.rating : 0;
@@ -137,7 +140,7 @@ export default function TimelineCard({ item }: { item: TimelineItem }) {
       const method = isLiked ? "DELETE" : "POST";
       const res = await fetch(`/api/v1/likes/${item.id}`, { method });
       if (!res.ok) throw new Error("좋아요 요청 실패");
-      const data = await res.json();
+      const data: { liked?: boolean; likeCount?: number } = await res.json();
       setIsLiked(!!data.liked);
       setLikeCount(
         typeof data.likeCount === "number"
@@ -145,6 +148,7 @@ export default function TimelineCard({ item }: { item: TimelineItem }) {
           : likeCount + (isLiked ? -1 : 1)
       );
     } catch (err) {
+      // eslint-disable-next-line no-console
       console.error(err);
       alert("좋아요 요청 중 오류가 발생했습니다.");
     }
@@ -159,7 +163,7 @@ export default function TimelineCard({ item }: { item: TimelineItem }) {
     >
       {/* 미니멀 호버 효과 */}
       <div className="absolute inset-0 bg-gray-50 opacity-0 group-hover:opacity-30 transition-opacity duration-300 rounded-2xl" />
-      
+
       {/* 이미지 + 공개/비공개 배지 */}
       <div className="relative h-48 w-full overflow-hidden">
         <Image
@@ -169,15 +173,20 @@ export default function TimelineCard({ item }: { item: TimelineItem }) {
           className="object-cover transition-transform duration-700 group-hover:scale-110"
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
         />
-        
+
         {/* 그라디언트 오버레이 */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
-        
+
         {typeof item.isPublic === "boolean" && (
           <div className="absolute top-3 right-3 flex items-center bg-white/90 backdrop-blur-md text-gray-700 text-xs font-bold px-3 py-1.5 rounded-full shadow-lg border border-white/20">
             {item.isPublic ? (
               <>
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1.5 text-emerald-500" viewBox="0 0 20 20" fill="currentColor">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-3 w-3 mr-1.5 text-emerald-500"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
                   <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
                   <path
                     fillRule="evenodd"
@@ -189,7 +198,12 @@ export default function TimelineCard({ item }: { item: TimelineItem }) {
               </>
             ) : (
               <>
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1.5 text-orange-500" viewBox="0 0 20 20" fill="currentColor">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-3 w-3 mr-1.5 text-orange-500"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
                   <path
                     fillRule="evenodd"
                     d="M13.477 14.89A6 6 0 015.11 6.524l8.367 8.367zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.367zM18 10a8 8 0 11-16 0 8 8 0 0116 0z"
@@ -267,8 +281,8 @@ export default function TimelineCard({ item }: { item: TimelineItem }) {
           <button
             onClick={handleLikeClick}
             className={`group/like flex items-center gap-2 px-3 py-2 rounded-xl transition-all duration-300 ${
-              isLiked 
-                ? "bg-red-50 text-red-600 shadow-sm" 
+              isLiked
+                ? "bg-red-50 text-red-600 shadow-sm"
                 : "hover:bg-red-50 text-gray-500 hover:text-red-500"
             }`}
             aria-label={isLiked ? "좋아요 취소" : "좋아요"}
@@ -278,9 +292,7 @@ export default function TimelineCard({ item }: { item: TimelineItem }) {
             ) : (
               <FaRegHeart className="text-lg transition-transform duration-200 group-hover/like:scale-110" />
             )}
-            <span className="text-sm font-semibold">
-              {likeCount}
-            </span>
+            <span className="text-sm font-semibold">{likeCount}</span>
           </button>
 
           <div className="group/comment flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-blue-50 text-gray-500 hover:text-blue-500 transition-all duration-300">

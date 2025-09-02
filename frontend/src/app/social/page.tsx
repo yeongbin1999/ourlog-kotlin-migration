@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Rss } from "lucide-react"; // RSS 아이콘 추가
+import { Rss } from "lucide-react";
 import TimelineCard from "../social/components/TimelineCard";
 import { TimelineItem } from "../social/types/timeline";
 import { axiosInstance } from "@/lib/api-client";
@@ -15,47 +15,71 @@ interface TimelineResponse {
   isFail: boolean;
 }
 
+type DiaryDetailDto = {
+  contentType?: string;
+  rating?: number;
+  isPublic?: boolean;
+  tagNames?: string[];
+  releasedAt?: string;
+  title?: string;
+};
+
 export default function TimelinePage() {
   const [items, setItems] = useState<TimelineItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    const ac = new AbortController();
+
     const run = async () => {
       setLoading(true);
       setError(null);
       try {
-        const res = await axiosInstance.get("/api/v1/timeline");
-        const base: any[] = unwrapList(res.data);
+        const res = await axiosInstance.get<TimelineResponse>("/api/v1/timeline", {
+          signal: ac.signal,
+        });
+
+        const base = unwrapList<TimelineItem>(res.data);
 
         const enriched = await Promise.all(
           base.map(async (it) => {
             try {
-              const d = await axiosInstance.get(`/api/v1/diaries/${it.id}`);
+              const d = await axiosInstance.get<{ data: DiaryDetailDto }>(
+                `/api/v1/diaries/${it.id}`,
+                { signal: ac.signal }
+              );
               const diary = d.data?.data ?? {};
               return {
                 ...it,
-                contentType: diary.contentType,
+                contentType: diary.contentType ?? it.contentType,
                 rating: typeof diary.rating === "number" ? diary.rating : it.rating,
-                isPublic: typeof diary.isPublic === "boolean" ? diary.isPublic : it.isPublic,
-                tagNames: Array.isArray(diary.tagNames) ? diary.tagNames : it.tagNames,
+                isPublic:
+                  typeof diary.isPublic === "boolean" ? diary.isPublic : it.isPublic,
+                tagNames: Array.isArray(diary.tagNames)
+                  ? diary.tagNames
+                  : it.tagNames,
                 releasedAt: diary.releasedAt ?? it.releasedAt,
-                title: it.title ?? diary.title,
-              };
+                title: it.title ?? diary.title ?? it.title,
+              } as TimelineItem;
             } catch {
               return it;
             }
           })
         );
+
         setItems(enriched);
       } catch (e) {
+        // eslint-disable-next-line no-console
         console.error(e);
         setError("타임라인을 불러오는 데 실패했습니다.");
       } finally {
         setLoading(false);
       }
     };
+
     run();
+    return () => ac.abort();
   }, []);
 
   return (
@@ -118,7 +142,8 @@ export default function TimelinePage() {
                       className="flex justify-center animate-fadeInUp"
                       style={{ animationDelay: `${index * 0.1}s` }}
                     >
-                      <TimelineCard item={item as any} />
+                      {/* any 캐스팅 제거 */}
+                      <TimelineCard item={item} />
                     </div>
                   ))}
                 </div>
@@ -143,7 +168,8 @@ export default function TimelinePage() {
                         아직 공유된 일기가 없어요
                       </h3>
                       <p className="text-gray-500 leading-relaxed">
-                        첫 번째 감상일기를 작성해서<br />
+                        첫 번째 감상일기를 작성해서
+                        <br />
                         커뮤니티를 활성화시켜보세요!
                       </p>
                     </div>

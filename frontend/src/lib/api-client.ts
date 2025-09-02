@@ -1,7 +1,14 @@
-import axios, { AxiosError, InternalAxiosRequestConfig, AxiosInstance, AxiosRequestConfig } from 'axios';
-import { useAuthStore } from '@/stores/authStore';
+import axios from "axios";
+import type {
+  AxiosError,
+  InternalAxiosRequestConfig,
+  AxiosInstance,
+  AxiosRequestConfig,
+  AxiosResponse,
+} from "axios";
+import { useAuthStore } from "@/stores/authStore";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "/";
 
 /**
  * Axios 인스턴스
@@ -9,79 +16,56 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/';
  * 모든 API 요청은 이 인스턴스를 통해 이루어집니다.
  * `withCredentials: true` 옵션을 통해 요청 시 쿠키를 포함하도록 설정합니다.
  */
-const axiosInstance = axios.create({
+export const axiosInstance: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: true,
 });
 
-// Axios 인스턴스를 customInstance라는 이름으로 내보냅니다.
-// orval로 생성된 코드가 이 이름으로 인스턴스를 가져오기 때문입니다.
-export { axiosInstance };
-
-export const customInstance = <T>(config: AxiosRequestConfig, options?: { request?: AxiosRequestConfig }): Promise<T> => {
+/**
+ * orval용 customInstance
+ * - 제너릭 T로 응답 타입을 명시하고, data만 반환
+ */
+export const customInstance = <T>(
+  config: AxiosRequestConfig,
+  options?: { request?: AxiosRequestConfig }
+): Promise<T> => {
   const mergedConfig: AxiosRequestConfig = { ...config, ...options?.request };
-
-  // 1) 절대 URL로 들어오면 오리진을 제거하고 경로만 남겨서 동일 오리진으로 보냄 (Next.js rewrite 타도록)
-  if (typeof mergedConfig.url === 'string' && /^https?:\/\//i.test(mergedConfig.url)) {
-    try {
-      const u = new URL(mergedConfig.url);
-      mergedConfig.url = u.pathname + u.search + u.hash;
-    } catch {
-      // URL 파싱 실패 시 무시
-    }
-  }
-
-  // 2) params에 pageable이 있으면 page/size로 평탄화 → ?page=0&size=10 형태로 전송
-  if (mergedConfig.params && typeof mergedConfig.params === 'object' && (mergedConfig.params as any).pageable) {
-    const { pageable, ...rest } = mergedConfig.params as any;
-    if (pageable && typeof pageable === 'object') {
-      const { page, size, sort } = pageable;
-      mergedConfig.params = { ...rest, page, size, ...(sort ? { sort } : {}) };
-    } else {
-      mergedConfig.params = rest;
-    }
-  }
-
-  return axiosInstance(mergedConfig) as unknown as Promise<T>;
+  return axiosInstance.request<T>(mergedConfig).then((res) => res.data);
 };
 
 /**
  * 요청 인터셉터 (Request Interceptor)
- *
- * API 요청을 보내기 전에 특정 작업을 수행합니다.
- * 여기서는 Zustand 스토어에서 액세스 토큰을 가져와 Authorization 헤더에 추가합니다.
+ * - Zustand 스토어에서 액세스 토큰을 가져와 Authorization 헤더에 추가
  */
 axiosInstance.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const { accessToken } = useAuthStore.getState();
-
     if (accessToken) {
       config.headers.Authorization = `Bearer ${accessToken}`;
     }
     return config;
   },
-  (error: AxiosError) => {
-    return Promise.reject(error);
-  },
+  (error: AxiosError) => Promise.reject(error)
 );
 
 /**
  * 응답 인터셉터 (Response Interceptor)
- *
- * API 응답을 받은 후 특정 작업을 수행합니다.
- * 여기서는 401 (Unauthorized) 에러가 발생했을 때, 토큰 갱신을 시도합니다.
+ * - 401 발생 시 토큰 만료 코드(AUTH_002)면 갱신 시도, 그 외는 즉시 로그아웃
  */
 axiosInstance.interceptors.response.use(
-  (response) => {
-    // 정상적인 응답은 그대로 반환합니다.
-    return response;
-  },
+  (response: AxiosResponse) => response,
   async (error: AxiosError) => {
-    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+    const originalRequest = error.config as (InternalAxiosRequestConfig & {
+      _retry?: boolean;
+    }) | undefined;
 
-    // 401 에러이고, 아직 재시도되지 않은 요청인 경우
+    if (!originalRequest) {
+      return Promise.reject(error);
+    }
+
+    // 401 이고 아직 재시도 안 했다면
     if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true; // 재시도 플래그를 설정하여 무한 재시도를 방지합니다.
+      originalRequest._retry = true;
 
       const { refreshAccessToken, logout } = useAuthStore.getState();
       interface BackendErrorResponse {
@@ -89,18 +73,20 @@ axiosInstance.interceptors.response.use(
         code: string;
         message: string;
       }
-      const errorCode = (error.response?.data as BackendErrorResponse)?.code;
+      const errorCode = (error.response.data as BackendErrorResponse)?.code;
 
-      // 로그아웃 요청이거나, 토큰 만료가 아닌 다른 401 에러인 경우 즉시 로그아웃 처리
-      if (originalRequest.url === '/api/v1/auth/logout' || errorCode !== 'AUTH_002') {
+      // 로그아웃 API이거나 만료 코드가 아니면 바로 로그아웃
+      if (
+        originalRequest.url === "/api/v1/auth/logout" ||
+        errorCode !== "AUTH_002"
+      ) {
         await logout(true);
         return Promise.reject(error);
       }
 
-      // 토큰 만료 (AUTH_002)인 경우에만 토큰 갱신 시도
+      // 만료 코드면 갱신 시도
       try {
         const refreshed = await refreshAccessToken();
-
         if (refreshed) {
           return axiosInstance(originalRequest);
         } else {
@@ -112,7 +98,6 @@ axiosInstance.interceptors.response.use(
       }
     }
 
-    // 그 외의 에러는 그대로 반환합니다.
     return Promise.reject(error);
-  },
+  }
 );

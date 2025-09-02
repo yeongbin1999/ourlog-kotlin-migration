@@ -1,9 +1,10 @@
+// src/app/social/types/timeline.ts
 export interface TimelineItem {
   id: number;
   title: string;
   content: string;
   createdAt: string;
-  imageUrl?: string; // 피드 카드에 이미지가 없는 경우도 있기 때문에 ?(optional)
+  imageUrl?: string; 
   likeCount: number;
   commentCount: number;
   isLiked: boolean;
@@ -12,4 +13,13 @@ export interface TimelineItem {
     nickname: string;
     profileImageUrl?: string;
   };
+
+  contentType?: string;
+  rating?: number;
+  isPublic?: boolean;
+  tagNames?: string[];
+  releasedAt?: string;
+
+  posterUrl?: string;
+  type?: string;
 }
