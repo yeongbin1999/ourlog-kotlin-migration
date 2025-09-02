@@ -2,254 +2,133 @@
 
 import { useRouter } from 'next/navigation';
 import React, { useEffect, useState, useCallback } from 'react';
-
-import FollowRequestList from '@/components/user/FollowRequestList';
-import SentRequestList from '@/components/user/SentRequestList';
-import FollowingList from '@/components/user/FollowingList';
-import FollowerList from '@/components/user/FollowerList';
 import { useAuthStore } from '@/stores/authStore';
-import DiaryList from '@/components/user/DiaryList'; 
+import DiaryList from '@/components/user/DiaryList';
+import UserList from '@/components/user/UserList';
 import { axiosInstance } from '@/lib/api-client';
+import { unwrapList } from '@/lib/unwrap';
 
 const TAB_ITEMS = [
-  { key: 'received', label: '받은 요청', icon: '↓' },
-  { key: 'sent', label: '보낸 요청', icon: '↑' },
-  { key: 'following', label: '팔로잉', icon: '→' },
-  { key: 'followers', label: '팔로워', icon: '♥' },
+  { key: 'diary', label: '마이 다이어리', type: 'diary' },
+  { key: 'received', label: '받은 요청', type: 'user_list', endpoint: (id: number) => `/api/v1/follows/requests?userId=${id}`, actionType: 'accept_reject', empty: '받은 팔로우 요청이 없습니다.' },
+  { key: 'sent', label: '보낸 요청', type: 'user_list', endpoint: (id: number) => `/api/v1/follows/sent-requests?userId=${id}`, actionType: 'cancel', empty: '보낸 팔로우 요청이 없습니다.' },
+  { key: 'following', label: '팔로잉', type: 'user_list', endpoint: (id: number) => `/api/v1/follows/followings?userId=${id}`, actionType: 'unfollow', empty: '팔로우하는 사용자가 없습니다.' },
+  { key: 'followers', label: '팔로워', type: 'user_list', endpoint: (id: number) => `/api/v1/follows/followers?userId=${id}`, actionType: 'none', empty: '아직 팔로워가 없습니다.' },
 ] as const;
 
-type TabKey = (typeof TAB_ITEMS)[number]['key'];
-
-/** ✅ 서버 응답을 항상 배열로 정규화 */
-function unwrapList<T = any>(data: any): T[] {
-  if (Array.isArray(data)) return data;
-  if (Array.isArray(data?.data?.content)) return data.data.content;
-  if (Array.isArray(data?.data)) return data.data;
-  if (Array.isArray(data?.content)) return data.content;
-  return [];
-}
+type TabKey = typeof TAB_ITEMS[number]['key'];
 
 export default function MyProfilePage() {
-  const [selectedTab, setSelectedTab] = useState<TabKey | null>('received');
-  const { user } = useAuthStore();
+  const [selectedTabKey, setSelectedTabKey] = useState<TabKey>('diary');
+  const { user, isAuthenticated } = useAuthStore();
   const router = useRouter();
 
-  useEffect(() => {
-    // user가 falsy면 로그인으로 보냄 (초기 로딩 동안은 살짝 대기)
-    if (!user) {
-      router.push('/login');
-    }
-  }, [user, router]);
+  const [counts, setCounts] = useState({ diary: 0, received: 0, sent: 0, following: 0, followers: 0 });
 
-  const [myUserId, setMyUserId] = useState<number | null>(null);
-  const [counts, setCounts] = useState<Record<TabKey, number>>({
-    received: 0,
-    sent: 0,
-    following: 0,
-    followers: 0,
-  });
-
-  useEffect(() => {
-    if (user?.id) {
-      setMyUserId(Number(user.id));
-    }
-  }, [user]);
-
-  /** ✅ 카운트도 정규화해서 길이만 집계 */
-  const fetchCounts = useCallback(async (userId: number) => {
+  const fetchAllCounts = useCallback(async (userId: number) => {
     try {
-      const endpoints = {
-        received: `/api/v1/follows/requests?userId=${userId}`,
-        sent: `/api/v1/follows/sent-requests?userId=${userId}`,
-        following: `/api/v1/follows/followings?userId=${userId}`,
-        followers: `/api/v1/follows/followers?userId=${userId}`,
-      };
-
-      const res = await Promise.all(
-        Object.values(endpoints).map((url) => axiosInstance.get(url).then((r) => r.data))
+      const diaryPromise = axiosInstance.get(`/api/v1/diaries/users/${userId}?size=1`).then(r => r.data.data?.totalElements ?? 0);
+      
+      const socialPromises = TAB_ITEMS.filter(tab => tab.type === 'user_list').map(tab =>
+        axiosInstance.get(tab.endpoint!(userId)).then(r => unwrapList(r.data).length)
       );
 
+      const [diaryCount, ...socialCounts] = await Promise.all([diaryPromise, ...socialPromises]);
+      
       setCounts({
-        received: unwrapList(res[0]).length,
-        sent: unwrapList(res[1]).length,
-        following: unwrapList(res[2]).length,
-        followers: unwrapList(res[3]).length,
+        diary: diaryCount,
+        received: socialCounts[0],
+        sent: socialCounts[1],
+        following: socialCounts[2],
+        followers: socialCounts[3],
       });
-    } catch (err) {
-      console.error('수량 불러오기 실패', err);
-      // 실패해도 UI 깨지지 않게 유지
+    } catch (error) {
+      console.error("Failed to fetch counts", error);
     }
-  }, []); // ✅ 의존성에 myUserId 불필요
+  }, []);
 
   useEffect(() => {
-    if (myUserId) {
-      fetchCounts(myUserId);
+    if (!isAuthenticated) {
+      router.push('/login');
+    } else if (user?.id) {
+      fetchAllCounts(Number(user.id));
     }
-  }, [myUserId, fetchCounts]);
-
-  const handleTabClick = (tabKey: TabKey) => {
-    setSelectedTab((prev) => (prev === tabKey ? null : tabKey));
-    if (myUserId) {
-      fetchCounts(myUserId); // 탭 바꿀 때 최신화
-    }
-  };
-
-  const renderTabContent = () => {
-    if (!myUserId || selectedTab === null) {
-      return (
-        <div className="flex flex-col items-center justify-center py-20 text-gray-400">
-          <div className="w-16 h-16 border-2 border-dashed border-gray-200 rounded-full flex items-center justify-center mb-4">
-            <span className="text-xl text-gray-300">•••</span>
-          </div>
-          <p className="text-sm font-medium text-gray-500">탭을 선택하면 내용이 표시됩니다</p>
-        </div>
-      );
-    }
-
-    const onActionCompleted = () => fetchCounts(myUserId);
-
-    switch (selectedTab) {
-      case 'received':
-        return <FollowRequestList myUserId={myUserId} onActionCompleted={onActionCompleted} />;
-      case 'sent':
-        return <SentRequestList myUserId={myUserId} onActionCompleted={onActionCompleted} />;
-      case 'following':
-        return <FollowingList myUserId={myUserId} onActionCompleted={onActionCompleted} />;
-      case 'followers':
-        return <FollowerList myUserId={myUserId} onActionCompleted={onActionCompleted} />;
-      default:
-        return null;
-    }
-  };
+  }, [user, isAuthenticated, router, fetchAllCounts]);
 
   if (!user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-sm text-gray-600">로그인 확인 중...</p>
-        </div>
+        <div className="w-8 h-8 border-4 border-sky-200 border-t-sky-500 rounded-full animate-spin"></div>
       </div>
     );
   }
 
+  const myUserId = Number(user.id);
+  const selectedTab = TAB_ITEMS.find(t => t.key === selectedTabKey);
+
+  const renderTabContent = () => {
+    if (!selectedTab) return null;
+
+    if (selectedTab.type === 'diary') {
+      return <DiaryList userId={myUserId} onActionCompleted={() => fetchAllCounts(myUserId)} />;
+    }
+    
+    if (selectedTab.type === 'user_list') {
+      return (
+        <UserList
+          key={selectedTab.key}
+          myUserId={myUserId}
+          endpoint={selectedTab.endpoint(myUserId)}
+          actionType={selectedTab.actionType}
+          emptyMessage={selectedTab.empty}
+          onActionCompleted={() => fetchAllCounts(myUserId)}
+        />
+      );
+    }
+    
+    return null;
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* 헤더 */}
-      <div className="bg-white border-b border-gray-100">
-        <div className="max-w-6xl mx-auto px-6 py-8">
-          <h1 className="text-2xl font-bold text-black text-center">MY PROFILE</h1>
-        </div>
-      </div>
-
-      <div className="max-w-6xl mx-auto px-6 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* 왼쪽: 프로필 정보 */}
-          <div className="lg:col-span-1 space-y-6">
-            {/* 프로필 카드 */}
-            <div className="bg-white rounded-none shadow-sm border border-gray-200 overflow-hidden">
-              <div className="p-8">
-                <div className="flex flex-col items-center text-center mb-6">
-                  <div className="w-24 h-24 rounded-full bg-gray-100 border-2 border-gray-200 overflow-hidden mb-4">
-                    <img
-                      src={user.profileImageUrl || '/images/no-image.png'}
-                      alt="프로필"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <h2 className="text-xl font-bold text-black mb-2">{user.nickname}</h2>
-                  <p className="text-sm text-gray-600 mb-3 max-w-xs leading-relaxed">
-                    {user.bio || '소개글이 없습니다.'}
-                  </p>
-                  <p className="text-xs text-gray-400 font-mono">{user.email}</p>
-                </div>
-
-                {/* 통계 */}
-                <div className="grid grid-cols-2 gap-4 pt-6 border-t border-gray-100">
-                  <div className="text-center">
-                    <div className="text-lg font-bold text-black">{counts.following}</div>
-                    <div className="text-xs text-gray-500 uppercase tracking-wider">Following</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-lg font-bold text-black">{counts.followers}</div>
-                    <div className="text-xs text-gray-500 uppercase tracking-wider">Followers</div>
-                  </div>
-                </div>
+    <div className="bg-gray-50 min-h-screen">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="lg:grid lg:grid-cols-12 lg:gap-8">
+          <aside className="lg:col-span-4 lg:sticky lg:top-8 self-start space-y-6">
+            <div className="bg-white p-6 rounded-2xl border border-gray-200 text-center">
+              <img src={user.profileImageUrl || '/images/no-image.png'} alt="프로필" className="w-28 h-28 rounded-full object-cover mx-auto mb-4 border-4 border-white shadow-md" />
+              <h2 className="text-2xl font-bold text-gray-900">{user.nickname}</h2>
+              <p className="text-sm text-gray-500 font-mono mb-4">{user.email}</p>
+              <p className="text-gray-600 leading-relaxed max-w-xs mx-auto">{user.bio || '소개글이 없습니다.'}</p>
+              <div className="grid grid-cols-2 gap-4 pt-6 mt-6 border-t border-gray-100">
+                <div><div className="text-xl font-bold text-sky-500">{counts.following}</div><div className="text-xs text-gray-500 uppercase">Following</div></div>
+                <div><div className="text-xl font-bold text-sky-500">{counts.followers}</div><div className="text-xs text-gray-500 uppercase">Followers</div></div>
               </div>
             </div>
-
-            {/* 소셜 네비게이션 */}
-            <div className="bg-white rounded-none shadow-sm border border-gray-200">
-              <div className="p-6">
-                <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4">
-                  Social Activity
-                </h3>
-                <div className="space-y-2">
-                  {TAB_ITEMS.map((tab) => (
-                    <button
-                      key={tab.key}
-                      onClick={() => handleTabClick(tab.key)}
-                      className={`w-full flex items-center justify-between px-4 py-3 text-left transition-all duration-200 ${
-                        selectedTab === tab.key
-                          ? 'bg-black text-white'
-                          : 'bg-white hover:bg-gray-50 text-gray-700 border border-gray-100'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm font-medium">{tab.icon}</span>
-                        <span className="text-sm font-medium">{tab.label}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {counts[tab.key] > 0 && (
-                          <span
-                            className={`px-2 py-1 text-xs font-bold ${
-                              selectedTab === tab.key ? 'bg-white text-black' : 'bg-gray-900 text-white'
-                            }`}
-                          >
-                            {counts[tab.key]}
-                          </span>
-                        )}
-                        <span className="text-xs">{selectedTab === tab.key ? '●' : '○'}</span>
-                      </div>
-                    </button>
-                  ))}
-                </div>
+            <div className="bg-white p-4 rounded-2xl border border-gray-200 space-y-2">
+              {TAB_ITEMS.map((tab) => (
+                <button
+                  key={tab.key}
+                  onClick={() => setSelectedTabKey(tab.key)}
+                  className={`w-full flex items-center justify-between px-4 py-3 text-left rounded-lg transition-all duration-200 ${selectedTabKey === tab.key ? 'bg-sky-500 text-white shadow-sm' : 'hover:bg-gray-100 text-gray-700'}`}
+                >
+                  <span className="font-semibold">{tab.label}</span>
+                  <span className={`px-2.5 py-0.5 text-xs font-bold rounded-full ${selectedTabKey === tab.key ? 'bg-white text-sky-600' : 'bg-gray-200 text-gray-600'}`}>
+                    {counts[tab.key]}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </aside>
+          <main className="lg:col-span-8 mt-8 lg:mt-0">
+            <div className="bg-white rounded-2xl border border-gray-200">
+              <div className="px-6 py-4 border-b border-gray-100">
+                <h3 className="text-xl font-bold text-gray-900">{selectedTab?.label}</h3>
+              </div>
+              <div className="p-4 md:p-6">
+                {renderTabContent()}
               </div>
             </div>
-          </div>
-
-          {/* 오른쪽: 콘텐츠 영역 */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* 소셜 활동 콘텐츠 */}
-            <div className="bg-white rounded-none shadow-sm border border-gray-200">
-              <div className="border-b border-gray-100 px-6 py-4">
-                <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">
-                  {selectedTab ? TAB_ITEMS.find((tab) => tab.key === selectedTab)?.label : 'Social Content'}
-                </h3>
-              </div>
-              <div className="p-6">{renderTabContent()}</div>
-            </div>
-
-            {/* 다이어리 섹션 */}
-            <div className="bg-white rounded-none shadow-sm border border-gray-200">
-              <div className="border-b border-gray-100 px-6 py-4">
-                <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">My Diary</h3>
-              </div>
-              <div className="p-6">
-                {myUserId ? (
-                  <DiaryList userId={myUserId} />
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-20 text-gray-400">
-                    <div className="w-16 h-16 border-2 border-dashed border-gray-200 rounded-full flex items-center justify-center mb-4 animate-pulse">
-                      <span className="text-xl text-gray-300">◐</span>
-                    </div>
-                    <p className="text-sm font-medium text-gray-500">다이어리를 불러오는 중...</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-          {/* /오른쪽 */}
+          </main>
         </div>
       </div>
     </div>
