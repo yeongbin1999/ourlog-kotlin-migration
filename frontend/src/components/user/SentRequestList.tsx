@@ -1,10 +1,9 @@
-// src/components/user/SentRequestList.tsx
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
 import UserProfileCard from './UserProfileCard';
 import { axiosInstance } from '@/lib/api-client';
+import { unwrapList } from '@/lib/unwrap';
 
 type Props = {
   myUserId: number;
@@ -19,20 +18,21 @@ type SentUserResponse = {
   profileImageUrl: string;
 };
 
-// 내가 보낸 팔로우 요청..
 export default function SentRequestList({ myUserId, onActionCompleted }: Props) {
   const [sentRequests, setSentRequests] = useState<SentUserResponse[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchSentRequests = async () => {
-    console.log("Fetching sent requests...");
     try {
+      setLoading(true);
+      setError(null);
       const res = await axiosInstance.get(`/api/v1/follows/sent-requests?userId=${myUserId}`);
-      console.log("Sent Requests API Response:", res.data); // 추가된 로그
-      const data = Array.isArray(res.data) ? res.data : res.data ?? [];
-      setSentRequests(data);
+      setSentRequests(unwrapList<SentUserResponse>(res.data));
     } catch (err) {
       console.error('보낸 요청 불러오기 실패', err);
+      setError('보낸 요청을 불러오지 못했습니다.');
+      setSentRequests([]);
     } finally {
       setLoading(false);
     }
@@ -43,21 +43,20 @@ export default function SentRequestList({ myUserId, onActionCompleted }: Props) 
       await axiosInstance.delete(`/api/v1/follows/${targetUserId}?myUserId=${myUserId}`);
       alert('요청이 취소되었습니다.');
       fetchSentRequests(); // 리스트 갱신
-      onActionCompleted?.(); // 액션 완료 후 콜백 호출
+      onActionCompleted?.(); // 상위 카운트 갱신
     } catch (err) {
       console.error('요청 취소 실패', err);
       alert('요청 취소 중 오류가 발생했습니다.');
-    } finally {
-      setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchSentRequests();
-  }, []);
+    if (myUserId) fetchSentRequests();
+  }, [myUserId]);
 
   if (loading) return <div className="text-center mt-10">로딩 중...</div>;
-  if (sentRequests.length === 0) return <div className="text-center mt-10">보낸 요청이 없습니다.</div>;
+  if (error) return <div className="text-center mt-10 text-red-600">{error}</div>;
+  if (!sentRequests.length) return <div className="text-center mt-10">보낸 요청이 없습니다.</div>;
 
   return (
     <div className="space-y-6">

@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { axiosInstance } from '@/lib/api-client';
 import { useRouter } from 'next/navigation';
+import { unwrapList } from '@/lib/unwrap';
 
 type Diary = {
   id: number;
@@ -13,9 +14,9 @@ type Diary = {
   createdAt: string;
   modifiedAt: string;
   releasedAt: string | null;
-  genres: string[];
-  tags: string[];
-  otts: string[];
+  genres?: string[];
+  tags?: string[];
+  otts?: string[];
 };
 
 export default function DiaryList({ userId }: { userId: number }) {
@@ -32,32 +33,26 @@ export default function DiaryList({ userId }: { userId: number }) {
 
     try {
       const res = await axiosInstance.get(`/api/v1/diaries/users/${userId}`, {
-        params: { page: pageToLoad, size: 3 }, // ✅ 3개씩 보여주기
+        params: { page: pageToLoad, size: 3 },
       });
 
-      const rsData = res.data as {
-        resultCode: string;
-        msg: string;
-        data: {
-          content: Diary[];
-          totalPages: number;
-          number: number;
-          size: number;
-          totalElements: number;
-          last: boolean;
-        };
-      };
+      const payload = res.data;
 
-      if (!rsData || rsData.resultCode.startsWith('FAIL')) {
-        setError('다이어리 목록을 불러오는 데 실패했습니다.');
-        return;
-      }
+      // 1) 페이징 응답(data.content) 형태 우선
+      const paged = payload?.data;
+      const list = Array.isArray(paged?.content)
+        ? (paged.content as Diary[])
+        : unwrapList<Diary>(payload); // 2) 혹시 배열/다른 키로 올 수도 있음
 
-      setDiaries(rsData.data.content);
-      setTotalPages(rsData.data.totalPages || 1); // ✅ 최소 1
+      setDiaries(list ?? []);
+      setTotalPages(
+        typeof paged?.totalPages === 'number' && paged.totalPages > 0 ? paged.totalPages : 1
+      );
     } catch (e) {
       console.error('❌ 다이어리 불러오기 실패:', e);
       setError('네트워크 오류가 발생했습니다.');
+      setDiaries([]); // 안전
+      setTotalPages(1);
     } finally {
       setLoading(false);
     }
@@ -65,7 +60,9 @@ export default function DiaryList({ userId }: { userId: number }) {
 
   useEffect(() => {
     loadDiaries(page);
-  }, [page]);
+    // userId 변동 시 첫 페이지로 리셋하고 다시 로드하고 싶다면:
+    // setPage(0);
+  }, [page, userId]);
 
   const handlePageChange = (newPage: number) => {
     if (newPage >= 0 && newPage < totalPages) {
@@ -103,13 +100,13 @@ export default function DiaryList({ userId }: { userId: number }) {
             <span>수정일: {diary.modifiedAt?.slice(0, 10)}</span>
           </div>
           <div className="mt-2 flex flex-wrap gap-2 text-xs">
-            {diary.genres.map((g, i) => (
+            {(diary.genres ?? []).map((g, i) => (
               <span key={`genre-${i}`} className="px-2 py-1 bg-blue-100 rounded">{g}</span>
             ))}
-            {diary.tags.map((t, i) => (
+            {(diary.tags ?? []).map((t, i) => (
               <span key={`tag-${i}`} className="px-2 py-1 bg-green-100 rounded">{t}</span>
             ))}
-            {diary.otts.map((o, i) => (
+            {(diary.otts ?? []).map((o, i) => (
               <span key={`ott-${i}`} className="px-2 py-1 bg-yellow-100 rounded">{o}</span>
             ))}
           </div>
@@ -132,9 +129,7 @@ export default function DiaryList({ userId }: { userId: number }) {
           <button
             key={i}
             onClick={() => handlePageChange(i)}
-            className={`px-3 py-1 rounded ${
-              i === page ? 'bg-gray-800 text-white' : 'border'
-            }`}
+            className={`px-3 py-1 rounded ${i === page ? 'bg-gray-800 text-white' : 'border'}`}
           >
             {i + 1}
           </button>
