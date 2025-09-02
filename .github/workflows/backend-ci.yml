@@ -3,12 +3,14 @@ name: Backend CI
 on:
   push:
     branches:
+      - main
       - dev
     paths:
       - 'backend/**'
   pull_request:
     types: [opened, synchronize, reopened, edited]
     branches:
+      - main
       - dev
     paths:
       - 'backend/**'
@@ -23,20 +25,6 @@ jobs:
         ports:
           - 6379:6379
 
-    env:
-      SPOTIFY_CLIENT_ID: ${{ secrets.SPOTIFY_CLIENT_ID }}
-      SPOTIFY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET }}
-      TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
-      LIBRARY_API_KEY: ${{ secrets.LIBRARY_API_KEY }}
-      GOOGLE_CLIENT_ID: ${{secrets.GOOGLE_CLIENT_ID}}
-      GOOGLE_CLIENT_SECRET: ${{secrets.GOOGLE_CLIENT_SECRET}}
-      NAVER_CLIENT_ID: ${{secrets.NAVER_CLIENT_ID}}
-      NAVER_CLIENT_SECRET: ${{secrets.NAVER_CLIENT_SECRET}}
-      KAKAO_CLIENT_ID: ${{secrets.KAKAO_CLIENT_ID}}
-      KAKAO_CLIENT_SECRET: ${{secrets.KAKAO_CLIENT_SECRET}}
-      REDIS_HOST: localhost
-      REDIS_PORT: 6379
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -50,6 +38,10 @@ jobs:
       - name: Grant execute permission to gradlew
         working-directory: ./backend
         run: chmod +x ./gradlew
+
+      - name: Load .env from secrets
+        run: |
+          echo "${{ secrets.DOT_ENV }}" > ./backend/.env
 
       - name: Build and test backend
         working-directory: ./backend
