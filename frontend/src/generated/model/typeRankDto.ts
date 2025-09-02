@@ -8,6 +8,6 @@
 import type { TypeRankDtoType } from "./typeRankDtoType";
 
 export interface TypeRankDto {
-  type?: TypeRankDtoType;
-  totalCount?: number;
+  type: TypeRankDtoType;
+  totalCount: number;
 }

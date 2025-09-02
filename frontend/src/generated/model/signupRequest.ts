@@ -7,9 +7,9 @@
  */
 
 export interface SignupRequest {
-  email?: string;
-  password?: string;
-  nickname?: string;
+  email: string;
+  password: string;
+  nickname: string;
   profileImageUrl?: string;
   bio?: string;
 }

@@ -6,4 +6,4 @@
  * OpenAPI spec version: beta
  */
 
-export type RsDataVoidData = { [key: string]: unknown };
+export type RsDataData = { [key: string]: unknown };

@@ -1,7 +1,7 @@
 /* eslint-disable */
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { searchUsers } from '../generated/api/api';
-import { Omit } from 'utility-types'; // 필요시
+import { Omit } from 'utility-types';
 import { SearchUsersParams } from '@/generated/model/searchUsersParams';
 
 export const useSearchUsersInfinite = (params: Omit<SearchUsersParams, 'pageable'>) => {
@@ -13,9 +13,7 @@ export const useSearchUsersInfinite = (params: Omit<SearchUsersParams, 'pageable
         pageable: { page: pageParam, size: 10 },
       });
 
-      const resData = response.data;
-
-      if (!resData || resData.fail || !resData.data) {
+      if (!response.data) {
         return {
           content: [],
           page: 0,
@@ -26,15 +24,13 @@ export const useSearchUsersInfinite = (params: Omit<SearchUsersParams, 'pageable
         };
       }
 
-      const data = resData.data as any;
-
       return {
-        content: data.content || [],
-        page: data.page || 0,
-        size: data.size || 10,
-        totalElements: data.totalElements || 0,
-        totalPages: data.totalPages || 0,
-        hasNext: (data.page || 0) + 1 < (data.totalPages || 0),
+        content: response.data.content || [],
+        page: response.data.page || 0,
+        size: response.data.size || 10,
+        totalElements: response.data.totalElements || 0,
+        totalPages: response.data.totalPages || 0,
+        hasNext: response.data.hasNext,
       };
     },
     getNextPageParam: (lastPage) => (lastPage.hasNext ? lastPage.page + 1 : undefined),

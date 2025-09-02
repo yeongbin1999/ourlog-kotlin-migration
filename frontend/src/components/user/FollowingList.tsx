@@ -27,7 +27,7 @@ export default function FollowingList({ myUserId, onActionCompleted }: Props) {
     console.log("Fetching followings...");
     try {
       const res = await axiosInstance.get(`/api/v1/follows/followings?userId=${myUserId}`);
-      const data = Array.isArray(res.data) ? res.data : res.data ?? [];
+      const data = res.data.data;
       setFollowings(data);
     } catch (err) {
       console.error('팔로잉 목록 불러오기 실패', err);

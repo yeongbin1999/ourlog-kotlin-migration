@@ -7,7 +7,7 @@
  */
 
 export interface GenreLineGraphDto {
-  axisLabel?: string;
-  genre?: string;
-  count?: number;
+  axisLabel: string;
+  genre: string;
+  count: number;
 }

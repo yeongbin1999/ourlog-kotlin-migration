@@ -7,6 +7,6 @@
  */
 
 export interface CommentUpdateRequestDto {
-  id?: number;
-  content?: string;
+  id: number;
+  content: string;
 }

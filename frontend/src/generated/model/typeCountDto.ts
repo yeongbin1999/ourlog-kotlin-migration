@@ -7,6 +7,6 @@
  */
 
 export interface TypeCountDto {
-  type?: string;
-  count?: number;
+  type: string;
+  count: number;
 }

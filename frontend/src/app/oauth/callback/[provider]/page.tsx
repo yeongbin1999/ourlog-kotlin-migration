@@ -43,9 +43,11 @@ const OAuthCallbackPage = () => {
             },
           );
 
-          if (response.data.success) {
+          if (response.data.isSuccess) {
             const { accessToken } = response.data.data;
+            console.log('Before first setAuthInfo. isAuthenticated:', true, 'accessToken:', accessToken);
             setAuthInfo({ accessToken, user: null, isAuthenticated: true });
+            console.log('After first setAuthInfo. isAuthenticated:', useAuthStore.getState().isAuthenticated);
 
             try {
               const meResponse = await getMe({
@@ -53,18 +55,18 @@ const OAuthCallbackPage = () => {
                   headers: { Authorization: `Bearer ${accessToken}` },
                 },
               });
-              const meData = meResponse.data;
-              if (meData && meData.data) {
+              if (meResponse.data) {
                 const fetchedUser = {
-                  id: meData.data.userId?.toString() || '',
-                  email: meData.data.email || '',
-                  nickname: meData.data.nickname || '',
-                  profileImageUrl: meData.data.profileImageUrl,
-                  bio: meData.data.bio,
-                  followingsCount: meData.data.followingsCount,
-                  followersCount: meData.data.followersCount,
+                  id: meResponse.data.userId?.toString() || '',
+                  email: meResponse.data.email || '',
+                  nickname: meResponse.data.nickname || '',
+                  profileImageUrl: meResponse.data.profileImageUrl,
+                  bio: meResponse.data.bio,
+                  followingsCount: meResponse.data.followingsCount,
+                  followersCount: meResponse.data.followersCount,
                 };
                 setAuthInfo({ accessToken, user: fetchedUser, isAuthenticated: true });
+                console.log('After second setAuthInfo. isAuthenticated:', useAuthStore.getState().isAuthenticated, 'user:', useAuthStore.getState().user);
               }
             } catch (meError) {
               console.error('Failed to fetch user profile after OAuth login:', meError);
@@ -72,6 +74,7 @@ const OAuthCallbackPage = () => {
             }
 
             toast.success(`${provider} 로그인 성공!`);
+            console.log('Attempting to redirect to /');
             router.push('/');
           } else {
             toast.error(response.data.msg || `${provider} 로그인 중 오류가 발생했습니다.`);

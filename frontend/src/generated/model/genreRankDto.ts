@@ -7,6 +7,6 @@
  */
 
 export interface GenreRankDto {
-  genre?: string;
-  totalCount?: number;
+  genre: string;
+  totalCount: number;
 }

@@ -10,5 +10,9 @@ import type { ReportRequestType } from "./reportRequestType";
 export interface ReportRequest {
   targetUserId: number;
   type: ReportRequestType;
+  /**
+   * @minLength 0
+   * @maxLength 255
+   */
   description: string;
 }

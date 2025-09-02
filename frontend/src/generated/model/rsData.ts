@@ -5,12 +5,12 @@
  * 팀12 2차 프로젝트 API 서버 문서입니다.
  * OpenAPI spec version: beta
  */
-import type { RsDataVoidData } from "./rsDataVoidData";
+import type { RsDataData } from "./rsDataData";
 
-export interface RsDataVoid {
-  resultCode?: string;
+export interface RsData {
+  resultCode: string;
   msg?: string;
-  data?: RsDataVoidData;
-  fail?: boolean;
-  success?: boolean;
+  data?: RsDataData;
+  isSuccess: boolean;
+  isFail: boolean;
 }

@@ -6,4 +6,7 @@
  * OpenAPI spec version: beta
  */
 
-export type RsDataObjectData = { [key: string]: unknown };
+export interface FavoriteEmotionAndCountDto {
+  favoriteEmotion: string;
+  favoriteEmotionCount: number;
+}

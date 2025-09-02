@@ -8,9 +8,9 @@
 import type { TagResponse } from "./tagResponse";
 
 export interface RsDataListTagResponse {
-  resultCode?: string;
+  resultCode: string;
   msg?: string;
   data?: TagResponse[];
-  fail?: boolean;
-  success?: boolean;
+  isSuccess: boolean;
+  isFail: boolean;
 }

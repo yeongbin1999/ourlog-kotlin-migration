@@ -5,12 +5,12 @@
  * 팀12 2차 프로젝트 API 서버 문서입니다.
  * OpenAPI spec version: beta
  */
-import type { RsDataObjectData } from "./rsDataObjectData";
+import type { TypeCountDto } from "./typeCountDto";
 
-export interface RsDataObject {
-  resultCode?: string;
+export interface RsDataListTypeCountDto {
+  resultCode: string;
   msg?: string;
-  data?: RsDataObjectData;
-  fail?: boolean;
-  success?: boolean;
+  data?: TypeCountDto[];
+  isSuccess: boolean;
+  isFail: boolean;
 }

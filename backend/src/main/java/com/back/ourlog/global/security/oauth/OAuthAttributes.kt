@@ -21,9 +21,15 @@ data class OAuthAttributes(
             val providerId = attributes["sub"]?.toString().orEmpty()
             val name = attributes["name"]?.toString().orEmpty()
             val email = attributes["email"]?.toString().orEmpty()
+            val profileImageUrl = attributes["picture"]?.toString() // Google's profile picture URL
+
+            val modifiedAttributes = attributes.toMutableMap()
+            if (profileImageUrl != null) {
+                modifiedAttributes["profileImageUrl"] = profileImageUrl
+            }
 
             return OAuthAttributes(
-                attributes = attributes,
+                attributes = modifiedAttributes as Map<String, Any>,
                 providerId = providerId,
                 name = name,
                 email = email,
@@ -36,9 +42,15 @@ data class OAuthAttributes(
             val providerId = resp["id"]?.toString().orEmpty()
             val name = resp["name"]?.toString().orEmpty()
             val email = resp["email"]?.toString().orEmpty()
+            val profileImageUrl = resp["profile_image"]?.toString() // Naver's profile image URL
+
+            val modifiedAttributes = resp.mapKeys { it.key.toString() }.toMutableMap()
+            if (profileImageUrl != null) {
+                modifiedAttributes["profileImageUrl"] = profileImageUrl
+            }
 
             return OAuthAttributes(
-                attributes = resp.mapKeys { it.key.toString() }.mapValues { it.value.toString() },
+                attributes = modifiedAttributes as Map<String, Any>,
                 providerId = providerId,
                 name = name,
                 email = email,
@@ -53,10 +65,15 @@ data class OAuthAttributes(
             val providerId = attributes["id"]?.toString().orEmpty()
             val name = profile["nickname"]?.toString().orEmpty()
             val email = kakaoAccount["email"]?.toString() ?: "$providerId@kakao.com"
+            val profileImageUrl = profile["profile_image_url"]?.toString() // Kakao's profile image URL
 
+            val modifiedAttributes = attributes.toMutableMap()
+            if (profileImageUrl != null) {
+                modifiedAttributes["profileImageUrl"] = profileImageUrl
+            }
 
             return OAuthAttributes(
-                attributes = attributes,
+                attributes = modifiedAttributes as Map<String, Any>,
                 providerId = providerId,
                 name = name,
                 email = email,

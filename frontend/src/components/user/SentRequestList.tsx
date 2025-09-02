@@ -29,7 +29,7 @@ export default function SentRequestList({ myUserId, onActionCompleted }: Props) 
     try {
       const res = await axiosInstance.get(`/api/v1/follows/sent-requests?userId=${myUserId}`);
       console.log("Sent Requests API Response:", res.data); // 추가된 로그
-      const data = Array.isArray(res.data) ? res.data : res.data ?? [];
+      const data = res.data.data;
       setSentRequests(data);
     } catch (err) {
       console.error('보낸 요청 불러오기 실패', err);

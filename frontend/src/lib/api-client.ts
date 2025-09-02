@@ -1,4 +1,5 @@
 import axios, { AxiosError, InternalAxiosRequestConfig, AxiosInstance, AxiosRequestConfig } from 'axios';
+import { getDeviceId } from './deviceId';
 import { useAuthStore } from '@/stores/authStore';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/';
@@ -20,7 +21,7 @@ export { axiosInstance };
 
 export const customInstance = <T>(config: AxiosRequestConfig, options?: { request?: AxiosRequestConfig }): Promise<T> => {
   const mergedConfig = { ...config, ...options?.request };
-  return axiosInstance(mergedConfig);
+  return axiosInstance(mergedConfig).then((res) => res.data);
 };
 
 /**
@@ -32,9 +33,14 @@ export const customInstance = <T>(config: AxiosRequestConfig, options?: { reques
 axiosInstance.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const { accessToken } = useAuthStore.getState();
+    const deviceId = getDeviceId();
 
     if (accessToken) {
       config.headers.Authorization = `Bearer ${accessToken}`;
+    }
+
+    if (deviceId) {
+      config.headers['X-Device-Id'] = deviceId;
     }
     return config;
   },

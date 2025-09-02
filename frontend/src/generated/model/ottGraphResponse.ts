@@ -9,6 +9,6 @@ import type { OttLineGraphDto } from "./ottLineGraphDto";
 import type { OttRankDto } from "./ottRankDto";
 
 export interface OttGraphResponse {
-  ottLineGraph?: OttLineGraphDto[];
-  ottRanking?: OttRankDto[];
+  ottLineGraph: OttLineGraphDto[];
+  ottRanking: OttRankDto[];
 }

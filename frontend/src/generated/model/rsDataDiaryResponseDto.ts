@@ -8,9 +8,9 @@
 import type { DiaryResponseDto } from "./diaryResponseDto";
 
 export interface RsDataDiaryResponseDto {
-  resultCode?: string;
+  resultCode: string;
   msg?: string;
   data?: DiaryResponseDto;
-  fail?: boolean;
-  success?: boolean;
+  isSuccess: boolean;
+  isFail: boolean;
 }

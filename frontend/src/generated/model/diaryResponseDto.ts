@@ -7,17 +7,17 @@
  */
 
 export interface DiaryResponseDto {
-  id?: number;
-  userId?: number;
-  contentId?: number;
-  title?: string;
-  contentText?: string;
-  rating?: number;
-  isPublic?: boolean;
-  createdAt?: string;
-  modifiedAt?: string;
+  id: number;
+  userId: number;
+  contentId: number;
+  title: string;
+  contentText: string;
+  rating: number;
+  isPublic: boolean;
+  createdAt: string;
+  modifiedAt: string;
   releasedAt?: string;
-  genres?: string[];
-  tags?: string[];
-  otts?: string[];
+  genres: string[];
+  tags: string[];
+  otts: string[];
 }

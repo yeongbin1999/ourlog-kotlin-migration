@@ -8,7 +8,7 @@
 import type { ContentResponseDtoType } from "./contentResponseDtoType";
 
 export interface ContentResponseDto {
-  id?: number;
+  id: number;
   externalId?: string;
   type?: ContentResponseDtoType;
   posterUrl?: string;

@@ -1,7 +1,7 @@
 import { useAuthStore } from '../stores';
 import {
   useGetDiary,
-  useWriteDiary,
+  useCreateDiary,
   useUpdateDiary,
   useDeleteDiary,
   useGetUserProfile,

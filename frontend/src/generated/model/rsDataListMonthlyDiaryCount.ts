@@ -5,12 +5,12 @@
  * 팀12 2차 프로젝트 API 서버 문서입니다.
  * OpenAPI spec version: beta
  */
-import type { CommentResponseDto } from "./commentResponseDto";
+import type { MonthlyDiaryCount } from "./monthlyDiaryCount";
 
-export interface RsDataListCommentResponseDto {
+export interface RsDataListMonthlyDiaryCount {
   resultCode: string;
   msg?: string;
-  data?: CommentResponseDto[];
+  data?: MonthlyDiaryCount[];
   isSuccess: boolean;
   isFail: boolean;
 }

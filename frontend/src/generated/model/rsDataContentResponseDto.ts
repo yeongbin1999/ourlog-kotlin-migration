@@ -8,9 +8,9 @@
 import type { ContentResponseDto } from "./contentResponseDto";
 
 export interface RsDataContentResponseDto {
-  resultCode?: string;
+  resultCode: string;
   msg?: string;
   data?: ContentResponseDto;
-  fail?: boolean;
-  success?: boolean;
+  isSuccess: boolean;
+  isFail: boolean;
 }

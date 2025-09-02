@@ -29,7 +29,7 @@ export default function FollowRequestList({ myUserId, onActionCompleted }: Props
     try {
       const res = await axiosInstance.get(`/api/v1/follows/requests?userId=${myUserId}`);
       console.log("Follow Requests API Response:", res.data);
-      setRequests(res.data);
+      setRequests(res.data.data);
     } catch (err) {
       console.error('받은 요청 불러오기 실패', err);
     } finally {

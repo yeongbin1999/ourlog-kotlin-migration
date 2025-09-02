@@ -6,6 +6,10 @@
  * OpenAPI spec version: beta
  */
 
-export type GetFollowersParams = {
-  userId: number;
-};
+export interface RsDataInteger {
+  resultCode: string;
+  msg?: string;
+  data?: number;
+  isSuccess: boolean;
+  isFail: boolean;
+}

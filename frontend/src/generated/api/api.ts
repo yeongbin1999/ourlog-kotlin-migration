@@ -30,43 +30,43 @@ import type {
   CommentUpdateRequestDto,
   DiaryUpdateRequestDto,
   DiaryWriteRequestDto,
-  EmotionGraphResponse,
-  FollowUserResponse,
-  GenreGraphResponse,
   GetEmotionGraphParams,
   GetGenreGraphParams,
   GetLikeCountParams,
-  GetMyDiariesParams,
   GetOttGraphParams,
   GetTypeGraphParams,
-  LikeCountResponse,
-  LikeResponse,
+  Like200,
+  ListUserDiariesParams,
   LoginRequest,
-  MonthlyDiaryCount,
   OAuthCallbackRequest,
-  OttGraphResponse,
   ReportRequest,
+  RsData,
   RsDataCommentResponseDto,
   RsDataContentResponseDto,
   RsDataDiaryDetailDto,
   RsDataDiaryResponseDto,
+  RsDataEmotionGraphResponse,
+  RsDataGenreGraphResponse,
+  RsDataInteger,
   RsDataListCommentResponseDto,
   RsDataListContentSearchResultDto,
+  RsDataListFollowUserResponse,
+  RsDataListMonthlyDiaryCount,
   RsDataListTagResponse,
+  RsDataListTimelineResponse,
+  RsDataListTypeCountDto,
   RsDataLoginResponse,
   RsDataMyProfileResponse,
-  RsDataObject,
+  RsDataOttGraphResponse,
   RsDataPageDiaryResponseDto,
   RsDataPageResponseUserProfileResponse,
+  RsDataStatisticsCardDto,
+  RsDataTypeGraphResponse,
   RsDataUserProfileResponse,
-  RsDataVoid,
   SearchContentsParams,
   SearchUsersParams,
   SignupRequest,
-  StatisticsCardDto,
-  TimelineResponse,
-  TypeCountDto,
-  TypeGraphResponse,
+  Unlike200,
 } from "../model";
 
 import { customInstance } from "../../lib/api-client";
@@ -74,7 +74,7 @@ import { customInstance } from "../../lib/api-client";
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 /**
- * 감상일기를 조회합니다.
+ * 감상일기를 조회합니다. 공개글은 인증 없이 조회 가능 / 비공개는 소유자만.
  * @summary 감상일기 조회
  */
 export const getDiary = (
@@ -467,7 +467,7 @@ export const deleteDiary = (
   diaryId: number,
   options?: SecondParameter<typeof customInstance>,
 ) => {
-  return customInstance<RsDataVoid>(
+  return customInstance<RsData>(
     { url: `/api/v1/diaries/${diaryId}`, method: "DELETE" },
     options,
   );
@@ -549,7 +549,7 @@ export const updateComment = (
   commentUpdateRequestDto: CommentUpdateRequestDto,
   options?: SecondParameter<typeof customInstance>,
 ) => {
-  return customInstance<RsDataVoid>(
+  return customInstance<RsData>(
     {
       url: `/api/v1/comments`,
       method: "PUT",
@@ -723,7 +723,7 @@ export const reportUser = (
   options?: SecondParameter<typeof customInstance>,
   signal?: AbortSignal,
 ) => {
-  return customInstance<RsDataObject>(
+  return customInstance<RsData>(
     {
       url: `/api/v1/reports`,
       method: "POST",
@@ -809,7 +809,7 @@ export const like = (
   options?: SecondParameter<typeof customInstance>,
   signal?: AbortSignal,
 ) => {
-  return customInstance<LikeResponse>(
+  return customInstance<Like200>(
     { url: `/api/v1/likes/${diaryId}`, method: "POST", signal },
     options,
   );
@@ -889,7 +889,7 @@ export const unlike = (
   diaryId: number,
   options?: SecondParameter<typeof customInstance>,
 ) => {
-  return customInstance<LikeResponse>(
+  return customInstance<Unlike200>(
     { url: `/api/v1/likes/${diaryId}`, method: "DELETE" },
     options,
   );
@@ -972,7 +972,7 @@ export const followUser = (
   options?: SecondParameter<typeof customInstance>,
   signal?: AbortSignal,
 ) => {
-  return customInstance<string>(
+  return customInstance<RsData>(
     { url: `/api/v1/follows/${followeeId}`, method: "POST", signal },
     options,
   );
@@ -1055,7 +1055,7 @@ export const acceptFollow = (
   options?: SecondParameter<typeof customInstance>,
   signal?: AbortSignal,
 ) => {
-  return customInstance<string>(
+  return customInstance<RsData>(
     { url: `/api/v1/follows/${followId}/accept`, method: "POST", signal },
     options,
   );
@@ -1134,7 +1134,7 @@ export const useAcceptFollow = <TError = unknown, TContext = unknown>(
  * 감상일기를 작성합니다.
  * @summary 감상일기 등록
  */
-export const writeDiary = (
+export const createDiary = (
   diaryWriteRequestDto: DiaryWriteRequestDto,
   options?: SecondParameter<typeof customInstance>,
   signal?: AbortSignal,
@@ -1151,24 +1151,24 @@ export const writeDiary = (
   );
 };
 
-export const getWriteDiaryMutationOptions = <
+export const getCreateDiaryMutationOptions = <
   TError = unknown,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof writeDiary>>,
+    Awaited<ReturnType<typeof createDiary>>,
     TError,
     { data: DiaryWriteRequestDto },
     TContext
   >;
   request?: SecondParameter<typeof customInstance>;
 }): UseMutationOptions<
-  Awaited<ReturnType<typeof writeDiary>>,
+  Awaited<ReturnType<typeof createDiary>>,
   TError,
   { data: DiaryWriteRequestDto },
   TContext
 > => {
-  const mutationKey = ["writeDiary"];
+  const mutationKey = ["createDiary"];
   const { mutation: mutationOptions, request: requestOptions } = options
     ? options.mutation &&
       "mutationKey" in options.mutation &&
@@ -1178,30 +1178,30 @@ export const getWriteDiaryMutationOptions = <
     : { mutation: { mutationKey }, request: undefined };
 
   const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof writeDiary>>,
+    Awaited<ReturnType<typeof createDiary>>,
     { data: DiaryWriteRequestDto }
   > = (props) => {
     const { data } = props ?? {};
 
-    return writeDiary(data, requestOptions);
+    return createDiary(data, requestOptions);
   };
 
   return { mutationFn, ...mutationOptions };
 };
 
-export type WriteDiaryMutationResult = NonNullable<
-  Awaited<ReturnType<typeof writeDiary>>
+export type CreateDiaryMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createDiary>>
 >;
-export type WriteDiaryMutationBody = DiaryWriteRequestDto;
-export type WriteDiaryMutationError = unknown;
+export type CreateDiaryMutationBody = DiaryWriteRequestDto;
+export type CreateDiaryMutationError = unknown;
 
 /**
  * @summary 감상일기 등록
  */
-export const useWriteDiary = <TError = unknown, TContext = unknown>(
+export const useCreateDiary = <TError = unknown, TContext = unknown>(
   options?: {
     mutation?: UseMutationOptions<
-      Awaited<ReturnType<typeof writeDiary>>,
+      Awaited<ReturnType<typeof createDiary>>,
       TError,
       { data: DiaryWriteRequestDto },
       TContext
@@ -1210,12 +1210,12 @@ export const useWriteDiary = <TError = unknown, TContext = unknown>(
   },
   queryClient?: QueryClient,
 ): UseMutationResult<
-  Awaited<ReturnType<typeof writeDiary>>,
+  Awaited<ReturnType<typeof createDiary>>,
   TError,
   { data: DiaryWriteRequestDto },
   TContext
 > => {
-  const mutationOptions = getWriteDiaryMutationOptions(options);
+  const mutationOptions = getCreateDiaryMutationOptions(options);
 
   return useMutation(mutationOptions, queryClient);
 };
@@ -1225,7 +1225,7 @@ export const signup = (
   options?: SecondParameter<typeof customInstance>,
   signal?: AbortSignal,
 ) => {
-  return customInstance<RsDataObject>(
+  return customInstance<RsData>(
     {
       url: `/api/v1/auth/signup`,
       method: "POST",
@@ -1465,7 +1465,7 @@ export const logout = (
   options?: SecondParameter<typeof customInstance>,
   signal?: AbortSignal,
 ) => {
-  return customInstance<RsDataObject>(
+  return customInstance<RsData>(
     { url: `/api/v1/auth/logout`, method: "POST", signal },
     options,
   );
@@ -2436,7 +2436,7 @@ export const getPublicTimeline = (
   options?: SecondParameter<typeof customInstance>,
   signal?: AbortSignal,
 ) => {
-  return customInstance<TimelineResponse[]>(
+  return customInstance<RsDataListTimelineResponse>(
     { url: `/api/v1/timeline`, method: "GET", signal },
     options,
   );
@@ -3005,7 +3005,7 @@ export const getTypeGraph = (
   options?: SecondParameter<typeof customInstance>,
   signal?: AbortSignal,
 ) => {
-  return customInstance<TypeGraphResponse>(
+  return customInstance<RsDataTypeGraphResponse>(
     { url: `/api/v1/statistics/type-graph`, method: "GET", params, signal },
     options,
   );
@@ -3289,14 +3289,14 @@ export function useGetTypeGraph<
 }
 
 /**
- * 특정 회원의 콘테츠 타입 분포를 조회합니다
- * @summary 콘테츠 타입 분포
+ * 특정 회원의 콘텐츠 타입 분포를 조회합니다
+ * @summary 콘텐츠 타입 분포
  */
 export const getTypeDistribution = (
   options?: SecondParameter<typeof customInstance>,
   signal?: AbortSignal,
 ) => {
-  return customInstance<TypeCountDto[]>(
+  return customInstance<RsDataListTypeCountDto>(
     { url: `/api/v1/statistics/type-distribution`, method: "GET", signal },
     options,
   );
@@ -3410,7 +3410,7 @@ export function useGetTypeDistributionInfinite<
   queryKey: DataTag<QueryKey, TData, TError>;
 };
 /**
- * @summary 콘테츠 타입 분포
+ * @summary 콘텐츠 타입 분포
  */
 
 export function useGetTypeDistributionInfinite<
@@ -3549,7 +3549,7 @@ export function useGetTypeDistribution<
   queryKey: DataTag<QueryKey, TData, TError>;
 };
 /**
- * @summary 콘테츠 타입 분포
+ * @summary 콘텐츠 타입 분포
  */
 
 export function useGetTypeDistribution<
@@ -3591,7 +3591,7 @@ export const getOttGraph = (
   options?: SecondParameter<typeof customInstance>,
   signal?: AbortSignal,
 ) => {
-  return customInstance<OttGraphResponse>(
+  return customInstance<RsDataOttGraphResponse>(
     { url: `/api/v1/statistics/ott-graph`, method: "GET", params, signal },
     options,
   );
@@ -3879,7 +3879,7 @@ export const getLast6MonthsDiaryCounts = (
   options?: SecondParameter<typeof customInstance>,
   signal?: AbortSignal,
 ) => {
-  return customInstance<MonthlyDiaryCount[]>(
+  return customInstance<RsDataListMonthlyDiaryCount>(
     { url: `/api/v1/statistics/monthly-diary-graph`, method: "GET", signal },
     options,
   );
@@ -4177,7 +4177,7 @@ export const getGenreGraph = (
   options?: SecondParameter<typeof customInstance>,
   signal?: AbortSignal,
 ) => {
-  return customInstance<GenreGraphResponse>(
+  return customInstance<RsDataGenreGraphResponse>(
     { url: `/api/v1/statistics/genre-graph`, method: "GET", params, signal },
     options,
   );
@@ -4469,7 +4469,7 @@ export const getEmotionGraph = (
   options?: SecondParameter<typeof customInstance>,
   signal?: AbortSignal,
 ) => {
-  return customInstance<EmotionGraphResponse>(
+  return customInstance<RsDataEmotionGraphResponse>(
     { url: `/api/v1/statistics/emotion-graph`, method: "GET", params, signal },
     options,
   );
@@ -4773,14 +4773,14 @@ export function useGetEmotionGraph<
 }
 
 /**
- * 총 감상 수, 평균 별정, 선호 장르, 주요 감정을 조회합니다.
+ * 총 감상 수, 평균 별점, 선호 장르, 주요 감정을 조회합니다.
  * @summary 통계 카드 조회
  */
 export const getStatisticsCard = (
   options?: SecondParameter<typeof customInstance>,
   signal?: AbortSignal,
 ) => {
-  return customInstance<StatisticsCardDto>(
+  return customInstance<RsDataStatisticsCardDto>(
     { url: `/api/v1/statistics/card`, method: "GET", signal },
     options,
   );
@@ -5074,7 +5074,7 @@ export const getLikeCount = (
   options?: SecondParameter<typeof customInstance>,
   signal?: AbortSignal,
 ) => {
-  return customInstance<LikeCountResponse>(
+  return customInstance<RsDataInteger>(
     { url: `/api/v1/likes/count`, method: "GET", params, signal },
     options,
   );
@@ -5355,14 +5355,14 @@ export function useGetLikeCount<
 }
 
 /**
- * 아직 수락되지 않은 PENDING 상태의 팔로우 요청 목록을 반환합니다.
+ * PENDING 상태의 목록을 반환합니다.
  * @summary 내가 보낸 팔로우 요청 목록 조회
  */
 export const getSentRequests = (
   options?: SecondParameter<typeof customInstance>,
   signal?: AbortSignal,
 ) => {
-  return customInstance<FollowUserResponse[]>(
+  return customInstance<RsDataListFollowUserResponse>(
     { url: `/api/v1/follows/sent-requests`, method: "GET", signal },
     options,
   );
@@ -5645,14 +5645,14 @@ export function useGetSentRequests<
 }
 
 /**
- * PENDING 상태의 팔로우 요청 목록을 반환합니다.
+ * PENDING 상태의 목록을 반환합니다.
  * @summary 내가 받은 팔로우 요청 목록 조회
  */
 export const getPendingRequests = (
   options?: SecondParameter<typeof customInstance>,
   signal?: AbortSignal,
 ) => {
-  return customInstance<FollowUserResponse[]>(
+  return customInstance<RsDataListFollowUserResponse>(
     { url: `/api/v1/follows/requests`, method: "GET", signal },
     options,
   );
@@ -5946,7 +5946,7 @@ export const getFollowings = (
   options?: SecondParameter<typeof customInstance>,
   signal?: AbortSignal,
 ) => {
-  return customInstance<FollowUserResponse[]>(
+  return customInstance<RsDataListFollowUserResponse>(
     { url: `/api/v1/follows/followings`, method: "GET", signal },
     options,
   );
@@ -6220,7 +6220,7 @@ export const getFollowers = (
   options?: SecondParameter<typeof customInstance>,
   signal?: AbortSignal,
 ) => {
-  return customInstance<FollowUserResponse[]>(
+  return customInstance<RsDataListFollowUserResponse>(
     { url: `/api/v1/follows/followers`, method: "GET", signal },
     options,
   );
@@ -6488,11 +6488,11 @@ export function useGetFollowers<
 
 /**
  * 사용자의 감상일기 목록을 페이징 조회합니다.
- * @summary 내 다이어리 목록 조회
+ * @summary 사용자 다이어리 목록 조회
  */
-export const getMyDiaries = (
+export const listUserDiaries = (
   userId: number,
-  params: GetMyDiariesParams,
+  params: ListUserDiariesParams,
   options?: SecondParameter<typeof customInstance>,
   signal?: AbortSignal,
 ) => {
@@ -6502,9 +6502,9 @@ export const getMyDiaries = (
   );
 };
 
-export const getGetMyDiariesQueryKey = (
+export const getListUserDiariesQueryKey = (
   userId?: number,
-  params?: GetMyDiariesParams,
+  params?: ListUserDiariesParams,
 ) => {
   return [
     `/api/v1/diaries/users/${userId}`,
@@ -6512,16 +6512,16 @@ export const getGetMyDiariesQueryKey = (
   ] as const;
 };
 
-export const getGetMyDiariesInfiniteQueryOptions = <
-  TData = InfiniteData<Awaited<ReturnType<typeof getMyDiaries>>>,
+export const getListUserDiariesInfiniteQueryOptions = <
+  TData = InfiniteData<Awaited<ReturnType<typeof listUserDiaries>>>,
   TError = unknown,
 >(
   userId: number,
-  params: GetMyDiariesParams,
+  params: ListUserDiariesParams,
   options?: {
     query?: Partial<
       UseInfiniteQueryOptions<
-        Awaited<ReturnType<typeof getMyDiaries>>,
+        Awaited<ReturnType<typeof listUserDiaries>>,
         TError,
         TData
       >
@@ -6532,11 +6532,11 @@ export const getGetMyDiariesInfiniteQueryOptions = <
   const { query: queryOptions, request: requestOptions } = options ?? {};
 
   const queryKey =
-    queryOptions?.queryKey ?? getGetMyDiariesQueryKey(userId, params);
+    queryOptions?.queryKey ?? getListUserDiariesQueryKey(userId, params);
 
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyDiaries>>> = ({
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listUserDiaries>>> = ({
     signal,
-  }) => getMyDiaries(userId, params, requestOptions, signal);
+  }) => listUserDiaries(userId, params, requestOptions, signal);
 
   return {
     queryKey,
@@ -6544,36 +6544,36 @@ export const getGetMyDiariesInfiniteQueryOptions = <
     enabled: !!userId,
     ...queryOptions,
   } as UseInfiniteQueryOptions<
-    Awaited<ReturnType<typeof getMyDiaries>>,
+    Awaited<ReturnType<typeof listUserDiaries>>,
     TError,
     TData
   > & { queryKey: DataTag<QueryKey, TData, TError> };
 };
 
-export type GetMyDiariesInfiniteQueryResult = NonNullable<
-  Awaited<ReturnType<typeof getMyDiaries>>
+export type ListUserDiariesInfiniteQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listUserDiaries>>
 >;
-export type GetMyDiariesInfiniteQueryError = unknown;
+export type ListUserDiariesInfiniteQueryError = unknown;
 
-export function useGetMyDiariesInfinite<
-  TData = InfiniteData<Awaited<ReturnType<typeof getMyDiaries>>>,
+export function useListUserDiariesInfinite<
+  TData = InfiniteData<Awaited<ReturnType<typeof listUserDiaries>>>,
   TError = unknown,
 >(
   userId: number,
-  params: GetMyDiariesParams,
+  params: ListUserDiariesParams,
   options: {
     query: Partial<
       UseInfiniteQueryOptions<
-        Awaited<ReturnType<typeof getMyDiaries>>,
+        Awaited<ReturnType<typeof listUserDiaries>>,
         TError,
         TData
       >
     > &
       Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getMyDiaries>>,
+          Awaited<ReturnType<typeof listUserDiaries>>,
           TError,
-          Awaited<ReturnType<typeof getMyDiaries>>
+          Awaited<ReturnType<typeof listUserDiaries>>
         >,
         "initialData"
       >;
@@ -6583,25 +6583,25 @@ export function useGetMyDiariesInfinite<
 ): DefinedUseInfiniteQueryResult<TData, TError> & {
   queryKey: DataTag<QueryKey, TData, TError>;
 };
-export function useGetMyDiariesInfinite<
-  TData = InfiniteData<Awaited<ReturnType<typeof getMyDiaries>>>,
+export function useListUserDiariesInfinite<
+  TData = InfiniteData<Awaited<ReturnType<typeof listUserDiaries>>>,
   TError = unknown,
 >(
   userId: number,
-  params: GetMyDiariesParams,
+  params: ListUserDiariesParams,
   options?: {
     query?: Partial<
       UseInfiniteQueryOptions<
-        Awaited<ReturnType<typeof getMyDiaries>>,
+        Awaited<ReturnType<typeof listUserDiaries>>,
         TError,
         TData
       >
     > &
       Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getMyDiaries>>,
+          Awaited<ReturnType<typeof listUserDiaries>>,
           TError,
-          Awaited<ReturnType<typeof getMyDiaries>>
+          Awaited<ReturnType<typeof listUserDiaries>>
         >,
         "initialData"
       >;
@@ -6611,16 +6611,16 @@ export function useGetMyDiariesInfinite<
 ): UseInfiniteQueryResult<TData, TError> & {
   queryKey: DataTag<QueryKey, TData, TError>;
 };
-export function useGetMyDiariesInfinite<
-  TData = InfiniteData<Awaited<ReturnType<typeof getMyDiaries>>>,
+export function useListUserDiariesInfinite<
+  TData = InfiniteData<Awaited<ReturnType<typeof listUserDiaries>>>,
   TError = unknown,
 >(
   userId: number,
-  params: GetMyDiariesParams,
+  params: ListUserDiariesParams,
   options?: {
     query?: Partial<
       UseInfiniteQueryOptions<
-        Awaited<ReturnType<typeof getMyDiaries>>,
+        Awaited<ReturnType<typeof listUserDiaries>>,
         TError,
         TData
       >
@@ -6632,19 +6632,19 @@ export function useGetMyDiariesInfinite<
   queryKey: DataTag<QueryKey, TData, TError>;
 };
 /**
- * @summary 내 다이어리 목록 조회
+ * @summary 사용자 다이어리 목록 조회
  */
 
-export function useGetMyDiariesInfinite<
-  TData = InfiniteData<Awaited<ReturnType<typeof getMyDiaries>>>,
+export function useListUserDiariesInfinite<
+  TData = InfiniteData<Awaited<ReturnType<typeof listUserDiaries>>>,
   TError = unknown,
 >(
   userId: number,
-  params: GetMyDiariesParams,
+  params: ListUserDiariesParams,
   options?: {
     query?: Partial<
       UseInfiniteQueryOptions<
-        Awaited<ReturnType<typeof getMyDiaries>>,
+        Awaited<ReturnType<typeof listUserDiaries>>,
         TError,
         TData
       >
@@ -6655,7 +6655,7 @@ export function useGetMyDiariesInfinite<
 ): UseInfiniteQueryResult<TData, TError> & {
   queryKey: DataTag<QueryKey, TData, TError>;
 } {
-  const queryOptions = getGetMyDiariesInfiniteQueryOptions(
+  const queryOptions = getListUserDiariesInfiniteQueryOptions(
     userId,
     params,
     options,
@@ -6673,15 +6673,19 @@ export function useGetMyDiariesInfinite<
   return query;
 }
 
-export const getGetMyDiariesQueryOptions = <
-  TData = Awaited<ReturnType<typeof getMyDiaries>>,
+export const getListUserDiariesQueryOptions = <
+  TData = Awaited<ReturnType<typeof listUserDiaries>>,
   TError = unknown,
 >(
   userId: number,
-  params: GetMyDiariesParams,
+  params: ListUserDiariesParams,
   options?: {
     query?: Partial<
-      UseQueryOptions<Awaited<ReturnType<typeof getMyDiaries>>, TError, TData>
+      UseQueryOptions<
+        Awaited<ReturnType<typeof listUserDiaries>>,
+        TError,
+        TData
+      >
     >;
     request?: SecondParameter<typeof customInstance>;
   },
@@ -6689,11 +6693,11 @@ export const getGetMyDiariesQueryOptions = <
   const { query: queryOptions, request: requestOptions } = options ?? {};
 
   const queryKey =
-    queryOptions?.queryKey ?? getGetMyDiariesQueryKey(userId, params);
+    queryOptions?.queryKey ?? getListUserDiariesQueryKey(userId, params);
 
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyDiaries>>> = ({
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listUserDiaries>>> = ({
     signal,
-  }) => getMyDiaries(userId, params, requestOptions, signal);
+  }) => listUserDiaries(userId, params, requestOptions, signal);
 
   return {
     queryKey,
@@ -6701,32 +6705,36 @@ export const getGetMyDiariesQueryOptions = <
     enabled: !!userId,
     ...queryOptions,
   } as UseQueryOptions<
-    Awaited<ReturnType<typeof getMyDiaries>>,
+    Awaited<ReturnType<typeof listUserDiaries>>,
     TError,
     TData
   > & { queryKey: DataTag<QueryKey, TData, TError> };
 };
 
-export type GetMyDiariesQueryResult = NonNullable<
-  Awaited<ReturnType<typeof getMyDiaries>>
+export type ListUserDiariesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listUserDiaries>>
 >;
-export type GetMyDiariesQueryError = unknown;
+export type ListUserDiariesQueryError = unknown;
 
-export function useGetMyDiaries<
-  TData = Awaited<ReturnType<typeof getMyDiaries>>,
+export function useListUserDiaries<
+  TData = Awaited<ReturnType<typeof listUserDiaries>>,
   TError = unknown,
 >(
   userId: number,
-  params: GetMyDiariesParams,
+  params: ListUserDiariesParams,
   options: {
     query: Partial<
-      UseQueryOptions<Awaited<ReturnType<typeof getMyDiaries>>, TError, TData>
+      UseQueryOptions<
+        Awaited<ReturnType<typeof listUserDiaries>>,
+        TError,
+        TData
+      >
     > &
       Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getMyDiaries>>,
+          Awaited<ReturnType<typeof listUserDiaries>>,
           TError,
-          Awaited<ReturnType<typeof getMyDiaries>>
+          Awaited<ReturnType<typeof listUserDiaries>>
         >,
         "initialData"
       >;
@@ -6736,21 +6744,25 @@ export function useGetMyDiaries<
 ): DefinedUseQueryResult<TData, TError> & {
   queryKey: DataTag<QueryKey, TData, TError>;
 };
-export function useGetMyDiaries<
-  TData = Awaited<ReturnType<typeof getMyDiaries>>,
+export function useListUserDiaries<
+  TData = Awaited<ReturnType<typeof listUserDiaries>>,
   TError = unknown,
 >(
   userId: number,
-  params: GetMyDiariesParams,
+  params: ListUserDiariesParams,
   options?: {
     query?: Partial<
-      UseQueryOptions<Awaited<ReturnType<typeof getMyDiaries>>, TError, TData>
+      UseQueryOptions<
+        Awaited<ReturnType<typeof listUserDiaries>>,
+        TError,
+        TData
+      >
     > &
       Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getMyDiaries>>,
+          Awaited<ReturnType<typeof listUserDiaries>>,
           TError,
-          Awaited<ReturnType<typeof getMyDiaries>>
+          Awaited<ReturnType<typeof listUserDiaries>>
         >,
         "initialData"
       >;
@@ -6760,15 +6772,19 @@ export function useGetMyDiaries<
 ): UseQueryResult<TData, TError> & {
   queryKey: DataTag<QueryKey, TData, TError>;
 };
-export function useGetMyDiaries<
-  TData = Awaited<ReturnType<typeof getMyDiaries>>,
+export function useListUserDiaries<
+  TData = Awaited<ReturnType<typeof listUserDiaries>>,
   TError = unknown,
 >(
   userId: number,
-  params: GetMyDiariesParams,
+  params: ListUserDiariesParams,
   options?: {
     query?: Partial<
-      UseQueryOptions<Awaited<ReturnType<typeof getMyDiaries>>, TError, TData>
+      UseQueryOptions<
+        Awaited<ReturnType<typeof listUserDiaries>>,
+        TError,
+        TData
+      >
     >;
     request?: SecondParameter<typeof customInstance>;
   },
@@ -6777,18 +6793,22 @@ export function useGetMyDiaries<
   queryKey: DataTag<QueryKey, TData, TError>;
 };
 /**
- * @summary 내 다이어리 목록 조회
+ * @summary 사용자 다이어리 목록 조회
  */
 
-export function useGetMyDiaries<
-  TData = Awaited<ReturnType<typeof getMyDiaries>>,
+export function useListUserDiaries<
+  TData = Awaited<ReturnType<typeof listUserDiaries>>,
   TError = unknown,
 >(
   userId: number,
-  params: GetMyDiariesParams,
+  params: ListUserDiariesParams,
   options?: {
     query?: Partial<
-      UseQueryOptions<Awaited<ReturnType<typeof getMyDiaries>>, TError, TData>
+      UseQueryOptions<
+        Awaited<ReturnType<typeof listUserDiaries>>,
+        TError,
+        TData
+      >
     >;
     request?: SecondParameter<typeof customInstance>;
   },
@@ -6796,7 +6816,7 @@ export function useGetMyDiaries<
 ): UseQueryResult<TData, TError> & {
   queryKey: DataTag<QueryKey, TData, TError>;
 } {
-  const queryOptions = getGetMyDiariesQueryOptions(userId, params, options);
+  const queryOptions = getListUserDiariesQueryOptions(userId, params, options);
 
   const query = useQuery(queryOptions, queryClient) as UseQueryResult<
     TData,
@@ -6811,7 +6831,7 @@ export function useGetMyDiaries<
 /**
  * @summary 컨텐츠 조회
  */
-export const getContent = (
+export const getContentForDiary = (
   diaryId: number,
   options?: SecondParameter<typeof customInstance>,
   signal?: AbortSignal,
@@ -6822,19 +6842,19 @@ export const getContent = (
   );
 };
 
-export const getGetContentQueryKey = (diaryId?: number) => {
+export const getGetContentForDiaryQueryKey = (diaryId?: number) => {
   return [`/api/v1/contents/${diaryId}`] as const;
 };
 
-export const getGetContentInfiniteQueryOptions = <
-  TData = InfiniteData<Awaited<ReturnType<typeof getContent>>>,
+export const getGetContentForDiaryInfiniteQueryOptions = <
+  TData = InfiniteData<Awaited<ReturnType<typeof getContentForDiary>>>,
   TError = unknown,
 >(
   diaryId: number,
   options?: {
     query?: Partial<
       UseInfiniteQueryOptions<
-        Awaited<ReturnType<typeof getContent>>,
+        Awaited<ReturnType<typeof getContentForDiary>>,
         TError,
         TData
       >
@@ -6844,11 +6864,12 @@ export const getGetContentInfiniteQueryOptions = <
 ) => {
   const { query: queryOptions, request: requestOptions } = options ?? {};
 
-  const queryKey = queryOptions?.queryKey ?? getGetContentQueryKey(diaryId);
+  const queryKey =
+    queryOptions?.queryKey ?? getGetContentForDiaryQueryKey(diaryId);
 
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof getContent>>> = ({
-    signal,
-  }) => getContent(diaryId, requestOptions, signal);
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getContentForDiary>>
+  > = ({ signal }) => getContentForDiary(diaryId, requestOptions, signal);
 
   return {
     queryKey,
@@ -6856,35 +6877,35 @@ export const getGetContentInfiniteQueryOptions = <
     enabled: !!diaryId,
     ...queryOptions,
   } as UseInfiniteQueryOptions<
-    Awaited<ReturnType<typeof getContent>>,
+    Awaited<ReturnType<typeof getContentForDiary>>,
     TError,
     TData
   > & { queryKey: DataTag<QueryKey, TData, TError> };
 };
 
-export type GetContentInfiniteQueryResult = NonNullable<
-  Awaited<ReturnType<typeof getContent>>
+export type GetContentForDiaryInfiniteQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getContentForDiary>>
 >;
-export type GetContentInfiniteQueryError = unknown;
+export type GetContentForDiaryInfiniteQueryError = unknown;
 
-export function useGetContentInfinite<
-  TData = InfiniteData<Awaited<ReturnType<typeof getContent>>>,
+export function useGetContentForDiaryInfinite<
+  TData = InfiniteData<Awaited<ReturnType<typeof getContentForDiary>>>,
   TError = unknown,
 >(
   diaryId: number,
   options: {
     query: Partial<
       UseInfiniteQueryOptions<
-        Awaited<ReturnType<typeof getContent>>,
+        Awaited<ReturnType<typeof getContentForDiary>>,
         TError,
         TData
       >
     > &
       Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getContent>>,
+          Awaited<ReturnType<typeof getContentForDiary>>,
           TError,
-          Awaited<ReturnType<typeof getContent>>
+          Awaited<ReturnType<typeof getContentForDiary>>
         >,
         "initialData"
       >;
@@ -6894,24 +6915,24 @@ export function useGetContentInfinite<
 ): DefinedUseInfiniteQueryResult<TData, TError> & {
   queryKey: DataTag<QueryKey, TData, TError>;
 };
-export function useGetContentInfinite<
-  TData = InfiniteData<Awaited<ReturnType<typeof getContent>>>,
+export function useGetContentForDiaryInfinite<
+  TData = InfiniteData<Awaited<ReturnType<typeof getContentForDiary>>>,
   TError = unknown,
 >(
   diaryId: number,
   options?: {
     query?: Partial<
       UseInfiniteQueryOptions<
-        Awaited<ReturnType<typeof getContent>>,
+        Awaited<ReturnType<typeof getContentForDiary>>,
         TError,
         TData
       >
     > &
       Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getContent>>,
+          Awaited<ReturnType<typeof getContentForDiary>>,
           TError,
-          Awaited<ReturnType<typeof getContent>>
+          Awaited<ReturnType<typeof getContentForDiary>>
         >,
         "initialData"
       >;
@@ -6921,15 +6942,15 @@ export function useGetContentInfinite<
 ): UseInfiniteQueryResult<TData, TError> & {
   queryKey: DataTag<QueryKey, TData, TError>;
 };
-export function useGetContentInfinite<
-  TData = InfiniteData<Awaited<ReturnType<typeof getContent>>>,
+export function useGetContentForDiaryInfinite<
+  TData = InfiniteData<Awaited<ReturnType<typeof getContentForDiary>>>,
   TError = unknown,
 >(
   diaryId: number,
   options?: {
     query?: Partial<
       UseInfiniteQueryOptions<
-        Awaited<ReturnType<typeof getContent>>,
+        Awaited<ReturnType<typeof getContentForDiary>>,
         TError,
         TData
       >
@@ -6944,15 +6965,15 @@ export function useGetContentInfinite<
  * @summary 컨텐츠 조회
  */
 
-export function useGetContentInfinite<
-  TData = InfiniteData<Awaited<ReturnType<typeof getContent>>>,
+export function useGetContentForDiaryInfinite<
+  TData = InfiniteData<Awaited<ReturnType<typeof getContentForDiary>>>,
   TError = unknown,
 >(
   diaryId: number,
   options?: {
     query?: Partial<
       UseInfiniteQueryOptions<
-        Awaited<ReturnType<typeof getContent>>,
+        Awaited<ReturnType<typeof getContentForDiary>>,
         TError,
         TData
       >
@@ -6963,7 +6984,10 @@ export function useGetContentInfinite<
 ): UseInfiniteQueryResult<TData, TError> & {
   queryKey: DataTag<QueryKey, TData, TError>;
 } {
-  const queryOptions = getGetContentInfiniteQueryOptions(diaryId, options);
+  const queryOptions = getGetContentForDiaryInfiniteQueryOptions(
+    diaryId,
+    options,
+  );
 
   const query = useInfiniteQuery(
     queryOptions,
@@ -6977,25 +7001,30 @@ export function useGetContentInfinite<
   return query;
 }
 
-export const getGetContentQueryOptions = <
-  TData = Awaited<ReturnType<typeof getContent>>,
+export const getGetContentForDiaryQueryOptions = <
+  TData = Awaited<ReturnType<typeof getContentForDiary>>,
   TError = unknown,
 >(
   diaryId: number,
   options?: {
     query?: Partial<
-      UseQueryOptions<Awaited<ReturnType<typeof getContent>>, TError, TData>
+      UseQueryOptions<
+        Awaited<ReturnType<typeof getContentForDiary>>,
+        TError,
+        TData
+      >
     >;
     request?: SecondParameter<typeof customInstance>;
   },
 ) => {
   const { query: queryOptions, request: requestOptions } = options ?? {};
 
-  const queryKey = queryOptions?.queryKey ?? getGetContentQueryKey(diaryId);
+  const queryKey =
+    queryOptions?.queryKey ?? getGetContentForDiaryQueryKey(diaryId);
 
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof getContent>>> = ({
-    signal,
-  }) => getContent(diaryId, requestOptions, signal);
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getContentForDiary>>
+  > = ({ signal }) => getContentForDiary(diaryId, requestOptions, signal);
 
   return {
     queryKey,
@@ -7003,31 +7032,35 @@ export const getGetContentQueryOptions = <
     enabled: !!diaryId,
     ...queryOptions,
   } as UseQueryOptions<
-    Awaited<ReturnType<typeof getContent>>,
+    Awaited<ReturnType<typeof getContentForDiary>>,
     TError,
     TData
   > & { queryKey: DataTag<QueryKey, TData, TError> };
 };
 
-export type GetContentQueryResult = NonNullable<
-  Awaited<ReturnType<typeof getContent>>
+export type GetContentForDiaryQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getContentForDiary>>
 >;
-export type GetContentQueryError = unknown;
+export type GetContentForDiaryQueryError = unknown;
 
-export function useGetContent<
-  TData = Awaited<ReturnType<typeof getContent>>,
+export function useGetContentForDiary<
+  TData = Awaited<ReturnType<typeof getContentForDiary>>,
   TError = unknown,
 >(
   diaryId: number,
   options: {
     query: Partial<
-      UseQueryOptions<Awaited<ReturnType<typeof getContent>>, TError, TData>
+      UseQueryOptions<
+        Awaited<ReturnType<typeof getContentForDiary>>,
+        TError,
+        TData
+      >
     > &
       Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getContent>>,
+          Awaited<ReturnType<typeof getContentForDiary>>,
           TError,
-          Awaited<ReturnType<typeof getContent>>
+          Awaited<ReturnType<typeof getContentForDiary>>
         >,
         "initialData"
       >;
@@ -7037,20 +7070,24 @@ export function useGetContent<
 ): DefinedUseQueryResult<TData, TError> & {
   queryKey: DataTag<QueryKey, TData, TError>;
 };
-export function useGetContent<
-  TData = Awaited<ReturnType<typeof getContent>>,
+export function useGetContentForDiary<
+  TData = Awaited<ReturnType<typeof getContentForDiary>>,
   TError = unknown,
 >(
   diaryId: number,
   options?: {
     query?: Partial<
-      UseQueryOptions<Awaited<ReturnType<typeof getContent>>, TError, TData>
+      UseQueryOptions<
+        Awaited<ReturnType<typeof getContentForDiary>>,
+        TError,
+        TData
+      >
     > &
       Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getContent>>,
+          Awaited<ReturnType<typeof getContentForDiary>>,
           TError,
-          Awaited<ReturnType<typeof getContent>>
+          Awaited<ReturnType<typeof getContentForDiary>>
         >,
         "initialData"
       >;
@@ -7060,14 +7097,18 @@ export function useGetContent<
 ): UseQueryResult<TData, TError> & {
   queryKey: DataTag<QueryKey, TData, TError>;
 };
-export function useGetContent<
-  TData = Awaited<ReturnType<typeof getContent>>,
+export function useGetContentForDiary<
+  TData = Awaited<ReturnType<typeof getContentForDiary>>,
   TError = unknown,
 >(
   diaryId: number,
   options?: {
     query?: Partial<
-      UseQueryOptions<Awaited<ReturnType<typeof getContent>>, TError, TData>
+      UseQueryOptions<
+        Awaited<ReturnType<typeof getContentForDiary>>,
+        TError,
+        TData
+      >
     >;
     request?: SecondParameter<typeof customInstance>;
   },
@@ -7079,14 +7120,18 @@ export function useGetContent<
  * @summary 컨텐츠 조회
  */
 
-export function useGetContent<
-  TData = Awaited<ReturnType<typeof getContent>>,
+export function useGetContentForDiary<
+  TData = Awaited<ReturnType<typeof getContentForDiary>>,
   TError = unknown,
 >(
   diaryId: number,
   options?: {
     query?: Partial<
-      UseQueryOptions<Awaited<ReturnType<typeof getContent>>, TError, TData>
+      UseQueryOptions<
+        Awaited<ReturnType<typeof getContentForDiary>>,
+        TError,
+        TData
+      >
     >;
     request?: SecondParameter<typeof customInstance>;
   },
@@ -7094,7 +7139,7 @@ export function useGetContent<
 ): UseQueryResult<TData, TError> & {
   queryKey: DataTag<QueryKey, TData, TError>;
 } {
-  const queryOptions = getGetContentQueryOptions(diaryId, options);
+  const queryOptions = getGetContentForDiaryQueryOptions(diaryId, options);
 
   const query = useQuery(queryOptions, queryClient) as UseQueryResult<
     TData,
@@ -7700,7 +7745,7 @@ export const unfollowUser = (
   otherUserId: number,
   options?: SecondParameter<typeof customInstance>,
 ) => {
-  return customInstance<string>(
+  return customInstance<RsData>(
     { url: `/api/v1/follows/${otherUserId}`, method: "DELETE" },
     options,
   );
@@ -7782,7 +7827,7 @@ export const rejectFollow = (
   followId: number,
   options?: SecondParameter<typeof customInstance>,
 ) => {
-  return customInstance<string>(
+  return customInstance<RsData>(
     { url: `/api/v1/follows/${followId}/reject`, method: "DELETE" },
     options,
   );
@@ -7864,7 +7909,7 @@ export const deleteComment = (
   commentId: number,
   options?: SecondParameter<typeof customInstance>,
 ) => {
-  return customInstance<RsDataVoid>(
+  return customInstance<RsData>(
     { url: `/api/v1/comments/${commentId}`, method: "DELETE" },
     options,
   );

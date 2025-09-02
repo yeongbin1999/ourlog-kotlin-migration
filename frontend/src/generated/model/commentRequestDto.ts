@@ -7,6 +7,6 @@
  */
 
 export interface CommentRequestDto {
-  diaryId?: number;
+  diaryId: number;
   content: string;
 }

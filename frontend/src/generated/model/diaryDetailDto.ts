@@ -7,10 +7,11 @@
  */
 
 export interface DiaryDetailDto {
-  title?: string;
-  rating?: number;
-  contentText?: string;
-  tagNames?: string[];
-  genreNames?: string[];
-  ottNames?: string[];
+  title: string;
+  rating: number;
+  contentText: string;
+  tagNames: string[];
+  genreNames: string[];
+  ottNames: string[];
+  isPublic: boolean;
 }

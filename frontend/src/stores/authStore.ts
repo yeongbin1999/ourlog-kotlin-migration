@@ -19,7 +19,6 @@ interface AuthState {
   accessToken: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   error: string | null;
   isRefreshing: boolean;
 }
@@ -72,14 +71,15 @@ export const useAuthStore = create<AuthStore>()(
                   headers: { Authorization: `Bearer ${accessToken}` },
                 },
               });
-              const meData = meResponse.data;
-              if (meData && meData.data) {
+              console.log('meResponse:', meResponse);
+              if (meResponse.data) {
                 currentUser = {
-                  id: meData.data.userId?.toString() || '',
-                  email: meData.data.email || '',
-                  nickname: meData.data.nickname || '',
-                  profileImageUrl: meData.data.profileImageUrl,
+                  id: meResponse.data.userId?.toString() || '',
+                  email: meResponse.data.email || '',
+                  nickname: meResponse.data.nickname || '',
+                  profileImageUrl: meResponse.data.profileImageUrl,
                 };
+                console.log('currentUser after getMe:', currentUser);
               }
             } catch (meError) {
               console.error('Failed to fetch user profile after login:', meError);
@@ -93,6 +93,7 @@ export const useAuthStore = create<AuthStore>()(
             isLoading: false,
             error: null,
           });
+          console.log('Auth state after login:', get().user, get().accessToken, get().isAuthenticated);
 
           window.localStorage.setItem(
             'authEvent',
@@ -237,14 +238,13 @@ export const useAuthStore = create<AuthStore>()(
         if (get().isAuthenticated && !get().user) {
           try {
             const meResponse = await getMe();
-            const meData = meResponse.data;
-            if (meData) {
+            if (meResponse.data) {
               set({
                 user: {
-                  id: meData.userId?.toString() || '',
-                  email: meData.email || '',
-                  nickname: meData.nickname || '',
-                  profileImageUrl: meData.profileImageUrl,
+                  id: meResponse.data.userId?.toString() || '',
+                  email: meResponse.data.email || '',
+                  nickname: meResponse.data.nickname || '',
+                  profileImageUrl: meResponse.data.profileImageUrl,
                 },
               });
             }

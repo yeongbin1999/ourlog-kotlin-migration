@@ -29,7 +29,9 @@ class AuthService(
         val user = createNormalUser(
             email = request.email,
             encodedPassword = passwordEncoder.encode(request.password),
-            nickname = request.nickname
+            nickname = request.nickname,
+            profileImageUrl = request.profileImageUrl,
+            bio = request.bio
         )
 
         userRepository.save(user)

@@ -6,6 +6,7 @@
  * OpenAPI spec version: beta
  */
 
-export type GetPendingRequestsParams = {
-  userId: number;
-};
+export interface FavoriteTypeAndCountDto {
+  favoriteType: string;
+  favoriteTypeCount: number;
+}

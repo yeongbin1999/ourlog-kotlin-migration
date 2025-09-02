@@ -8,13 +8,12 @@
 import type { ContentSearchResultDtoType } from "./contentSearchResultDtoType";
 
 export interface ContentSearchResultDto {
-  externalId?: string;
+  externalId: string;
   title?: string;
   creatorName?: string;
   description?: string;
   posterUrl?: string;
   releasedAt?: string;
-  type?: ContentSearchResultDtoType;
-  genres?: string[];
-  "@class": string;
+  type: ContentSearchResultDtoType;
+  genres: string[];
 }

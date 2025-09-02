@@ -50,7 +50,11 @@ export default function UserProfileCard({
   useEffect(() => {
     axiosInstance
       .get(`/api/v1/users/${userId}`)
-      .then((res) => setProfile(res.data.data))
+      .then((res) => {
+        setProfile(res.data.data);
+        console.log('UserProfileCard profile:', res.data.data);
+        console.log('UserProfileCard profileImageUrl:', res.data.data.profileImageUrl);
+      })
       .catch(() => setError('존재하지 않는 사용자입니다.'));
   }, [userId]);
 
@@ -191,7 +195,10 @@ export default function UserProfileCard({
       case 'sent':
         return (
           <button
-            onClick={onActionCompleted}
+            onClick={(e) => {
+              e.stopPropagation(); // Stop event propagation
+              onActionCompleted?.();
+            }}
             className="mt-6 px-4 py-2 bg-red-500 text-white rounded"
           >
             요청 취소

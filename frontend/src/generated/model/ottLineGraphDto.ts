@@ -7,7 +7,7 @@
  */
 
 export interface OttLineGraphDto {
-  axisLabel?: string;
-  ottName?: string;
-  count?: number;
+  axisLabel: string;
+  ottName: string;
+  count: number;
 }

@@ -59,10 +59,10 @@ export default function MyProfilePage() {
             );
 
             setCounts({
-                received: Array.isArray(res[0]) ? res[0].length : 0,
-                sent: Array.isArray(res[1]) ? res[1].length : 0,
-                following: Array.isArray(res[2]) ? res[2].length : 0,
-                followers: Array.isArray(res[3]) ? res[3].length : 0,
+                received: res[0].data ? res[0].data.length : 0,
+                sent: res[1].data ? res[1].data.length : 0,
+                following: res[2].data ? res[2].data.length : 0,
+                followers: res[3].data ? res[3].data.length : 0,
             });
         } catch (err) {
             console.error('수량 불러오기 실패', err);

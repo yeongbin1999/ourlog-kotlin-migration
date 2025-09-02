@@ -6,6 +6,4 @@
  * OpenAPI spec version: beta
  */
 
-export type UnfollowUserParams = {
-  myUserId: number;
-};
+export type Like200 = { [key: string]: unknown };

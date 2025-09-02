@@ -8,9 +8,9 @@
 import type { ContentSearchResultDto } from "./contentSearchResultDto";
 
 export interface RsDataListContentSearchResultDto {
-  resultCode?: string;
+  resultCode: string;
   msg?: string;
   data?: ContentSearchResultDto[];
-  fail?: boolean;
-  success?: boolean;
+  isSuccess: boolean;
+  isFail: boolean;
 }

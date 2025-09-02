@@ -9,6 +9,6 @@ import type { EmotionLineGraphDto } from "./emotionLineGraphDto";
 import type { EmotionRankDto } from "./emotionRankDto";
 
 export interface EmotionGraphResponse {
-  emotionLineGraph?: EmotionLineGraphDto[];
-  emotionRanking?: EmotionRankDto[];
+  emotionLineGraph: EmotionLineGraphDto[];
+  emotionRanking: EmotionRankDto[];
 }

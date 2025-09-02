@@ -55,7 +55,7 @@ export function UserMenu() {
     <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
         <Avatar className="w-10 h-10 cursor-pointer">
-          <AvatarImage src={user?.profileImageUrl || ''} alt={user?.nickname || 'User'} />
+          <AvatarImage src={user?.profileImageUrl || null} alt={user?.nickname || 'User'} />
           <AvatarFallback>{user?.nickname?.charAt(0) || 'U'}</AvatarFallback>
         </Avatar>
       </DropdownMenuTrigger>

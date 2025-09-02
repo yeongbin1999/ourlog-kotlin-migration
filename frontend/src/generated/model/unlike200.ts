@@ -6,6 +6,4 @@
  * OpenAPI spec version: beta
  */
 
-export type GetFollowingsParams = {
-  userId: number;
-};
+export type Unlike200 = { [key: string]: unknown };

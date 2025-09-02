@@ -8,9 +8,9 @@
 import type { CommentResponseDto } from "./commentResponseDto";
 
 export interface RsDataCommentResponseDto {
-  resultCode?: string;
+  resultCode: string;
   msg?: string;
   data?: CommentResponseDto;
-  fail?: boolean;
-  success?: boolean;
+  isSuccess: boolean;
+  isFail: boolean;
 }

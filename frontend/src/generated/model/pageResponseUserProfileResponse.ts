@@ -8,12 +8,10 @@
 import type { UserProfileResponse } from "./userProfileResponse";
 
 export interface PageResponseUserProfileResponse {
-  data: unknown;
-  fail: boolean;
-  content?: UserProfileResponse[];
-  page?: number;
-  size?: number;
-  totalElements?: number;
-  totalPages?: number;
-  hasNext?: boolean;
+  content: UserProfileResponse[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  hasNext: boolean;
 }

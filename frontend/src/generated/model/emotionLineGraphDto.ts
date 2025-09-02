@@ -7,7 +7,7 @@
  */
 
 export interface EmotionLineGraphDto {
-  axisLabel?: string;
-  emotion?: string;
-  count?: number;
+  axisLabel: string;
+  emotion: string;
+  count: number;
 }
