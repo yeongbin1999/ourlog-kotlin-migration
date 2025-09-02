@@ -15,6 +15,7 @@ import com.querydsl.core.types.dsl.Expressions
 import com.querydsl.jpa.impl.JPAQueryFactory
 import jakarta.persistence.EntityManager
 import org.springframework.beans.factory.annotation.Value
+import com.querydsl.core.types.dsl.StringTemplate
 import org.springframework.stereotype.Repository
 import java.time.LocalDateTime
 
@@ -31,8 +32,8 @@ class StatisticsRepositoryCustomImpl(
     val diaryTag = QDiaryTag.diaryTag
     val tag = QTag.tag
 
-    val monthlyPeriodExpr = Expressions.stringTemplate(lineMonthlySql, diary.createdAt)
-    val dailyPeriodExpr = Expressions.stringTemplate(lineDailySql, diary.createdAt)
+    val monthlyPeriodExpr: StringTemplate = Expressions.stringTemplate(lineMonthlySql, diary.createdAt)
+    val dailyPeriodExpr: StringTemplate = Expressions.stringTemplate(lineDailySql, diary.createdAt)
 
     /** 총 다이어리 개수 */
     override fun getTotalDiaryCountByUserId(userId: Int): Long {
@@ -41,7 +42,7 @@ class StatisticsRepositoryCustomImpl(
             .select(diary.count())
             .from(diary)
             .where(diary.user.id.eq(userId))
-            .fetchOne() ?: 0L                  // 결과가 없을 때 안전 장치
+            .fetchOne() ?: 0L
     }
 
     /** 평균 별점 */
@@ -66,9 +67,7 @@ class StatisticsRepositoryCustomImpl(
             .where(diary.user.id.eq(userId))
             .groupBy(content.type)
             .orderBy(diary.count().desc())
-            .limit(1)
-            .fetch()
-            .firstOrNull()
+            .fetchFirst()
 
         return FavoriteTypeAndCountDto(
             favoriteType = result?.get(content.type)?.toString() ?: "없음",
@@ -87,9 +86,7 @@ class StatisticsRepositoryCustomImpl(
             .where(diary.user.id.eq(userId))
             .groupBy(tag.name)
             .orderBy(diaryTag.count().desc())
-            .limit(1)
-            .fetch()
-            .firstOrNull()
+            .fetchFirst()
 
         return FavoriteEmotionAndCountDto(
             favoriteEmotion = result?.get(tag.name) ?: "없음",
@@ -99,9 +96,6 @@ class StatisticsRepositoryCustomImpl(
 
     /** 최근 6개월 감상 수 */
     override fun count6MonthlyDiaryByUserId(userId: Int, startDate: LocalDateTime): List<MonthlyDiaryCount> {
-
-
-
         val result = queryFactory
             .select(monthlyPeriodExpr, diary.count())
             .from(diary)
@@ -113,9 +107,11 @@ class StatisticsRepositoryCustomImpl(
             .orderBy(monthlyPeriodExpr.asc())
             .fetch()
 
+        if (result.isEmpty()) return emptyList()
+
         return result.map { tuple ->
             MonthlyDiaryCount(
-                tuple.get(monthlyPeriodExpr) ?: "",
+                tuple.get(monthlyPeriodExpr) ?: "없음",
                 tuple.get(diary.count()) ?: 0L
             )
         }
@@ -133,6 +129,8 @@ class StatisticsRepositoryCustomImpl(
             .orderBy(diary.count().desc())
             .fetch()
 
+        if (result.isEmpty()) return emptyList()
+
         return result.map { tuple ->
             TypeCountDto(
                 tuple.get(content.type).toString(),
@@ -142,34 +140,15 @@ class StatisticsRepositoryCustomImpl(
     }
 
     /** 콘텐츠 타입별 월별 추이 */
-    override fun findTypeLineMonthly(userId: Int, start: LocalDateTime, end: LocalDateTime): List<TypeLineGraphDto> {
-        val result = queryFactory
-            .select(
-                Projections.constructor(
-                TypeLineGraphDto::class.java,
-                monthlyPeriodExpr,           // 월별 라벨
-                content.type,        // 콘텐츠 타입
-                diary.count()        // 카운트
-            ))
-            .from(diary)
-            .join(content).on(diary.content.id.eq(content.id))
-            .where(
-                diary.user.id.eq(userId),
-                diary.createdAt.between(start, end)
-            )
-            .groupBy(monthlyPeriodExpr, content.type)
-            .orderBy(monthlyPeriodExpr.asc(), content.type.asc())
-            .fetch()
-
-        return result
-    }
-
+    override fun findTypeLineMonthly(userId: Int, start: LocalDateTime, end: LocalDateTime): List<TypeLineGraphDto> = findTypeLine(userId, start, end, monthlyPeriodExpr)
     /** 콘텐츠 타입별 일별 추이 */
-    override fun findTypeLineDaily(userId: Int, start: LocalDateTime, end: LocalDateTime): List<TypeLineGraphDto> {
+    override fun findTypeLineDaily(userId: Int, start: LocalDateTime, end: LocalDateTime): List<TypeLineGraphDto> = findTypeLine(userId, start, end, dailyPeriodExpr)
+
+    fun findTypeLine(userId: Int, start: LocalDateTime, end: LocalDateTime, periodExpr: StringTemplate): List<TypeLineGraphDto> {
         val result = queryFactory
             .select(Projections.constructor(
                 TypeLineGraphDto::class.java,
-                dailyPeriodExpr,
+                periodExpr,
                 content.type,
                 diary.count()
             ))
@@ -179,8 +158,8 @@ class StatisticsRepositoryCustomImpl(
                 diary.user.id.eq(userId),
                 diary.createdAt.between(start, end)
             )
-            .groupBy(dailyPeriodExpr, content.type)
-            .orderBy(dailyPeriodExpr.asc(), content.type.asc())
+            .groupBy(periodExpr, content.type)
+            .orderBy(periodExpr.asc(), content.type.asc())
             .fetch()
 
         return result
@@ -206,34 +185,15 @@ class StatisticsRepositoryCustomImpl(
     }
 
     /** 장르별 월별 추이 */
-    override fun findGenreLineMonthly(userId: Int, start: LocalDateTime, end: LocalDateTime): List<GenreLineGraphDto> {
-        val result = queryFactory
-            .select(Projections.constructor(
-                GenreLineGraphDto::class.java,
-                monthlyPeriodExpr,
-                genre.name,
-                diary.count()
-            ))
-            .from(diary)
-            .join(diaryGenre).on(diaryGenre.diary.id.eq(diary.id))
-            .join(genre).on(genre.id.eq(diaryGenre.genre.id))
-            .where(
-                diary.user.id.eq(userId),
-                diary.createdAt.between(start, end)
-            )
-            .groupBy(monthlyPeriodExpr, genre.name)
-            .orderBy(monthlyPeriodExpr.asc(), genre.name.asc())
-            .fetch()
-
-        return result
-    }
-
+    override fun findGenreLineMonthly(userId: Int, start: LocalDateTime, end: LocalDateTime): List<GenreLineGraphDto> = findGenreLine(userId, start, end, monthlyPeriodExpr)
     /** 장르별 일별 추이 */
-    override fun findGenreLineDaily(userId: Int, start: LocalDateTime, end: LocalDateTime): List<GenreLineGraphDto> {
+    override fun findGenreLineDaily(userId: Int, start: LocalDateTime, end: LocalDateTime): List<GenreLineGraphDto> = findGenreLine(userId, start, end, dailyPeriodExpr)
+
+    fun findGenreLine(userId: Int, start: LocalDateTime, end: LocalDateTime, periodExpr: StringTemplate): List<GenreLineGraphDto> {
         val result = queryFactory
             .select(Projections.constructor(
                 GenreLineGraphDto::class.java,
-                dailyPeriodExpr,
+                periodExpr,
                 genre.name,
                 diary.count()
             ))
@@ -244,8 +204,8 @@ class StatisticsRepositoryCustomImpl(
                 diary.user.id.eq(userId),
                 diary.createdAt.between(start, end)
             )
-            .groupBy(dailyPeriodExpr, genre.name)
-            .orderBy(dailyPeriodExpr.asc(), genre.name.asc())
+            .groupBy(periodExpr, genre.name)
+            .orderBy(periodExpr.asc(), genre.name.asc())
             .fetch()
 
         return result
@@ -274,32 +234,15 @@ class StatisticsRepositoryCustomImpl(
     }
 
     /** 감정별 월별 추이 */
-    override fun findEmotionLineMonthly(userId: Int, start: LocalDateTime, end: LocalDateTime): List<EmotionLineGraphDto> {
-        return queryFactory
-            .select(Projections.constructor(
-                EmotionLineGraphDto::class.java,
-                monthlyPeriodExpr,
-                tag.name,
-                diary.count()
-            ))
-            .from(diary)
-            .join(diaryTag).on(diaryTag.diary.id.eq(diary.id))
-            .join(tag).on(tag.id.eq(diaryTag.tag.id))
-            .where(
-                diary.user.id.eq(userId),
-                diary.createdAt.between(start, end)
-            )
-            .groupBy(monthlyPeriodExpr, tag.name)
-            .orderBy(monthlyPeriodExpr.asc(), tag.name.asc())
-            .fetch()
-    }
-
+    override fun findEmotionLineMonthly(userId: Int, start: LocalDateTime, end: LocalDateTime): List<EmotionLineGraphDto> = findEmotionLine(userId, start, end, monthlyPeriodExpr)
     /** 감정별 일별 추이 */
-    override fun findEmotionLineDaily(userId: Int, start: LocalDateTime, end: LocalDateTime): List<EmotionLineGraphDto> {
+    override fun findEmotionLineDaily(userId: Int, start: LocalDateTime, end: LocalDateTime): List<EmotionLineGraphDto> = findEmotionLine(userId, start, end, dailyPeriodExpr)
+
+    fun findEmotionLine(userId: Int, start: LocalDateTime, end: LocalDateTime, periodExpr: StringTemplate): List<EmotionLineGraphDto> {
         return queryFactory
             .select(Projections.constructor(
                 EmotionLineGraphDto::class.java,
-                dailyPeriodExpr,
+                periodExpr,
                 tag.name,
                 diary.count()
             ))
@@ -310,8 +253,8 @@ class StatisticsRepositoryCustomImpl(
                 diary.user.id.eq(userId),
                 diary.createdAt.between(start, end)
             )
-            .groupBy(dailyPeriodExpr, tag.name)
-            .orderBy(dailyPeriodExpr.asc(), tag.name.asc())
+            .groupBy(periodExpr, tag.name)
+            .orderBy(periodExpr.asc(), tag.name.asc())
             .fetch()
     }
 
@@ -336,32 +279,20 @@ class StatisticsRepositoryCustomImpl(
     }
 
     /** OTT별 월별 추이 */
-    override fun findOttLineMonthly(userId: Int, start: LocalDateTime, end: LocalDateTime): List<OttLineGraphDto> {
-        return queryFactory
-            .select(Projections.constructor(
-                OttLineGraphDto::class.java,
-                monthlyPeriodExpr,
-                ott.name,
-                diary.count()
-            ))
-            .from(diary)
-            .join(diaryOtt).on(diaryOtt.diary.id.eq(diary.id))
-            .join(ott).on(ott.id.eq(diaryOtt.ott.id))
-            .where(
-                diary.user.id.eq(userId),
-                diary.createdAt.between(start, end)
-            )
-            .groupBy(monthlyPeriodExpr, ott.name)
-            .orderBy(monthlyPeriodExpr.asc(), ott.name.asc())
-            .fetch()
-    }
-
+    override fun findOttLineMonthly(userId: Int, start: LocalDateTime, end: LocalDateTime): List<OttLineGraphDto> = findOttLine(userId, start, end, monthlyPeriodExpr)
     /** OTT별 일별 추이 */
-    override fun findOttLineDaily(userId: Int, start: LocalDateTime, end: LocalDateTime): List<OttLineGraphDto> {
+    override fun findOttLineDaily(userId: Int, start: LocalDateTime, end: LocalDateTime): List<OttLineGraphDto> = findOttLine(userId, start, end, dailyPeriodExpr)
+
+    private fun findOttLine(
+        userId: Int,
+        start: LocalDateTime,
+        end: LocalDateTime,
+        periodExpr: StringTemplate
+    ): List<OttLineGraphDto> {
         return queryFactory
             .select(Projections.constructor(
                 OttLineGraphDto::class.java,
-                dailyPeriodExpr,
+                periodExpr,
                 ott.name,
                 diary.count()
             ))
@@ -372,8 +303,8 @@ class StatisticsRepositoryCustomImpl(
                 diary.user.id.eq(userId),
                 diary.createdAt.between(start, end)
             )
-            .groupBy(dailyPeriodExpr, ott.name)
-            .orderBy(dailyPeriodExpr.asc(), ott.name.asc())
+            .groupBy(periodExpr, ott.name)
+            .orderBy(periodExpr.asc(), ott.name.asc())
             .fetch()
     }
 
