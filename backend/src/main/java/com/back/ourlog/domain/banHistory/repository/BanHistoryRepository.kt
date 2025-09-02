@@ -12,4 +12,3 @@ interface BanHistoryRepository : JpaRepository<BanHistory, Int> {
     @Query("SELECT b FROM BanHistory b WHERE b.user = :user AND (b.expiredAt IS NULL OR b.expiredAt > CURRENT_TIMESTAMP)")
     fun findActiveBanByUser(@Param("user") user: User): BanHistory?
 }
-

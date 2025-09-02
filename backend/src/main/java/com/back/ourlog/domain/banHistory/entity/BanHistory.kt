@@ -9,6 +9,9 @@ import java.time.LocalDateTime
 @Entity
 @EntityListeners(AuditingEntityListener::class)
 class BanHistory(
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    val id: Int? = null,
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     val user: User,
@@ -18,17 +21,13 @@ class BanHistory(
     val banType: BanType,
 
     @Column(length = 255)
-    val reason: String? = null,
+    val reason: String = "No reason provided",
 
-    val expiredAt: LocalDateTime? = null,
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Int? = null,
-
+    @Column(nullable = false, updatable = false)
     @CreatedDate
-    @Column(updatable = false)
-    val bannedAt: LocalDateTime? = null
+    val bannedAt: LocalDateTime = LocalDateTime.now(),
+
+    val expiredAt: LocalDateTime? = null
 ) {
     val isActiveNow: Boolean
         get() = banType == BanType.PERMANENT || (expiredAt?.isAfter(LocalDateTime.now()) == true)

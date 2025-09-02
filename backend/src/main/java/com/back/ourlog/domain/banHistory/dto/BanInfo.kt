@@ -1,21 +1,23 @@
 package com.back.ourlog.domain.banHistory.dto
 
 import com.back.ourlog.domain.banHistory.entity.BanHistory
-import java.io.Serializable
 import java.time.LocalDateTime
 
-data class BanInfo (
-    private var bannedAt: LocalDateTime,
-    private var expiredAt: LocalDateTime,
-    private var reason: String
-) : Serializable {
-
+data class BanInfo(
+    val bannedAt: LocalDateTime,
+    val expiredAt: LocalDateTime?,
+    val reason: String
+) {
     val isStillBanned: Boolean
-        get() = expiredAt.isAfter(LocalDateTime.now())
+        get() = expiredAt?.isAfter(LocalDateTime.now()) ?: true
 
     companion object {
         fun from(ban: BanHistory): BanInfo {
-            return BanInfo(ban.bannedAt, ban.expiredAt, ban.reason)
+            return BanInfo(
+                bannedAt = ban.bannedAt,
+                expiredAt = ban.expiredAt,
+                reason = ban.reason
+            )
         }
     }
 }
