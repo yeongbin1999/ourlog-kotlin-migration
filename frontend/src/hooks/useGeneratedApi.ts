@@ -12,7 +12,35 @@ import {
   LoginMutationResult,
 } from '../generated/api/api';
 
-// 사용자 관련 API 훅들
+/** ===== 공통 유틸: RsData<LoginResponseDTO>에서 accessToken 안전 추출 ===== */
+type RsData<T> = {
+  resultCode: string;
+  msg?: string | null;
+  data?: T | null;
+};
+
+type LoginResponseDTO = {
+  accessToken: string;
+};
+
+const isRecord = (v: unknown): v is Record<string, unknown> =>
+  v !== null && typeof v === 'object';
+
+const getAccessTokenFromRsData = (payload: unknown): string | undefined => {
+  // payload가 RsData<LoginResponseDTO>라면 payload.data.accessToken 경로에 존재
+  if (!isRecord(payload)) return undefined;
+  const data = payload['data'];
+  if (isRecord(data) && typeof data['accessToken'] === 'string') {
+    return data['accessToken'];
+  }
+  // 혹시 백엔드가 평평한 형태로 내려주는 경우까지 방어
+  if (typeof payload['accessToken'] === 'string') {
+    return payload['accessToken'] as string;
+  }
+  return undefined;
+};
+
+/** ===== 사용자 관련 API 훅들 ===== */
 export const useUserProfile = (userId: number) => {
   return useGetUserProfile(userId, {
     query: {
@@ -21,13 +49,13 @@ export const useUserProfile = (userId: number) => {
   });
 };
 
-// 인증 관련 API 훅들
+/** ===== 인증 관련 API 훅들 ===== */
 export const useLoginMutation = () => {
   return useLogin({
     mutation: {
       onSuccess: (response: LoginMutationResult) => {
-        // API 응답에서 토큰 추출하여 상태 업데이트
-        const accessToken = response.data?.accessToken;
+        // ✅ 핵심: RsData<LoginResponseDTO> 구조 대응
+        const accessToken = getAccessTokenFromRsData(response.data);
         if (accessToken) {
           useAuthStore.setState({
             accessToken,
@@ -35,6 +63,8 @@ export const useLoginMutation = () => {
             isLoading: false,
             error: null,
           });
+        } else {
+          console.warn('로그인 응답에 accessToken이 없습니다.', response.data);
         }
       },
     },
@@ -45,9 +75,8 @@ export const useRegister = () => {
   return useSignup({
     mutation: {
       onSuccess: (response) => {
-        // Orval 생성 타입에 따라 response가 RsDataObject일 수 있음
-        // 로그인과 동일한 응답을 기대한다면 백엔드 확인 필요
-        const accessToken = (response.data as { accessToken?: string })?.accessToken;
+        // ✅ 회원가입 응답도 RsData<LoginResponseDTO> 혹은 평평한 형태 모두 대응
+        const accessToken = getAccessTokenFromRsData(response.data);
         if (accessToken) {
           useAuthStore.setState({
             accessToken,
@@ -55,6 +84,8 @@ export const useRegister = () => {
             isLoading: false,
             error: null,
           });
+        } else {
+          console.warn('회원가입 응답에 accessToken이 없습니다.', response.data);
         }
       },
     },
@@ -70,4 +101,3 @@ export const useLogoutMutation = () => {
     },
   });
 };
- 

@@ -236,8 +236,13 @@ export const useAuthStore = create<AuthStore>()(
 
         if (get().isAuthenticated && !get().user) {
           try {
-            const meResponse = await getMe();
-            const meData = meResponse.data;
+            const meResponse = await getMe({
+              request: {
+                headers: { Authorization: `Bearer ${get().accessToken}` },
+              },
+            });
+            const meData = meResponse.data?.data;
+            
             if (meData) {
               set({
                 user: {
