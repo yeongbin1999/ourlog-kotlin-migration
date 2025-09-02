@@ -80,6 +80,7 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter:5.12.2")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.12.2")
     testImplementation("org.springframework.security:spring-security-test")
+    testImplementation("org.mockito:mockito-inline:5.2.0")
     testImplementation("org.mockito.kotlin:mockito-kotlin:5.2.1")
 
     // --- Querydsl ---

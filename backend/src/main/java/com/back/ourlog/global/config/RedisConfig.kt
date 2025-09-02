@@ -1,5 +1,6 @@
 package com.back.ourlog.global.config
 
+import com.back.ourlog.domain.diary.dto.DiaryDetailDto
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.springframework.cache.annotation.EnableCaching
 import org.springframework.context.annotation.Bean
@@ -12,6 +13,7 @@ import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.data.redis.core.StringRedisTemplate
 import org.springframework.data.redis.core.script.DefaultRedisScript
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer
+import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer
 import org.springframework.data.redis.serializer.RedisSerializationContext
 import org.springframework.data.redis.serializer.StringRedisSerializer
 import java.time.Duration
@@ -60,16 +62,37 @@ class RedisConfig {
         factory: RedisConnectionFactory,
         objectMapper: ObjectMapper
     ): RedisCacheManager {
-        val valueSerializer = GenericJackson2JsonRedisSerializer(objectMapper)
+        val keySerializer = StringRedisSerializer()
+        val genericValueSerializer = GenericJackson2JsonRedisSerializer(objectMapper)
 
-        val config = RedisCacheConfiguration.defaultCacheConfig()
+        // 기본 설정 (1시간 TTL, null 캐시 금지)
+        val defaultConfig = RedisCacheConfiguration.defaultCacheConfig()
+            .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(keySerializer))
+            .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(genericValueSerializer))
             .entryTtl(Duration.ofHours(1))
             .disableCachingNullValues()
-            .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(StringRedisSerializer()))
-            .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(valueSerializer))
+
+        // 1) DiaryDetailDto는 타입 지정 직렬화기 -> 역직렬화 안정
+        val diaryDetailSerializer =
+            Jackson2JsonRedisSerializer(objectMapper, DiaryDetailDto::class.java)
+
+        val diaryDetailConfig = defaultConfig
+            .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(diaryDetailSerializer))
+            .entryTtl(Duration.ofMinutes(10)) // 상세는 10분
+
+        // 2) 라이브러리 검색/도서/외부콘텐츠는 generic + 30분 TTL
+        val libraryConfig = defaultConfig.entryTtl(Duration.ofMinutes(30))
+
+        val perCacheConfigs = mapOf(
+            com.back.ourlog.global.config.cache.CacheNames.DIARY_DETAIL to diaryDetailConfig,
+            com.back.ourlog.global.config.cache.CacheNames.LIBRARY_BOOKS to libraryConfig,
+            com.back.ourlog.global.config.cache.CacheNames.LIBRARY_SEARCH_RESULTS to libraryConfig,
+            com.back.ourlog.global.config.cache.CacheNames.EXTERNAL_CONTENT to libraryConfig
+        )
 
         return RedisCacheManager.builder(factory)
-            .cacheDefaults(config)
+            .cacheDefaults(defaultConfig)
+            .withInitialCacheConfigurations(perCacheConfigs)
             .transactionAware()
             .build()
     }

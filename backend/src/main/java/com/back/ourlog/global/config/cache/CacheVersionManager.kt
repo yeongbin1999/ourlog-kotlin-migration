@@ -21,6 +21,7 @@ class CacheVersionManager(
 
         // 캐시 이름 정의
         private val MANAGED_CACHE_NAMES = setOf(
+            CacheNames.DIARY_DETAIL,
             CacheNames.LIBRARY_BOOKS,
             CacheNames.LIBRARY_SEARCH_RESULTS,
             CacheNames.EXTERNAL_CONTENT

@@ -1,8 +1,10 @@
 package com.back.ourlog.domain.genre.entity
 
 import jakarta.persistence.*
+import org.hibernate.annotations.BatchSize
 
 @Entity
+@BatchSize(size = 50)
 class Genre(
 
     @Column(unique = true, nullable = false)

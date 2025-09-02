@@ -61,6 +61,9 @@ enum class ErrorCode(
     FOLLOW_ALREADY_ACCEPTED(HttpStatus.BAD_REQUEST, "FOLLOW_005", "이미 수락된 팔로우 요청입니다."),
     FOLLOW_REQUEST_EXISTS(HttpStatus.BAD_REQUEST, "FOLLOW_006", "이미 상대방의 팔로우 요청이 있습니다. 요청을 수락해주세요."),
 
+    // ======================== 락 충돌 관련 ========================
+    CONFLICT_VERSION(HttpStatus.CONFLICT, "COMMON_409", "버전 충돌이 발생했습니다."),
+
     // ======================== 서버/시스템 관련 ========================
     SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "SERVER_500", "서버 내부 오류가 발생했습니다."),
     DATABASE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "SERVER_501", "데이터베이스 오류가 발생했습니다."),

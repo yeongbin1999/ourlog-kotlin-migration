@@ -18,7 +18,7 @@ data class DiaryDto(
 ) {
     constructor(diary: Diary) : this(
         id = diary.id,
-        userId = (diary.user ?: throw CustomException(ErrorCode.USER_NOT_FOUND)).id,
+        userId = diary.user?.id ?: throw CustomException(ErrorCode.USER_NOT_FOUND),
         contentId = diary.content.id,
         title = diary.title,
         contentText = diary.contentText,
