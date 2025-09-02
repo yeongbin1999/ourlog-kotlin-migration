@@ -33,24 +33,21 @@ class StatisticsController(
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "통계 카드 조회", description = "총 감상 수, 평균 별점, 선호 장르, 주요 감정을 조회합니다.")
     fun getStatisticsCard(@AuthenticationPrincipal userDetails: CustomUserDetails): ResponseEntity<RsData<StatisticsCardDto>> {
-        val userId = userDetails.id ?: throw CustomException(ErrorCode.AUTH_UNAUTHORIZED)
-        return statisticsService.getStatisticsCardByUserId(userId).toSuccessResponse("통계 카드 조회 성공")
+        return statisticsService.getStatisticsCardByUserId(getUserId(userDetails)).toSuccessResponse("통계 카드 조회 성공")
     }
 
     @GetMapping(value = ["/monthly-diary-graph"])
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "최근 6개월 월 별 감상 수", description = "특정 회원의 최근 6개월 월 별 감상 수를 조회합니다")
     fun getLast6MonthsDiaryCounts(@AuthenticationPrincipal userDetails: CustomUserDetails): ResponseEntity<RsData<List<MonthlyDiaryCount>>> {
-        val userId = userDetails.id ?: throw CustomException(ErrorCode.AUTH_UNAUTHORIZED)
-        return statisticsService.getLast6MonthsDiaryCountsByUser(userId).toSuccessResponse("최근 6개월 월 별 감상 수 조회 성공")
+        return statisticsService.getLast6MonthsDiaryCountsByUser(getUserId(userDetails)).toSuccessResponse("최근 6개월 월 별 감상 수 조회 성공")
     }
 
     @GetMapping(value = ["/type-distribution"])
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "콘텐츠 타입 분포", description = "특정 회원의 콘텐츠 타입 분포를 조회합니다")
     fun getTypeDistribution(@AuthenticationPrincipal userDetails: CustomUserDetails): ResponseEntity<RsData<List<TypeCountDto>>> {
-        val userId = userDetails.id ?: throw CustomException(ErrorCode.AUTH_UNAUTHORIZED)
-        return statisticsService.getTypeDistributionByUser(userId).toSuccessResponse("콘텐츠 타입 분포 조회 성공")
+        return statisticsService.getTypeDistributionByUser(getUserId(userDetails)).toSuccessResponse("콘텐츠 타입 분포 조회 성공")
     }
 
     @GetMapping("/type-graph")
@@ -60,8 +57,7 @@ class StatisticsController(
         @RequestParam period: PeriodOption,
         @AuthenticationPrincipal userDetails: CustomUserDetails
     ): ResponseEntity<RsData<TypeGraphResponse>> {
-        val userId = userDetails.id ?: throw CustomException(ErrorCode.AUTH_UNAUTHORIZED)
-        return statisticsService.getTypeGraph(userId, period).toSuccessResponse("콘텐츠 타입 그래프 조회 성공")
+        return statisticsService.getTypeGraph(getUserId(userDetails), period).toSuccessResponse("콘텐츠 타입 그래프 조회 성공")
     }
 
     @GetMapping("/genre-graph")
@@ -71,8 +67,7 @@ class StatisticsController(
         @RequestParam period: PeriodOption,
         @AuthenticationPrincipal userDetails: CustomUserDetails
     ): ResponseEntity<RsData<GenreGraphResponse>> {
-        val userId = userDetails.id ?: throw CustomException(ErrorCode.AUTH_UNAUTHORIZED)
-        return statisticsService.getGenreGraph(userId, period).toSuccessResponse("장르 그래프 조회 성공")
+        return statisticsService.getGenreGraph(getUserId(userDetails), period).toSuccessResponse("장르 그래프 조회 성공")
     }
 
     @GetMapping("/emotion-graph")
@@ -82,9 +77,7 @@ class StatisticsController(
         @RequestParam period: PeriodOption,
         @AuthenticationPrincipal userDetails: CustomUserDetails
     ): ResponseEntity<RsData<EmotionGraphResponse>> {
-        val userId = userDetails.id ?: throw CustomException(ErrorCode.AUTH_UNAUTHORIZED)
-        return statisticsService.getEmotionGraph(userId, period).toSuccessResponse("감정 그래프 조회 성공")
-
+        return statisticsService.getEmotionGraph(getUserId(userDetails), period).toSuccessResponse("감정 그래프 조회 성공")
     }
 
     @GetMapping("/ott-graph")
@@ -94,8 +87,10 @@ class StatisticsController(
         @RequestParam period: PeriodOption,
         @AuthenticationPrincipal userDetails: CustomUserDetails
     ): ResponseEntity<RsData<OttGraphResponse>> {
-        val userId = userDetails.id ?: throw CustomException(ErrorCode.AUTH_UNAUTHORIZED)
-        return statisticsService.getOttGraph(userId, period).toSuccessResponse("OTT 그래프 조회 성공")
+        return statisticsService.getOttGraph(getUserId(userDetails), period).toSuccessResponse("OTT 그래프 조회 성공")
+    }
 
+    private fun getUserId(userDetails: CustomUserDetails): Int {
+        return userDetails.id ?: throw CustomException(ErrorCode.AUTH_UNAUTHORIZED)
     }
 }

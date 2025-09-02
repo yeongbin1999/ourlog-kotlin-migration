@@ -20,7 +20,6 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 
 @Service
-@Transactional(readOnly = true)
 class StatisticsService(
     private val statisticsRepository: StatisticsRepository
 ) {
@@ -34,6 +33,7 @@ class StatisticsService(
      * @param userId 통계를 조회할 사용자 ID
      * @return StatisticsCardDto 사용자별 통계 카드 DTO
      */
+    @Transactional(readOnly = true)
     fun getStatisticsCardByUserId(userId: Int): StatisticsCardDto = StatisticsCardDto(
             getTotalDiaryCount(userId),
             getAverageRating(userId),
@@ -79,6 +79,7 @@ class StatisticsService(
      * @param userId 사용자 ID
      * @return List<MonthlyDiaryCount> 최근 6개월 월 별 감상 수 리스트, 없으면 빈 리스트
      */
+    @Transactional(readOnly = true)
     fun getLast6MonthsDiaryCountsByUser(userId: Int): List<MonthlyDiaryCount> {
         val startMonth = LocalDate.now().minusMonths(5).withDayOfMonth(1).atStartOfDay()
         return statisticsRepository.count6MonthlyDiaryByUserId(userId, startMonth)
@@ -90,6 +91,7 @@ class StatisticsService(
      * @param userId 사용자 ID
      * @return List<TypeCountDto> 콘텐츠 타입별 감상 수 리스트, 없으면 빈 리스트
      */
+    @Transactional(readOnly = true)
     fun getTypeDistributionByUser(userId: Int): List<TypeCountDto> = statisticsRepository.findTypeCountsByUserId(userId)
 
 
@@ -100,6 +102,7 @@ class StatisticsService(
      * @param period 조회 기간 옵션
      * @return TypeGraphResponse(타입별 추이 그래프 리스트, 타입별 순위 리스트), 없으면 빈 리스트
      */
+    @Transactional(readOnly = true)
     fun getTypeGraph(userId: Int, period: PeriodOption): TypeGraphResponse {
         val timeSet = TimeSet(period)
 
@@ -120,6 +123,7 @@ class StatisticsService(
      * @param period 조회 기간 옵션
      * @return GenreGraphResponse(장르별 추이 그래프 리스트, 장르별 순위 리스트), 없으면 빈 리스트
      */
+    @Transactional(readOnly = true)
     fun getGenreGraph(userId: Int, period: PeriodOption): GenreGraphResponse {
         val timeSet = TimeSet(period)
 
@@ -140,6 +144,7 @@ class StatisticsService(
      * @param period 조회 기간 옵션
      * @return EmotionGraphResponse(감정별 추이 그래프 리스트, 감정별 순위 리스트), 없으면 빈 리스트
      */
+    @Transactional(readOnly = true)
     fun getEmotionGraph(userId: Int, period: PeriodOption): EmotionGraphResponse {
         val timeSet = TimeSet(period)
 
@@ -160,6 +165,7 @@ class StatisticsService(
      * @param period 조회 기간 옵션
      * @return OttGraphResponse(OTT별 추이 그래프 리스트, OTT별 순위 리스트), 없으면 빈 리스트
      */
+    @Transactional(readOnly = true)
     fun getOttGraph(userId: Int, period: PeriodOption): OttGraphResponse {
         val timeSet = TimeSet(period)
 
