@@ -68,7 +68,7 @@ export default function Page() {
     const confirmed = confirm("정말 삭제하시겠습니까?");
     if (!confirmed) return;
     console.log("삭제 요청 보냄");
-    
+
     try {
       await axiosInstance.delete(`/api/v1/diaries/${diaryId}`);
       alert("삭제 완료!");
@@ -78,7 +78,6 @@ export default function Page() {
       alert("삭제 중 오류 발생");
     }
   };
-  
 
   if (loading) {
     return (
@@ -140,7 +139,10 @@ export default function Page() {
             <CommentInfo comments={comments} setComments={setComments} />
           </div>
         </div>
-        <CommentForm diaryId={Number(diaryId)} onCommentAdd={handleCommentAdd} />
+        <CommentForm
+          diaryId={Number(diaryId)}
+          onCommentAdd={handleCommentAdd}
+        />
       </div>
     </main>
   );
