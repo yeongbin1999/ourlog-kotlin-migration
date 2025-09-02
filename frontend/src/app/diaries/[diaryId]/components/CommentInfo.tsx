@@ -80,7 +80,7 @@ export default function CommentInfo({
   return (
     <div className="space-y-4">
       {comments.map((comment, index) => (
-        <div key={comment.id} className="group">
+        <div key={comment.id} className="group pb-6">
           <div className="flex gap-4">
             {/* 아바타 (클릭 시 프로필 이동) */}
             <div className="flex-shrink-0">

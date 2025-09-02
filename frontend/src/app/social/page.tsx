@@ -7,6 +7,14 @@ import { TimelineItem } from "../social/types/timeline";
 import { axiosInstance } from "@/lib/api-client";
 import { unwrapList } from "@/lib/unwrap";
 
+interface TimelineResponse {
+  resultCode: string;
+  msg: string;
+  data: TimelineItem[];
+  isSuccess: boolean;
+  isFail: boolean;
+}
+
 export default function TimelinePage() {
   const [items, setItems] = useState<TimelineItem[]>([]);
   const [loading, setLoading] = useState(true);
