@@ -10,35 +10,27 @@ export const useSearchUsersInfinite = (params: Omit<SearchUsersParams, 'pageable
     queryFn: async ({ pageParam = 0 }) => {
       const response = await searchUsers({
         keyword: params.keyword,
-        pageable: { page: pageParam, size: 10 },
+        pageable: { page: pageParam, size: 10 }, 
       });
 
       const resData = response.data;
+      const data: any = resData?.data ?? {};
 
-      if (!resData || resData.fail || !resData.data) {
-        return {
-          content: [],
-          page: 0,
-          size: 10,
-          totalElements: 0,
-          totalPages: 0,
-          hasNext: false,
-        };
-      }
-
-      const data = resData.data as any;
+      const pageNumber = data.number ?? data.page ?? 0;
+      const totalPages = data.totalPages ?? 0;
+      const hasNext = typeof data.last === 'boolean' ? !data.last : pageNumber + 1 < totalPages;
 
       return {
-        content: data.content || [],
-        page: data.page || 0,
-        size: data.size || 10,
-        totalElements: data.totalElements || 0,
-        totalPages: data.totalPages || 0,
-        hasNext: (data.page || 0) + 1 < (data.totalPages || 0),
+        content: data.content ?? [],
+        page: pageNumber,
+        size: data.size ?? 10,
+        totalElements: data.totalElements ?? 0,
+        totalPages,
+        hasNext,
       };
     },
     getNextPageParam: (lastPage) => (lastPage.hasNext ? lastPage.page + 1 : undefined),
     initialPageParam: 0,
-    enabled: !!params.keyword,
+    enabled: !!params.keyword?.trim(),
   });
 };

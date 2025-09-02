@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { Rss } from "lucide-react"; // RSS 아이콘 추가
 import TimelineCard from "../social/components/TimelineCard";
 import { TimelineItem } from "../social/types/timeline";
 import { axiosInstance } from "@/lib/api-client";
@@ -16,32 +17,20 @@ export default function TimelinePage() {
       setLoading(true);
       setError(null);
       try {
-        // 1) 타임라인 기본 목록
         const res = await axiosInstance.get("/api/v1/timeline");
         const base: any[] = unwrapList(res.data);
 
-        // 2) 각 항목을 상세 다이어리로 보강 (contentType, rating, tagNames, isPublic 등)
         const enriched = await Promise.all(
           base.map(async (it) => {
             try {
-              // 일반적으로 타임라인 item.id == diaryId
               const d = await axiosInstance.get(`/api/v1/diaries/${it.id}`);
               const diary = d.data?.data ?? {};
-
               return {
                 ...it,
-                // 카드에서 읽는 표준 키들
                 contentType: diary.contentType,
-                rating:
-                  typeof diary.rating === "number" ? diary.rating : it.rating,
-                isPublic:
-                  typeof diary.isPublic === "boolean"
-                    ? diary.isPublic
-                    : it.isPublic,
-                tagNames: Array.isArray(diary.tagNames)
-                  ? diary.tagNames
-                  : it.tagNames,
-                // 보강 가능 항목들
+                rating: typeof diary.rating === "number" ? diary.rating : it.rating,
+                isPublic: typeof diary.isPublic === "boolean" ? diary.isPublic : it.isPublic,
+                tagNames: Array.isArray(diary.tagNames) ? diary.tagNames : it.tagNames,
                 releasedAt: diary.releasedAt ?? it.releasedAt,
                 title: it.title ?? diary.title,
               };
@@ -50,7 +39,6 @@ export default function TimelinePage() {
             }
           })
         );
-
         setItems(enriched);
       } catch (e) {
         console.error(e);
@@ -59,20 +47,19 @@ export default function TimelinePage() {
         setLoading(false);
       }
     };
-
     run();
   }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 max-w-7xl">
-        {/* 헤더 섹션 */}
-        <header className="text-center mb-16">
-          <div className="space-y-5">
-            <h1 className="text-4xl lg:text-3xl font-bold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 bg-clip-text text-transparent tracking-tight mb-4">
-              Feed
+        <header className="flex items-center justify-between mb-12">
+          <div>
+            <h1 className="flex items-center gap-3 text-3xl font-bold text-gray-800">
+              <Rss className="w-7 h-7 text-sky-500" />
+              <span>Feed</span>
             </h1>
-            <p className="text-gray-600 text-lg max-w-2xl mx-auto leading-relaxed">
+            <p className="mt-2 text-gray-500">
               다른 사용자들의 감상일기를 둘러보고 새로운 영감을 얻어보세요.
             </p>
           </div>
@@ -82,7 +69,6 @@ export default function TimelinePage() {
         {loading && (
           <div className="flex justify-center items-center py-32">
             <div className="flex flex-col items-center gap-4">
-              {/* 심플한 스피너 */}
               <div className="w-10 h-10 border-4 border-gray-200 border-t-gray-900 rounded-full animate-spin" />
               <p className="text-gray-600 font-medium">멋진 일기들을 불러오는 중...</p>
             </div>
@@ -124,13 +110,10 @@ export default function TimelinePage() {
                       className="flex justify-center animate-fadeInUp"
                       style={{ animationDelay: `${index * 0.1}s` }}
                     >
-                      {/* 카드 내부에서 contentType을 사용 */}
                       <TimelineCard item={item as any} />
                     </div>
                   ))}
                 </div>
-
-                {/* 더보기/카운트 */}
                 <div className="text-center mt-16">
                   <div className="inline-flex items-center gap-2 text-gray-500 text-sm">
                     <div className="h-px bg-gray-300 w-8" />
@@ -179,7 +162,6 @@ export default function TimelinePage() {
             transform: translateY(0);
           }
         }
-
         .animate-fadeInUp {
           animation: fadeInUp 0.6s ease-out forwards;
           opacity: 0;

@@ -4,6 +4,7 @@ import React, { useEffect, useState, useCallback, MouseEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { axiosInstance } from '@/lib/api-client';
 import { FaEdit, FaTrashAlt } from 'react-icons/fa';
+import { useAuthStore } from '@/stores/authStore'; 
 
 type Diary = {
   id: number;
@@ -50,10 +51,12 @@ function CategorizedTags({ genres = [], otts = [], tags = [] }: Pick<Diary, 'gen
   );
 }
 
-const DiaryCard = ({ diary, onDelete, onEdit }: {
+
+const DiaryCard = ({ diary, onDelete, onEdit, showActions }: {
   diary: Diary;
   onDelete: (diaryId: number) => void;
   onEdit: (diaryId: number) => void;
+  showActions: boolean; 
 }) => {
   const router = useRouter();
 
@@ -67,25 +70,28 @@ const DiaryCard = ({ diary, onDelete, onEdit }: {
       className="relative bg-white rounded-xl shadow-sm p-5 border border-gray-200 hover:shadow-md transition-all duration-300 cursor-pointer"
       onClick={handleCardClick}
     >
-      {/* 수정/삭제 버튼을 우측 상단으로 이동 */}
-      <div className="absolute top-4 right-4 flex items-center gap-1">
+      {/* showActions가 true일 때만 수정/삭제 버튼을 렌더링 */}
+      {showActions && (
+        <div className="absolute top-4 right-4 flex items-center gap-1">
           <button 
-              onClick={(e) => { e.stopPropagation(); onEdit(diary.id); }} 
-              className="p-2 rounded-full hover:bg-gray-100 text-gray-500 hover:text-sky-600 transition-colors"
-              aria-label="수정"
+            onClick={(e) => { e.stopPropagation(); onEdit(diary.id); }} 
+            className="p-2 rounded-full hover:bg-gray-100 text-gray-500 hover:text-sky-600 transition-colors"
+            aria-label="수정"
           >
-              <FaEdit className="text-base" />
+            <FaEdit className="text-base" />
           </button>
           <button 
-              onClick={(e) => { e.stopPropagation(); onDelete(diary.id); }} 
-              className="p-2 rounded-full hover:bg-gray-100 text-gray-500 hover:text-red-600 transition-colors"
-              aria-label="삭제"
+            onClick={(e) => { e.stopPropagation(); onDelete(diary.id); }} 
+            className="p-2 rounded-full hover:bg-gray-100 text-gray-500 hover:text-red-600 transition-colors"
+            aria-label="삭제"
           >
-              <FaTrashAlt className="text-base" />
+            <FaTrashAlt className="text-base" />
           </button>
-      </div>
+        </div>
+      )}
       
-      <div className="pr-16"> {/* 버튼 영역만큼 오른쪽에 패딩을 줘서 텍스트가 겹치지 않도록 함 */}
+      {/* showActions가 true일 때만 오른쪽 패딩을 줘서 텍스트가 겹치지 않도록 함 */}
+      <div className={showActions ? "pr-16" : ""}>
         <span className="text-xs font-bold text-sky-600">{typeLabel(diary.contentType)}</span>
         <h3 className="font-bold text-lg text-gray-900 truncate my-1">{diary.title}</h3>
       </div>
@@ -110,6 +116,9 @@ export default function DiaryList({ userId, onActionCompleted }: { userId: numbe
   const [totalPages, setTotalPages] = useState(0);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  
+  const { user: me } = useAuthStore();
+  const isMyProfile = me?.id !== undefined && Number(me.id) === Number(userId);
 
   const loadDiaries = useCallback(async (pageToLoad: number) => {
     setLoading(true);
@@ -159,6 +168,7 @@ export default function DiaryList({ userId, onActionCompleted }: { userId: numbe
           diary={diary} 
           onDelete={handleDelete}
           onEdit={handleEdit}
+          showActions={isMyProfile} 
         />
       ))}
 

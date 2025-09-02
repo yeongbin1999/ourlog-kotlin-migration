@@ -9,11 +9,11 @@ import { axiosInstance } from '@/lib/api-client';
 import { unwrapList } from '@/lib/unwrap';
 
 const TAB_ITEMS = [
-  { key: 'diary', label: '마이 다이어리', type: 'diary' },
-  { key: 'received', label: '받은 요청', type: 'user_list', endpoint: (id: number) => `/api/v1/follows/requests?userId=${id}`, actionType: 'accept_reject', empty: '받은 팔로우 요청이 없습니다.' },
-  { key: 'sent', label: '보낸 요청', type: 'user_list', endpoint: (id: number) => `/api/v1/follows/sent-requests?userId=${id}`, actionType: 'cancel', empty: '보낸 팔로우 요청이 없습니다.' },
-  { key: 'following', label: '팔로잉', type: 'user_list', endpoint: (id: number) => `/api/v1/follows/followings?userId=${id}`, actionType: 'unfollow', empty: '팔로우하는 사용자가 없습니다.' },
-  { key: 'followers', label: '팔로워', type: 'user_list', endpoint: (id: number) => `/api/v1/follows/followers?userId=${id}`, actionType: 'none', empty: '아직 팔로워가 없습니다.' },
+  { key: 'diary',      label: '마이 다이어리', type: 'diary' },
+  { key: 'received',   label: '받은 요청',     type: 'user_list', endpoint: () => `/api/v1/follows/requests`,      actionType: 'accept_reject', empty: '받은 팔로우 요청이 없습니다.' },
+  { key: 'sent',       label: '보낸 요청',     type: 'user_list', endpoint: () => `/api/v1/follows/sent-requests`,  actionType: 'cancel',        empty: '보낸 팔로우 요청이 없습니다.' },
+  { key: 'following',  label: '팔로잉',        type: 'user_list', endpoint: () => `/api/v1/follows/followings`,     actionType: 'unfollow',      empty: '팔로우하는 사용자가 없습니다.' },
+  { key: 'followers',  label: '팔로워',        type: 'user_list', endpoint: () => `/api/v1/follows/followers`,      actionType: 'none',          empty: '아직 팔로워가 없습니다.' },
 ] as const;
 
 type TabKey = typeof TAB_ITEMS[number]['key'];
@@ -29,9 +29,9 @@ export default function MyProfilePage() {
     try {
       const diaryPromise = axiosInstance.get(`/api/v1/diaries/users/${userId}?size=1`).then(r => r.data.data?.totalElements ?? 0);
       
-      const socialPromises = TAB_ITEMS.filter(tab => tab.type === 'user_list').map(tab =>
-        axiosInstance.get(tab.endpoint!(userId)).then(r => unwrapList(r.data).length)
-      );
+      const socialPromises = TAB_ITEMS
+        .filter(tab => tab.type === 'user_list')
+        .map(tab => axiosInstance.get(tab.endpoint!()).then(r => unwrapList(r.data).length));
 
       const [diaryCount, ...socialCounts] = await Promise.all([diaryPromise, ...socialPromises]);
       
@@ -78,7 +78,7 @@ export default function MyProfilePage() {
         <UserList
           key={selectedTab.key}
           myUserId={myUserId}
-          endpoint={selectedTab.endpoint(myUserId)}
+          endpoint={selectedTab.endpoint()}   
           actionType={selectedTab.actionType}
           emptyMessage={selectedTab.empty}
           onActionCompleted={() => fetchAllCounts(myUserId)}
@@ -90,7 +90,7 @@ export default function MyProfilePage() {
   };
 
   return (
-    <div className="bg-gray-50 min-h-screen">
+    <div className="bg-white-50 min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="lg:grid lg:grid-cols-12 lg:gap-8">
           <aside className="lg:col-span-4 lg:sticky lg:top-8 self-start space-y-6">

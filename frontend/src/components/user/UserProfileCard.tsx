@@ -65,7 +65,7 @@ export default function UserProfileCard({ user, actionType, onAction, isLoading 
 
     return (
       <button
-        onClick={() => onAction?.(actionType, user.userId)}
+        onClick={() => onAction?.(actionType, user.userId, user.followId)}
         disabled={isLoading}
         className={`px-4 py-1.5 text-sm font-semibold rounded-md transition-colors duration-200 disabled:opacity-50 ${detail.className}`}
       >

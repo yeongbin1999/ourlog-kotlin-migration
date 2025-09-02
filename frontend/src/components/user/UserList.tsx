@@ -46,18 +46,18 @@ export default function UserList({ myUserId, endpoint, actionType, onActionCompl
     setActionLoading(targetUserId);
     try {
       switch (action) {
-        case 'unfollow':
-        case 'cancel':
-          await axiosInstance.delete(`/api/v1/follows/${targetUserId}`);
-          break;
         case 'follow':
           await axiosInstance.post(`/api/v1/follows/${targetUserId}`);
           break;
+        case 'unfollow':
+        case 'cancel':
+          await axiosInstance.delete(`/api/v1/follows/${targetUserId}`); // ✅ userId 기준
+          break;
         case 'accept':
-          await axiosInstance.post(`/api/v1/follows/${followId}/accept`);
+          await axiosInstance.post(`/api/v1/follows/${followId}/accept`); // ✅ followId
           break;
         case 'reject':
-          await axiosInstance.delete(`/api/v1/follows/${followId}/reject`);
+          await axiosInstance.delete(`/api/v1/follows/${followId}/reject`); // ✅ followId
           break;
       }
       onActionCompleted?.();
@@ -68,7 +68,7 @@ export default function UserList({ myUserId, endpoint, actionType, onActionCompl
     } finally {
       setActionLoading(null);
     }
-  };
+  };  
 
   if (loading) return <div className="text-center py-10">목록을 불러오는 중...</div>;
   if (error) return <div className="text-center py-10 text-red-500">{error}</div>;

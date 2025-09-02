@@ -19,8 +19,30 @@ const axiosInstance = axios.create({
 export { axiosInstance };
 
 export const customInstance = <T>(config: AxiosRequestConfig, options?: { request?: AxiosRequestConfig }): Promise<T> => {
-  const mergedConfig = { ...config, ...options?.request };
-  return axiosInstance(mergedConfig);
+  const mergedConfig: AxiosRequestConfig = { ...config, ...options?.request };
+
+  // 1) 절대 URL로 들어오면 오리진을 제거하고 경로만 남겨서 동일 오리진으로 보냄 (Next.js rewrite 타도록)
+  if (typeof mergedConfig.url === 'string' && /^https?:\/\//i.test(mergedConfig.url)) {
+    try {
+      const u = new URL(mergedConfig.url);
+      mergedConfig.url = u.pathname + u.search + u.hash;
+    } catch {
+      // URL 파싱 실패 시 무시
+    }
+  }
+
+  // 2) params에 pageable이 있으면 page/size로 평탄화 → ?page=0&size=10 형태로 전송
+  if (mergedConfig.params && typeof mergedConfig.params === 'object' && (mergedConfig.params as any).pageable) {
+    const { pageable, ...rest } = mergedConfig.params as any;
+    if (pageable && typeof pageable === 'object') {
+      const { page, size, sort } = pageable;
+      mergedConfig.params = { ...rest, page, size, ...(sort ? { sort } : {}) };
+    } else {
+      mergedConfig.params = rest;
+    }
+  }
+
+  return axiosInstance(mergedConfig) as unknown as Promise<T>;
 };
 
 /**
@@ -67,7 +89,7 @@ axiosInstance.interceptors.response.use(
         code: string;
         message: string;
       }
-      const errorCode = (error.response.data as BackendErrorResponse)?.code;
+      const errorCode = (error.response?.data as BackendErrorResponse)?.code;
 
       // 로그아웃 요청이거나, 토큰 만료가 아닌 다른 401 에러인 경우 즉시 로그아웃 처리
       if (originalRequest.url === '/api/v1/auth/logout' || errorCode !== 'AUTH_002') {
