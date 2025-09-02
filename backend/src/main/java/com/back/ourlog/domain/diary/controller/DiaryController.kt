@@ -40,7 +40,7 @@ class DiaryController(
     }
 
     @GetMapping("/{diaryId}")
-    @Operation(summary = "감상일기 조회", description = "감상일기를 조회합니다.")
+    @Operation(summary = "감상일기 조회", description = "감상일기를 조회합니다. 공개글은 인증 없이 조회 가능 / 비공개는 소유자만.")
     fun getDiary(@PathVariable diaryId: Int): ResponseEntity<RsData<DiaryDetailDto>> =
         diaryService.getDiaryDetail(diaryId)
             .toSuccessResponse("${diaryId}번 감상일기가 조회되었습니다.")

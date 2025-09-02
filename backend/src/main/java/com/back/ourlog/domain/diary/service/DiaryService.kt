@@ -33,7 +33,10 @@ class DiaryService(
     private val tagService: TagService,
     private val ottService: OttService,
     private val contentSearchFacade: ContentSearchFacade,
-    private val rq: Rq
+    private val rq: Rq,
+
+    @org.springframework.beans.factory.annotation.Value("\${ourlog.privacy.hide-private-diary:false}")
+    private val hidePrivateDiary: Boolean
 ) {
 
     @Transactional
@@ -107,8 +110,14 @@ class DiaryService(
 
         val currentUser = runCatching { rq.currentUser }.getOrNull()
         val isOwner = currentUser?.id == diary.user.id
-        if (!diary.isPublic && !isOwner) throw CustomException(ErrorCode.AUTH_FORBIDDEN)
-
+        if (!diary.isPublic && !isOwner) {
+            if (hidePrivateDiary) {
+                // 존재 자체를 숨김
+                throw CustomException(ErrorCode.DIARY_NOT_FOUND)
+            } else {
+                throw CustomException(ErrorCode.AUTH_FORBIDDEN)
+            }
+        }
         return DiaryDetailDto.from(diary)
     }
 
