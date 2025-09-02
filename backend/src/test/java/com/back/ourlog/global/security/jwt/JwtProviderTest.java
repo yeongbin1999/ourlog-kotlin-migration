@@ -103,7 +103,7 @@ class JwtProviderTest {
         JwtAuthenticationException exception = assertThrows(JwtAuthenticationException.class,
                 () -> jwtProvider.parseClaims(expiredToken));
 
-        assertEquals(ErrorCode.AUTH_EXPIRED_TOKEN, exception.getErrorCode());
+        assertEquals(ErrorCode.AUTH_EXPIRED_TOKEN, exception.errorCode);
     }
 
     // =================== 유틸 메서드 =======================

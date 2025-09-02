@@ -83,7 +83,7 @@ public class AuthControllerTest {
         TokenDto loginTokens = performLoginAndGetTokens();
 
         mockMvc.perform(post("/api/v1/auth/reissue")
-                        .cookie(new Cookie("refreshToken", loginTokens.refreshToken()))
+                        .cookie(new Cookie("refreshToken", loginTokens.refreshToken))
                         .header("X-Device-Id", "device123"))
                 .andExpect(status().isOk())
                 .andExpect(header().string("Set-Cookie", containsString("refreshToken=")))
