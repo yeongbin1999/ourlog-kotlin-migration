@@ -23,14 +23,16 @@ export const axiosInstance: AxiosInstance = axios.create({
 
 /**
  * orval용 customInstance
- * - 제너릭 T로 응답 타입을 명시하고, data만 반환
+ * ⚠️ orval은 `Promise<AxiosResponse<T>>`를 기대합니다.
+ *    여기서 data만 반환하면(= Promise<T>) 생성 코드가 깨집니다.
  */
 export const customInstance = <T>(
   config: AxiosRequestConfig,
   options?: { request?: AxiosRequestConfig }
-): Promise<T> => {
+): Promise<AxiosResponse<T>> => {
   const mergedConfig: AxiosRequestConfig = { ...config, ...options?.request };
-  return axiosInstance.request<T>(mergedConfig).then((res) => res.data);
+  // 절대 .then(res => res.data)로 바꾸지 마세요.
+  return axiosInstance.request<T>(mergedConfig);
 };
 
 /**
@@ -63,7 +65,6 @@ axiosInstance.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    // 401 이고 아직 재시도 안 했다면
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
@@ -75,7 +76,6 @@ axiosInstance.interceptors.response.use(
       }
       const errorCode = (error.response.data as BackendErrorResponse)?.code;
 
-      // 로그아웃 API이거나 만료 코드가 아니면 바로 로그아웃
       if (
         originalRequest.url === "/api/v1/auth/logout" ||
         errorCode !== "AUTH_002"
@@ -84,7 +84,6 @@ axiosInstance.interceptors.response.use(
         return Promise.reject(error);
       }
 
-      // 만료 코드면 갱신 시도
       try {
         const refreshed = await refreshAccessToken();
         if (refreshed) {

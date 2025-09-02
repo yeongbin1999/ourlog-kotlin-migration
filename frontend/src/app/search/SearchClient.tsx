@@ -4,23 +4,25 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { FaSearch } from "react-icons/fa";
+import Image from "next/image";
 import { axiosInstance } from "@/lib/api-client";
 
 type UserProfileResponse = {
   userId: number;
   nickname: string;
   profileImageUrl: string | null;
-  bio?: string; 
+  email?: string;
+  bio?: string;
 };
 
 const DEFAULT_IMAGE = "/images/no-image.png";
 
-const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 const highlightKeyword = (text: string, keyword: string) => {
   if (!keyword?.trim()) return text;
   const safe = escapeRegex(keyword);
-  const parts = text.split(new RegExp(`(${safe})`, 'gi'));
+  const parts = text.split(new RegExp(`(${safe})`, "gi"));
   return (
     <>
       {parts.map((part, i) =>
@@ -39,11 +41,15 @@ const highlightKeyword = (text: string, keyword: string) => {
 const UserResultCard = ({ user, keyword }: { user: UserProfileResponse; keyword: string }) => (
   <Link href={`/profile/${user.userId}`} className="block group">
     <div className="flex items-center gap-4 p-4 bg-white rounded-xl border border-gray-200 group-hover:border-sky-400 group-hover:shadow-lg transition-all duration-300">
-      <img
-        src={user.profileImageUrl || DEFAULT_IMAGE}
-        alt={user.nickname}
-        className="w-16 h-16 rounded-full object-cover border-2 border-gray-100 transition-transform duration-300 group-hover:scale-105"
-      />
+      <div className="relative w-16 h-16">
+        <Image
+          src={user.profileImageUrl || DEFAULT_IMAGE}
+          alt={user.nickname}
+          fill
+          className="rounded-full object-cover border-2 border-gray-100 transition-transform duration-300 group-hover:scale-105"
+          sizes="64px"
+        />
+      </div>
       <div className="flex-1 min-w-0">
         <p className="font-bold text-lg text-gray-900 truncate">
           {highlightKeyword(user.nickname, keyword)}
@@ -84,19 +90,23 @@ const SearchClient = () => {
   const searchParams = useSearchParams();
   const keyword = searchParams.get("keyword") || "";
   const [results, setResults] = useState<UserProfileResponse[]>([]);
-  const [loading, setLoading] = useState(true); 
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!keyword.trim()) { setResults([]); setLoading(false); return; }
+    if (!keyword.trim()) {
+      setResults([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError(null);
-  
+
     axiosInstance
-      .get(`/api/v1/users/search`, { params: { keyword } }) 
+      .get(`/api/v1/users/search`, { params: { keyword, page: 0, size: 20 } }) // ✅ 대괄호 X
       .then((res) => {
         const data = res.data?.data ?? res.data;
-        setResults(Array.isArray(data) ? data : []);
+        setResults(Array.isArray(data) ? data : data?.content ?? []);
       })
       .catch(() => setError("검색 중 오류가 발생했습니다."))
       .finally(() => setLoading(false));
@@ -112,8 +122,7 @@ const SearchClient = () => {
           </p>
         )}
       </header>
-      
-      {/* 결과 표시 영역 */}
+
       <div>
         {loading ? (
           <SkeletonLoader />

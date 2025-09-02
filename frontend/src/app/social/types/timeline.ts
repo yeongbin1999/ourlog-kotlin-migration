@@ -1,4 +1,3 @@
-// src/app/social/types/timeline.ts
 export interface TimelineItem {
   id: number;
   title: string;
