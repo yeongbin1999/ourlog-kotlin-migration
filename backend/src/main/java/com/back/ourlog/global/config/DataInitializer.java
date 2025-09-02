@@ -162,7 +162,7 @@ public class DataInitializer implements CommandLineRunner {
             for (int i = 0; i < likeCount; i++) {
                 User liker = users.get(random.nextInt(users.size()));
                 if (alreadyLiked.add(liker)) {
-                    likes.add(new Like(diary, liker));
+                    likes.add(new Like(liker, diary));
                 }
             }
         }

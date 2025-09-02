@@ -1,8 +1,10 @@
 package com.back.ourlog.domain.ott.entity
 
 import jakarta.persistence.*
+import org.hibernate.annotations.BatchSize
 
 @Entity
+@BatchSize(size = 50)
 class Ott(
 
     @Column(nullable = false, unique = true)

@@ -2,20 +2,13 @@ package com.back.ourlog.domain.diary.entity
 
 import com.back.ourlog.domain.comment.entity.Comment
 import com.back.ourlog.domain.content.entity.Content
-import com.back.ourlog.domain.content.entity.ContentType
 import com.back.ourlog.domain.genre.entity.DiaryGenre
-import com.back.ourlog.domain.genre.service.GenreService
 import com.back.ourlog.domain.like.entity.Like
 import com.back.ourlog.domain.ott.entity.DiaryOtt
-import com.back.ourlog.domain.ott.repository.OttRepository
 import com.back.ourlog.domain.tag.entity.DiaryTag
-import com.back.ourlog.domain.tag.entity.Tag
-import com.back.ourlog.domain.tag.repository.TagRepository
 import com.back.ourlog.domain.user.entity.User
-import com.back.ourlog.external.library.service.LibraryService
-import com.back.ourlog.global.exception.CustomException
-import com.back.ourlog.global.exception.ErrorCode
 import jakarta.persistence.*
+import org.hibernate.annotations.BatchSize
 import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.annotation.LastModifiedDate
 import org.springframework.data.jpa.domain.support.AuditingEntityListener
@@ -56,14 +49,20 @@ class Diary(
     @OneToMany(mappedBy = "diary", cascade = [CascadeType.ALL], orphanRemoval = true)
     var likes: MutableList<Like> = mutableListOf()
 
+    @BatchSize(size = 50)
     @OneToMany(mappedBy = "diary", cascade = [CascadeType.ALL], orphanRemoval = true)
     var diaryTags: MutableList<DiaryTag> = mutableListOf()
 
+    @BatchSize(size = 50)
     @OneToMany(mappedBy = "diary", cascade = [CascadeType.ALL], orphanRemoval = true)
     var diaryGenres: MutableList<DiaryGenre> = mutableListOf()
 
+    @BatchSize(size = 50)
     @OneToMany(mappedBy = "diary", cascade = [CascadeType.ALL], orphanRemoval = true)
     var diaryOtts: MutableList<DiaryOtt> = mutableListOf()
+
+    @Version
+    var version: Long? = null
 
     fun update(title: String, contentText: String, rating: Float, isPublic: Boolean) {
         this.title = title
@@ -72,55 +71,9 @@ class Diary(
         this.isPublic = isPublic
     }
 
-    fun updateTags(newTagNames: List<String>, tagRepository: TagRepository) {
-        val currentNames = diaryTags.map { it.tag.name }
-        val toRemove = diaryTags.filter { it.tag.name !in newTagNames }
-        diaryTags.removeAll(toRemove)
-
-        val toAdd = newTagNames.filter { it !in currentNames }
-        toAdd.forEach { tagName ->
-            val tag = tagRepository.findByName(tagName) ?: tagRepository.save(Tag(tagName))
-            diaryTags.add(DiaryTag(this, tag))
-        }
-    }
-
-    fun updateGenres(
-        newGenreNames: List<String>,
-        genreService: GenreService,
-        libraryService: LibraryService
-    ) {
-        val currentNames = diaryGenres.map { it.genre.name }
-        val mappedNames = newGenreNames.map {
-            if (content.type == ContentType.BOOK)
-                libraryService.mapKdcToGenre(it)
-            else it
-        }
-
-        val toRemove = diaryGenres.filter { it.genre.name !in mappedNames }
-        diaryGenres.removeAll(toRemove)
-
-        val toAdd = mappedNames.filter { it !in currentNames }
-        toAdd.forEach { name ->
-            val genre = genreService.findOrCreateByName(name)
-            diaryGenres.add(DiaryGenre(this, genre))
-        }
-    }
-
-    fun updateOtts(newOttIds: List<Int>, ottRepository: OttRepository) {
-        if (content.type != ContentType.MOVIE) {
-            diaryOtts.clear()
-            return
-        }
-
-        diaryOtts.clear()
-
-        newOttIds.forEach { ottId ->
-            val ott = ottRepository.findById(ottId).orElseThrow {
-                CustomException(ErrorCode.OTT_NOT_FOUND)
-            }
-            diaryOtts.add(DiaryOtt(this, ott))
-        }
-    }
+    // 작성자 검증 헬퍼 (중복 제거용)
+    fun me(userId: Int): Boolean = this.user.id == userId
+    fun me(user: User): Boolean = this.user.id == user.id
 
     fun addComment(user: User, content: String): Comment {
         val comment = Comment(this, user, content)

@@ -3,15 +3,19 @@ package com.back.ourlog.domain.statistics.repository
 import com.back.ourlog.domain.content.entity.ContentType
 import com.back.ourlog.domain.content.entity.QContent
 import com.back.ourlog.domain.diary.entity.QDiary
+import com.back.ourlog.domain.genre.entity.QDiaryGenre.Companion.diaryGenre
+import com.back.ourlog.domain.genre.entity.QGenre.Companion.genre
+import com.back.ourlog.domain.ott.entity.QDiaryOtt.Companion.diaryOtt
+import com.back.ourlog.domain.ott.entity.QOtt.Companion.ott
 import com.back.ourlog.domain.statistics.dto.*
 import com.back.ourlog.domain.tag.entity.QDiaryTag
-import com.back.ourlog.domain.tag.entity.QDiaryTag.Companion.diaryTag
 import com.back.ourlog.domain.tag.entity.QTag
-import com.back.ourlog.domain.tag.entity.QTag.Companion.tag
-import com.querydsl.jpa.JPAExpressions.select
+import com.querydsl.core.types.Projections
+import com.querydsl.core.types.dsl.Expressions
 import com.querydsl.jpa.impl.JPAQueryFactory
 import jakarta.persistence.EntityManager
 import org.springframework.beans.factory.annotation.Value
+import com.querydsl.core.types.dsl.StringTemplate
 import org.springframework.stereotype.Repository
 import java.time.LocalDateTime
 
@@ -28,6 +32,8 @@ class StatisticsRepositoryCustomImpl(
     val diaryTag = QDiaryTag.diaryTag
     val tag = QTag.tag
 
+    val monthlyPeriodExpr: StringTemplate = Expressions.stringTemplate(lineMonthlySql, diary.createdAt)
+    val dailyPeriodExpr: StringTemplate = Expressions.stringTemplate(lineDailySql, diary.createdAt)
 
     /** 총 다이어리 개수 */
     override fun getTotalDiaryCountByUserId(userId: Int): Long {
@@ -36,7 +42,7 @@ class StatisticsRepositoryCustomImpl(
             .select(diary.count())
             .from(diary)
             .where(diary.user.id.eq(userId))
-            .fetchOne() ?: 0L                  // 결과가 없을 때 안전 장치
+            .fetchOne() ?: 0L
     }
 
     /** 평균 별점 */
@@ -61,9 +67,7 @@ class StatisticsRepositoryCustomImpl(
             .where(diary.user.id.eq(userId))
             .groupBy(content.type)
             .orderBy(diary.count().desc())
-            .limit(1)
-            .fetch()
-            .firstOrNull()
+            .fetchFirst()
 
         return FavoriteTypeAndCountDto(
             favoriteType = result?.get(content.type)?.toString() ?: "없음",
@@ -82,9 +86,7 @@ class StatisticsRepositoryCustomImpl(
             .where(diary.user.id.eq(userId))
             .groupBy(tag.name)
             .orderBy(diaryTag.count().desc())
-            .limit(1)
-            .fetch()
-            .firstOrNull()
+            .fetchFirst()
 
         return FavoriteEmotionAndCountDto(
             favoriteEmotion = result?.get(tag.name) ?: "없음",
@@ -92,355 +94,237 @@ class StatisticsRepositoryCustomImpl(
         )
     }
 
-    override fun count6MonthlyDiaryByUserId(userId: Int?, startDate: LocalDateTime): List<MonthlyDiaryCount> {
-        val sql =
-            "SELECT $lineMonthlySql AS period, COUNT(*) AS views " +
-                "FROM diary d " +
-                "WHERE user_id = ? AND created_at >= ? " +
-                "GROUP BY period " +
-                "ORDER BY period ASC"
+    /** 최근 6개월 감상 수 */
+    override fun count6MonthlyDiaryByUserId(userId: Int, startDate: LocalDateTime): List<MonthlyDiaryCount> {
+        val result = queryFactory
+            .select(monthlyPeriodExpr, diary.count())
+            .from(diary)
+            .where(
+                diary.user.id.eq(userId),
+                diary.createdAt.goe(startDate)
+            )
+            .groupBy(monthlyPeriodExpr)
+            .orderBy(monthlyPeriodExpr.asc())
+            .fetch()
 
-        val query = em.createNativeQuery(sql)
-        query.setParameter(1, userId)
-        query.setParameter(2, startDate)
+        if (result.isEmpty()) return emptyList()
 
-        val result = query.resultList as List<Array<Any>>
-
-        return result.map { row ->
+        return result.map { tuple ->
             MonthlyDiaryCount(
-                row[0] as String,
-                (row[1] as Number).toLong()
+                tuple.get(monthlyPeriodExpr) ?: "없음",
+                tuple.get(diary.count()) ?: 0L
             )
         }
     }
 
-    override fun findTypeCountsByUserId(userId: Int?): List<TypeCountDto>? {
-        val sql =
-            "SELECT c.type AS type, COUNT(*) AS count " +
-                "FROM diary d " +
-                "JOIN content c ON d.content_id = c.id " +
-                "WHERE d.user_id = ? " +
-                "GROUP BY c.type " +
-                "ORDER BY count DESC"
+    /** 콘텐츠 타입별 감상 수 */
+    override fun findTypeCountsByUserId(userId: Int): List<TypeCountDto> {
 
-        val query = em.createNativeQuery(sql)
-        query.setParameter(1, userId)
+        val result = queryFactory
+            .select(content.type, diary.count())
+            .from(diary)
+            .join(diary.content, content)
+            .where(diary.user.id.eq(userId))
+            .groupBy(content.type)
+            .orderBy(diary.count().desc())
+            .fetch()
 
-        val result = query.resultList as List<Array<Any>>
+        if (result.isEmpty()) return emptyList()
 
-        return if (result.isNotEmpty()) {
-            result.map { row ->
-                TypeCountDto(
-                    row[0] as String,
-                    (row[1] as Number).toLong()
-                )
-            }
-        } else {
-            null
-        }
-    }
-
-    override fun findTypeLineMonthly(userId: Int?, start: LocalDateTime, end: LocalDateTime): List<TypeLineGraphDto> {
-        val sql =
-            "SELECT $lineMonthlySql AS axisLabel, " +
-                "c.type AS type, " +
-                "COUNT(*) AS count " +
-                "FROM diary d " +
-                "JOIN content c ON d.content_id = c.id " +
-                "WHERE d.user_id = ? AND d.created_at BETWEEN ? AND ? " +
-                "GROUP BY axisLabel, c.type " +
-                "ORDER BY axisLabel, c.type"
-
-        val query = em.createNativeQuery(sql)
-        query.setParameter(1, userId)
-        query.setParameter(2, start)
-        query.setParameter(3, end)
-
-        val result = query.resultList as List<Array<Any>>
-
-        return result.map { row ->
-            TypeLineGraphDto(
-                row[0] as String,
-                ContentType.valueOf(row[1] as String),
-                (row[2] as Number).toLong()
+        return result.map { tuple ->
+            TypeCountDto(
+                tuple.get(content.type).toString(),
+                tuple.get(diary.count()) ?: 0L
             )
         }
     }
 
-    override fun findTypeLineDaily(userId: Int?, start: LocalDateTime, end: LocalDateTime): List<TypeLineGraphDto> {
-        val sql =
-            "SELECT $lineDailySql AS axisLabel, " +
-                "c.type AS type, " +
-                "COUNT(*) AS count " +
-                "FROM diary d " +
-                "JOIN content c ON d.content_id = c.id " +
-                "WHERE d.user_id = ? AND d.created_at BETWEEN ? AND ? " +
-                "GROUP BY axisLabel, c.type " +
-                "ORDER BY axisLabel, c.type"
+    /** 콘텐츠 타입별 월별 추이 */
+    override fun findTypeLineMonthly(userId: Int, start: LocalDateTime, end: LocalDateTime): List<TypeLineGraphDto> = findTypeLine(userId, start, end, monthlyPeriodExpr)
+    /** 콘텐츠 타입별 일별 추이 */
+    override fun findTypeLineDaily(userId: Int, start: LocalDateTime, end: LocalDateTime): List<TypeLineGraphDto> = findTypeLine(userId, start, end, dailyPeriodExpr)
 
-        val query = em.createNativeQuery(sql)
-        query.setParameter(1, userId)
-        query.setParameter(2, start)
-        query.setParameter(3, end)
-
-        val result = query.resultList as List<Array<Any>>
-
-        return result.map { row ->
-            TypeLineGraphDto(
-                row[0] as String,
-                ContentType.valueOf(row[1] as String),
-                (row[2] as Number).toLong()
+    fun findTypeLine(userId: Int, start: LocalDateTime, end: LocalDateTime, periodExpr: StringTemplate): List<TypeLineGraphDto> {
+        val result = queryFactory
+            .select(Projections.constructor(
+                TypeLineGraphDto::class.java,
+                periodExpr,
+                content.type,
+                diary.count()
+            ))
+            .from(diary)
+            .join(content).on(diary.content.id.eq(content.id))
+            .where(
+                diary.user.id.eq(userId),
+                diary.createdAt.between(start, end)
             )
-        }
+            .groupBy(periodExpr, content.type)
+            .orderBy(periodExpr.asc(), content.type.asc())
+            .fetch()
+
+        return result
     }
 
-    override fun findTypeRanking(userId: Int?, start: LocalDateTime, end: LocalDateTime): List<TypeRankDto> {
-        val jpql =
-            "select new com.back.ourlog.domain.statistics.dto.TypeRankDto(" +
-                "c.type, count(d)" +
-                ") " +
-                "from Diary d join d.content c " +
-                "where d.user.id = :uid and d.createdAt between :s and :e " +
-                "group by c.type order by count(d) desc"
-
-        return em.createQuery(jpql, TypeRankDto::class.java)
-            .setParameter("uid", userId)
-            .setParameter("s", start)
-            .setParameter("e", end)
-            .resultList
+    /** 콘텐츠 타입별 순위 */
+    override fun findTypeRanking(userId: Int, start: LocalDateTime, end: LocalDateTime): List<TypeRankDto> {
+        return queryFactory
+            .select(Projections.constructor(
+                TypeRankDto::class.java,
+                content.type,        // 콘텐츠 타입
+                diary.count()        // 해당 타입의 카운트
+            ))
+            .from(diary)
+            .join(content).on(diary.content.id.eq(content.id))
+            .where(
+                diary.user.id.eq(userId),
+                diary.createdAt.between(start, end)
+            )
+            .groupBy(content.type)
+            .orderBy(diary.count().desc())
+            .fetch()
     }
 
-    override fun findGenreLineMonthly(userId: Int?, start: LocalDateTime, end: LocalDateTime): List<GenreLineGraphDto> {
-        val sql =
-            "SELECT $lineMonthlySql AS axisLabel, " +
-                "g.name AS genre, " +
-                "COUNT(*) AS cnt " +
-                "FROM diary d " +
-                "JOIN diary_genre dg ON d.id = dg.diary_id " +
-                "JOIN genre g ON dg.genre_id = g.id " +
-                "WHERE d.user_id = ? AND d.created_at BETWEEN ? AND ? " +
-                "GROUP BY axisLabel, g.name " +
-                "ORDER BY axisLabel, g.name"
+    /** 장르별 월별 추이 */
+    override fun findGenreLineMonthly(userId: Int, start: LocalDateTime, end: LocalDateTime): List<GenreLineGraphDto> = findGenreLine(userId, start, end, monthlyPeriodExpr)
+    /** 장르별 일별 추이 */
+    override fun findGenreLineDaily(userId: Int, start: LocalDateTime, end: LocalDateTime): List<GenreLineGraphDto> = findGenreLine(userId, start, end, dailyPeriodExpr)
 
-        val query = em.createNativeQuery(sql)
-        query.setParameter(1, userId)
-        query.setParameter(2, start)
-        query.setParameter(3, end)
-
-        val result = query.resultList as List<Array<Any>>
-
-        return result.map { r ->
-            GenreLineGraphDto(
-                r[0] as String,
-                r[1] as String,
-                (r[2] as Number).toLong()
+    fun findGenreLine(userId: Int, start: LocalDateTime, end: LocalDateTime, periodExpr: StringTemplate): List<GenreLineGraphDto> {
+        val result = queryFactory
+            .select(Projections.constructor(
+                GenreLineGraphDto::class.java,
+                periodExpr,
+                genre.name,
+                diary.count()
+            ))
+            .from(diary)
+            .join(diaryGenre).on(diaryGenre.diary.id.eq(diary.id))
+            .join(genre).on(genre.id.eq(diaryGenre.genre.id))
+            .where(
+                diary.user.id.eq(userId),
+                diary.createdAt.between(start, end)
             )
-        }
+            .groupBy(periodExpr, genre.name)
+            .orderBy(periodExpr.asc(), genre.name.asc())
+            .fetch()
+
+        return result
     }
 
-    override fun findGenreLineDaily(userId: Int?, start: LocalDateTime, end: LocalDateTime): List<GenreLineGraphDto> {
-        val sql =
-            "SELECT $lineDailySql AS axisLabel, " +
-                "g.name AS genre, " +
-                "COUNT(*) AS cnt " +
-                "FROM diary d " +
-                "JOIN diary_genre dg ON d.id = dg.diary_id " +
-                "JOIN genre g ON dg.genre_id = g.id " +
-                "WHERE d.user_id = ? AND d.created_at BETWEEN ? AND ? " +
-                "GROUP BY axisLabel, g.name " +
-                "ORDER BY axisLabel, g.name"
-
-        val query = em.createNativeQuery(sql)
-        query.setParameter(1, userId)
-        query.setParameter(2, start)
-        query.setParameter(3, end)
-
-        val result = query.resultList as List<Array<Any>>
-
-        return result.map { r ->
-            GenreLineGraphDto(
-                r[0] as String,
-                r[1] as String,
-                (r[2] as Number).toLong()
+    /** 장르별 순위 */
+    override fun findGenreRanking(userId: Int, start: LocalDateTime, end: LocalDateTime): List<GenreRankDto> {
+        val result = queryFactory
+            .select(Projections.constructor(
+                GenreRankDto::class.java,
+                genre.name,
+                diary.count()
+            ))
+            .from(diary)
+            .join(diaryGenre).on(diaryGenre.diary.id.eq(diary.id))
+            .join(genre).on(genre.id.eq(diaryGenre.genre.id))
+            .where(
+                diary.user.id.eq(userId),
+                diary.createdAt.between(start, end)
             )
-        }
+            .groupBy(genre.name)
+            .orderBy(diary.count().desc())
+            .fetch()
+
+        return result
     }
 
-    override fun findGenreRanking(userId: Int?, start: LocalDateTime, end: LocalDateTime): List<GenreRankDto> {
-        val sql =
-            "SELECT g.name AS genre, COUNT(*) AS totalCount " +
-                "FROM diary d " +
-                "JOIN diary_genre dg ON d.id = dg.diary_id " +
-                "JOIN genre g ON dg.genre_id = g.id " +
-                "WHERE d.user_id = ? AND d.created_at BETWEEN ? AND ? " +
-                "GROUP BY g.name ORDER BY totalCount DESC"
+    /** 감정별 월별 추이 */
+    override fun findEmotionLineMonthly(userId: Int, start: LocalDateTime, end: LocalDateTime): List<EmotionLineGraphDto> = findEmotionLine(userId, start, end, monthlyPeriodExpr)
+    /** 감정별 일별 추이 */
+    override fun findEmotionLineDaily(userId: Int, start: LocalDateTime, end: LocalDateTime): List<EmotionLineGraphDto> = findEmotionLine(userId, start, end, dailyPeriodExpr)
 
-        val query = em.createNativeQuery(sql)
-        query.setParameter(1, userId)
-        query.setParameter(2, start)
-        query.setParameter(3, end)
-
-        val result = query.resultList as List<Array<Any>>
-
-        return result.map { r ->
-            GenreRankDto(
-                r[0] as String,
-                (r[1] as Number).toLong()
+    fun findEmotionLine(userId: Int, start: LocalDateTime, end: LocalDateTime, periodExpr: StringTemplate): List<EmotionLineGraphDto> {
+        return queryFactory
+            .select(Projections.constructor(
+                EmotionLineGraphDto::class.java,
+                periodExpr,
+                tag.name,
+                diary.count()
+            ))
+            .from(diary)
+            .join(diaryTag).on(diaryTag.diary.id.eq(diary.id))
+            .join(tag).on(tag.id.eq(diaryTag.tag.id))
+            .where(
+                diary.user.id.eq(userId),
+                diary.createdAt.between(start, end)
             )
-        }
+            .groupBy(periodExpr, tag.name)
+            .orderBy(periodExpr.asc(), tag.name.asc())
+            .fetch()
     }
 
-    override fun findEmotionLineMonthly(userId: Int?, start: LocalDateTime, end: LocalDateTime): List<EmotionLineGraphDto> {
-        val sql =
-            "SELECT $lineMonthlySql AS axisLabel, " +
-                "t.name AS emotion, " +
-                "COUNT(*) AS cnt " +
-                "FROM diary d " +
-                "JOIN diary_tag dt ON d.id = dt.diary_id " +
-                "JOIN tag t ON dt.tag_id = t.id " +
-                "WHERE d.user_id = ? AND d.created_at BETWEEN ? AND ? " +
-                "GROUP BY axisLabel, t.name " +
-                "ORDER BY axisLabel, t.name"
-
-        val query = em.createNativeQuery(sql)
-        query.setParameter(1, userId)
-        query.setParameter(2, start)
-        query.setParameter(3, end)
-
-        val result = query.resultList as List<Array<Any>>
-
-        return result.map { r ->
-            EmotionLineGraphDto(
-                r[0] as String,
-                r[1] as String,
-                (r[2] as Number).toLong()
+    /** 감정별 순위 */
+    override fun findEmotionRanking(userId: Int, start: LocalDateTime, end: LocalDateTime): List<EmotionRankDto> {
+        return queryFactory
+            .select(Projections.constructor(
+                EmotionRankDto::class.java,
+                tag.name,
+                diary.count()
+            ))
+            .from(diary)
+            .join(diaryTag).on(diaryTag.diary.id.eq(diary.id))
+            .join(tag).on(tag.id.eq(diaryTag.tag.id))
+            .where(
+                diary.user.id.eq(userId),
+                diary.createdAt.between(start, end)
             )
-        }
+            .groupBy(tag.name)
+            .orderBy(diary.count().desc())
+            .fetch()
     }
 
-    override fun findEmotionLineDaily(userId: Int?, start: LocalDateTime, end: LocalDateTime): List<EmotionLineGraphDto> {
-        val sql =
-            "SELECT $lineDailySql AS axisLabel, " +
-                "t.name AS emotion, " +
-                "COUNT(*) AS cnt " +
-                "FROM diary d " +
-                "JOIN diary_tag dt ON d.id = dt.diary_id " +
-                "JOIN tag t ON dt.tag_id = t.id " +
-                "WHERE d.user_id = ? AND d.created_at BETWEEN ? AND ? " +
-                "GROUP BY axisLabel, t.name " +
-                "ORDER BY axisLabel, t.name"
+    /** OTT별 월별 추이 */
+    override fun findOttLineMonthly(userId: Int, start: LocalDateTime, end: LocalDateTime): List<OttLineGraphDto> = findOttLine(userId, start, end, monthlyPeriodExpr)
+    /** OTT별 일별 추이 */
+    override fun findOttLineDaily(userId: Int, start: LocalDateTime, end: LocalDateTime): List<OttLineGraphDto> = findOttLine(userId, start, end, dailyPeriodExpr)
 
-        val query = em.createNativeQuery(sql)
-        query.setParameter(1, userId)
-        query.setParameter(2, start)
-        query.setParameter(3, end)
-
-        val result = query.resultList as List<Array<Any>>
-
-        return result.map { r ->
-            EmotionLineGraphDto(
-                r[0] as String,
-                r[1] as String,
-                (r[2] as Number).toLong()
+    private fun findOttLine(
+        userId: Int,
+        start: LocalDateTime,
+        end: LocalDateTime,
+        periodExpr: StringTemplate
+    ): List<OttLineGraphDto> {
+        return queryFactory
+            .select(Projections.constructor(
+                OttLineGraphDto::class.java,
+                periodExpr,
+                ott.name,
+                diary.count()
+            ))
+            .from(diary)
+            .join(diaryOtt).on(diaryOtt.diary.id.eq(diary.id))
+            .join(ott).on(ott.id.eq(diaryOtt.ott.id))
+            .where(
+                diary.user.id.eq(userId),
+                diary.createdAt.between(start, end)
             )
-        }
+            .groupBy(periodExpr, ott.name)
+            .orderBy(periodExpr.asc(), ott.name.asc())
+            .fetch()
     }
 
-    override fun findEmotionRanking(userId: Int?, start: LocalDateTime, end: LocalDateTime): List<EmotionRankDto> {
-        val sql =
-            "SELECT t.name AS emotion, COUNT(*) AS totalCount " +
-                "FROM diary d " +
-                "JOIN diary_tag dt ON d.id = dt.diary_id " +
-                "JOIN tag t ON dt.tag_id = t.id " +
-                "WHERE d.user_id = ? AND d.created_at BETWEEN ? AND ? " +
-                "GROUP BY t.name ORDER BY totalCount DESC"
-
-        val query = em.createNativeQuery(sql)
-        query.setParameter(1, userId)
-        query.setParameter(2, start)
-        query.setParameter(3, end)
-
-        val result = query.resultList as List<Array<Any>>
-
-        return result.map { r ->
-            EmotionRankDto(
-                r[0] as String,
-                (r[1] as Number).toLong()
+    /** OTT별 순위 */
+    override fun findOttRanking(userId: Int, start: LocalDateTime, end: LocalDateTime): List<OttRankDto> {
+        return queryFactory
+            .select(Projections.constructor(
+                OttRankDto::class.java,
+                ott.name,
+                diary.count()
+            ))
+            .from(diary)
+            .join(diaryOtt).on(diaryOtt.diary.id.eq(diary.id))
+            .join(ott).on(ott.id.eq(diaryOtt.ott.id))
+            .where(
+                diary.user.id.eq(userId),
+                diary.createdAt.between(start, end)
             )
-        }
-    }
-
-    override fun findOttLineMonthly(userId: Int?, start: LocalDateTime, end: LocalDateTime): List<OttLineGraphDto> {
-        val sql =
-            "SELECT $lineMonthlySql AS axisLabel, o.name AS ottName, COUNT(*) AS cnt " +
-                "FROM diary d " +
-                "JOIN diary_ott do ON d.id = do.diary_id " +
-                "JOIN ott o ON do.ott_id = o.id " +
-                "WHERE d.user_id = ? AND d.created_at BETWEEN ? AND ? " +
-                "GROUP BY axisLabel, o.name ORDER BY axisLabel, o.name"
-
-        val query = em.createNativeQuery(sql)
-        query.setParameter(1, userId)
-        query.setParameter(2, start)
-        query.setParameter(3, end)
-
-        val result = query.resultList as List<Array<Any>>
-
-        return result.map { r ->
-            OttLineGraphDto(
-                r[0] as String,
-                r[1] as String,
-                (r[2] as Number).toLong()
-            )
-        }
-    }
-
-    override fun findOttLineDaily(userId: Int?, start: LocalDateTime, end: LocalDateTime): List<OttLineGraphDto> {
-        val sql =
-            "SELECT $lineDailySql AS axisLabel, o.name AS ottName, COUNT(*) AS cnt " +
-                "FROM diary d " +
-                "JOIN diary_ott do ON d.id = do.diary_id " +
-                "JOIN ott o ON do.ott_id = o.id " +
-                "WHERE d.user_id = ? AND d.created_at BETWEEN ? AND ? " +
-                "GROUP BY axisLabel, o.name ORDER BY axisLabel, o.name"
-
-        val query = em.createNativeQuery(sql)
-        query.setParameter(1, userId)
-        query.setParameter(2, start)
-        query.setParameter(3, end)
-
-        val result = query.resultList as List<Array<Any>>
-
-        return result.map { r ->
-            OttLineGraphDto(
-                r[0] as String,
-                r[1] as String,
-                (r[2] as Number).toLong()
-            )
-        }
-    }
-
-    override fun findOttRanking(userId: Int?, start: LocalDateTime, end: LocalDateTime): List<OttRankDto> {
-        val sql =
-            "SELECT o.name AS ottName, COUNT(*) AS totalCnt " +
-                "FROM diary d " +
-                "JOIN diary_ott do ON d.id = do.diary_id " +
-                "JOIN ott o ON do.ott_id = o.id " +
-                "WHERE d.user_id = ? AND d.created_at BETWEEN ? AND ? " +
-                "GROUP BY o.name ORDER BY totalCnt DESC"
-
-        val query = em.createNativeQuery(sql)
-        query.setParameter(1, userId)
-        query.setParameter(2, start)
-        query.setParameter(3, end)
-
-        val result = query.resultList as List<Array<Any>>
-
-        return result.map { r ->
-            OttRankDto(
-                r[0] as String,
-                (r[1] as Number).toLong()
-            )
-        }
+            .groupBy(ott.name)
+            .orderBy(diary.count().desc())
+            .fetch()
     }
 }

@@ -9,6 +9,10 @@ import com.back.ourlog.domain.statistics.dto.TypeCountDto
 import com.back.ourlog.domain.statistics.dto.TypeGraphResponse
 import com.back.ourlog.domain.statistics.enums.PeriodOption
 import com.back.ourlog.domain.statistics.service.StatisticsService
+import com.back.ourlog.global.common.dto.RsData
+import com.back.ourlog.global.common.extension.toSuccessResponse
+import com.back.ourlog.global.exception.CustomException
+import com.back.ourlog.global.exception.ErrorCode
 import com.back.ourlog.global.security.service.CustomUserDetails
 import io.swagger.v3.oas.annotations.Operation
 import org.springframework.http.ResponseEntity
@@ -27,25 +31,23 @@ class StatisticsController(
 
     @GetMapping(value = ["/card"])
     @PreAuthorize("isAuthenticated()")
-    @Operation(summary = "통계 카드 조회", description = "총 감상 수, 평균 별정, 선호 장르, 주요 감정을 조회합니다.")
-    fun getStatisticsCard(@AuthenticationPrincipal userDetails: CustomUserDetails): ResponseEntity<StatisticsCardDto> {
-        return ResponseEntity.ok(statisticsService.getStatisticsCardByUserId(userDetails.id))
+    @Operation(summary = "통계 카드 조회", description = "총 감상 수, 평균 별점, 선호 장르, 주요 감정을 조회합니다.")
+    fun getStatisticsCard(@AuthenticationPrincipal userDetails: CustomUserDetails): ResponseEntity<RsData<StatisticsCardDto>> {
+        return statisticsService.getStatisticsCardByUserId(getUserId(userDetails)).toSuccessResponse("통계 카드 조회 성공")
     }
 
     @GetMapping(value = ["/monthly-diary-graph"])
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "최근 6개월 월 별 감상 수", description = "특정 회원의 최근 6개월 월 별 감상 수를 조회합니다")
-    fun getLast6MonthsDiaryCounts(@AuthenticationPrincipal userDetails: CustomUserDetails): ResponseEntity<List<MonthlyDiaryCount>> {
-        return ResponseEntity.ok(
-            statisticsService.getLast6MonthsDiaryCountsByUser(userDetails.id)
-        )
+    fun getLast6MonthsDiaryCounts(@AuthenticationPrincipal userDetails: CustomUserDetails): ResponseEntity<RsData<List<MonthlyDiaryCount>>> {
+        return statisticsService.getLast6MonthsDiaryCountsByUser(getUserId(userDetails)).toSuccessResponse("최근 6개월 월 별 감상 수 조회 성공")
     }
 
     @GetMapping(value = ["/type-distribution"])
     @PreAuthorize("isAuthenticated()")
-    @Operation(summary = "콘테츠 타입 분포", description = "특정 회원의 콘테츠 타입 분포를 조회합니다")
-    fun getTypeDistribution(@AuthenticationPrincipal userDetails: CustomUserDetails): ResponseEntity<List<TypeCountDto>> {
-        return ResponseEntity.ok(statisticsService.getTypeDistributionByUser(userDetails.id))
+    @Operation(summary = "콘텐츠 타입 분포", description = "특정 회원의 콘텐츠 타입 분포를 조회합니다")
+    fun getTypeDistribution(@AuthenticationPrincipal userDetails: CustomUserDetails): ResponseEntity<RsData<List<TypeCountDto>>> {
+        return statisticsService.getTypeDistributionByUser(getUserId(userDetails)).toSuccessResponse("콘텐츠 타입 분포 조회 성공")
     }
 
     @GetMapping("/type-graph")
@@ -54,8 +56,8 @@ class StatisticsController(
     fun getTypeGraph(
         @RequestParam period: PeriodOption,
         @AuthenticationPrincipal userDetails: CustomUserDetails
-    ): ResponseEntity<TypeGraphResponse> {
-        return ResponseEntity.ok(statisticsService.getTypeGraph(userDetails.id, period))
+    ): ResponseEntity<RsData<TypeGraphResponse>> {
+        return statisticsService.getTypeGraph(getUserId(userDetails), period).toSuccessResponse("콘텐츠 타입 그래프 조회 성공")
     }
 
     @GetMapping("/genre-graph")
@@ -64,8 +66,8 @@ class StatisticsController(
     fun getGenreGraph(
         @RequestParam period: PeriodOption,
         @AuthenticationPrincipal userDetails: CustomUserDetails
-    ): ResponseEntity<GenreGraphResponse> {
-        return ResponseEntity.ok(statisticsService.getGenreGraph(userDetails.id, period))
+    ): ResponseEntity<RsData<GenreGraphResponse>> {
+        return statisticsService.getGenreGraph(getUserId(userDetails), period).toSuccessResponse("장르 그래프 조회 성공")
     }
 
     @GetMapping("/emotion-graph")
@@ -74,9 +76,8 @@ class StatisticsController(
     fun getEmotionGraph(
         @RequestParam period: PeriodOption,
         @AuthenticationPrincipal userDetails: CustomUserDetails
-    ): ResponseEntity<EmotionGraphResponse> {
-        val res = statisticsService.getEmotionGraph(userDetails.id, period)
-        return ResponseEntity.ok(res)
+    ): ResponseEntity<RsData<EmotionGraphResponse>> {
+        return statisticsService.getEmotionGraph(getUserId(userDetails), period).toSuccessResponse("감정 그래프 조회 성공")
     }
 
     @GetMapping("/ott-graph")
@@ -85,8 +86,11 @@ class StatisticsController(
     fun getOttGraph(
         @RequestParam period: PeriodOption,
         @AuthenticationPrincipal userDetails: CustomUserDetails
-    ): ResponseEntity<OttGraphResponse> {
-        val res = statisticsService.getOttGraph(userDetails.id, period)
-        return ResponseEntity.ok(res)
+    ): ResponseEntity<RsData<OttGraphResponse>> {
+        return statisticsService.getOttGraph(getUserId(userDetails), period).toSuccessResponse("OTT 그래프 조회 성공")
+    }
+
+    private fun getUserId(userDetails: CustomUserDetails): Int {
+        return userDetails.id ?: throw CustomException(ErrorCode.AUTH_UNAUTHORIZED)
     }
 }

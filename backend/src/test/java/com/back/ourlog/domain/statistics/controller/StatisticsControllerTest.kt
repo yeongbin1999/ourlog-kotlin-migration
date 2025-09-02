@@ -37,12 +37,12 @@ class StatisticsControllerTest @Autowired constructor(
         val statisticsCardDto = statisticsService.getStatisticsCardByUserId(1)
 
         resultActions
-            .andExpect { MockMvcResultMatchers.jsonPath("$.totalDiaryCount").value(statisticsCardDto.totalDiaryCount) }
-            .andExpect { MockMvcResultMatchers.jsonPath("$.averageRating").value(statisticsCardDto.averageRating) }
-            .andExpect { MockMvcResultMatchers.jsonPath("$.favoriteTypeAndCountDto.favoriteType").value(statisticsCardDto.favoriteTypeAndCountDto.favoriteType) }
-            .andExpect { MockMvcResultMatchers.jsonPath("$.favoriteTypeAndCountDto.favoriteTypeCount").value(statisticsCardDto.favoriteTypeAndCountDto.favoriteTypeCount) }
-            .andExpect { MockMvcResultMatchers.jsonPath("$.favoriteEmotionAndCountDto.favoriteEmotion").value(statisticsCardDto.favoriteEmotionAndCountDto.favoriteEmotion)}
-            .andExpect { MockMvcResultMatchers.jsonPath("$.favoriteEmotionAndCountDto.favoriteEmotionCount").value(statisticsCardDto.favoriteEmotionAndCountDto.favoriteEmotionCount) }
+            .andExpect { MockMvcResultMatchers.jsonPath("$.data.totalDiaryCount").value(statisticsCardDto.totalDiaryCount) }
+            .andExpect { MockMvcResultMatchers.jsonPath("$.data.averageRating").value(statisticsCardDto.averageRating) }
+            .andExpect { MockMvcResultMatchers.jsonPath("$.data.favoriteTypeAndCountDto.favoriteType").value(statisticsCardDto.favoriteTypeAndCountDto.favoriteType) }
+            .andExpect { MockMvcResultMatchers.jsonPath("$.data.favoriteTypeAndCountDto.favoriteTypeCount").value(statisticsCardDto.favoriteTypeAndCountDto.favoriteTypeCount) }
+            .andExpect { MockMvcResultMatchers.jsonPath("$.data.favoriteEmotionAndCountDto.favoriteEmotion").value(statisticsCardDto.favoriteEmotionAndCountDto.favoriteEmotion)}
+            .andExpect { MockMvcResultMatchers.jsonPath("$.data.favoriteEmotionAndCountDto.favoriteEmotionCount").value(statisticsCardDto.favoriteEmotionAndCountDto.favoriteEmotionCount) }
 
         println("Total Diary Count: ${statisticsCardDto.totalDiaryCount}")
         println("Average Rating: ${statisticsCardDto.averageRating}")
@@ -68,8 +68,8 @@ class StatisticsControllerTest @Autowired constructor(
         monthlyDiaryCounts.forEachIndexed { i, monthlyDiaryCount ->
             println("Period: ${monthlyDiaryCount.period}, Views: ${monthlyDiaryCount.views}")
             resultActions
-                .andExpect { MockMvcResultMatchers.jsonPath("$.[$i].period").value(monthlyDiaryCount.period) }
-                .andExpect { MockMvcResultMatchers.jsonPath("$.[$i].views").value(monthlyDiaryCount.views) }
+                .andExpect { MockMvcResultMatchers.jsonPath("$.data.[$i].period").value(monthlyDiaryCount.period) }
+                .andExpect { MockMvcResultMatchers.jsonPath("$.data.[$i].views").value(monthlyDiaryCount.views) }
         }
     }
 
@@ -89,8 +89,8 @@ class StatisticsControllerTest @Autowired constructor(
         typeCountDtos.forEachIndexed { i, typeCountDto ->
             println("Type: ${typeCountDto.type}, Count: ${typeCountDto.count}")
             resultActions
-                .andExpect { MockMvcResultMatchers.jsonPath("$.[$i].type").value(typeCountDto.type) }
-                .andExpect { MockMvcResultMatchers.jsonPath("$.[$i].count").value(typeCountDto.count) }
+                .andExpect { MockMvcResultMatchers.jsonPath("$.data.[$i].type").value(typeCountDto.type) }
+                .andExpect { MockMvcResultMatchers.jsonPath("$.data.[$i].count").value(typeCountDto.count) }
         }
     }
 
@@ -115,15 +115,15 @@ class StatisticsControllerTest @Autowired constructor(
         trend.forEachIndexed { i, typeLineGraphDto ->
             println("Axis Label: ${typeLineGraphDto.axisLabel}, Type: ${typeLineGraphDto.type}, Count: ${typeLineGraphDto.count}")
             resultActions
-                .andExpect { MockMvcResultMatchers.jsonPath("$.typeLineGraph.[$i].axisLabel").value(typeLineGraphDto.axisLabel) }
-                .andExpect { MockMvcResultMatchers.jsonPath("$.typeLineGraph.[$i].type").value(typeLineGraphDto.type.name) }
-                .andExpect { MockMvcResultMatchers.jsonPath("$.typeLineGraph.[$i].count").value(typeLineGraphDto.count) }
+                .andExpect { MockMvcResultMatchers.jsonPath("$.data.typeLineGraph.[$i].axisLabel").value(typeLineGraphDto.axisLabel) }
+                .andExpect { MockMvcResultMatchers.jsonPath("$.data.typeLineGraph.[$i].type").value(typeLineGraphDto.type.name) }
+                .andExpect { MockMvcResultMatchers.jsonPath("$.data.typeLineGraph.[$i].count").value(typeLineGraphDto.count) }
         }
         ranking.forEachIndexed { i, typeRankDto ->
             println("Type: ${typeRankDto.type}, Count: ${typeRankDto.totalCount}")
             resultActions
-                .andExpect { MockMvcResultMatchers.jsonPath("$.typeRanking.[$i].type").value(typeRankDto.type.name) }
-                .andExpect { MockMvcResultMatchers.jsonPath("$.typeRanking.[$i].totalCount").value(typeRankDto.totalCount) }
+                .andExpect { MockMvcResultMatchers.jsonPath("$.data.typeRanking.[$i].type").value(typeRankDto.type.name) }
+                .andExpect { MockMvcResultMatchers.jsonPath("$.data.typeRanking.[$i].totalCount").value(typeRankDto.totalCount) }
         }
     }
 
@@ -148,16 +148,16 @@ class StatisticsControllerTest @Autowired constructor(
         graph.forEachIndexed { i, genreLineGraphDto ->
             println("Axis Label: ${genreLineGraphDto.axisLabel}, Genre: ${genreLineGraphDto.genre}, Count: ${genreLineGraphDto.count}")
             resultActions
-                .andExpect { MockMvcResultMatchers.jsonPath("$.genreLineGraph.[$i].axisLabel").value(genreLineGraphDto.axisLabel) }
-                .andExpect { MockMvcResultMatchers.jsonPath("$.genreLineGraph.[$i].genre").value(genreLineGraphDto.genre) }
-                .andExpect { MockMvcResultMatchers.jsonPath("$.genreLineGraph.[$i].count").value(genreLineGraphDto.count) }
+                .andExpect { MockMvcResultMatchers.jsonPath("$.data.genreLineGraph.[$i].axisLabel").value(genreLineGraphDto.axisLabel) }
+                .andExpect { MockMvcResultMatchers.jsonPath("$.data.genreLineGraph.[$i].genre").value(genreLineGraphDto.genre) }
+                .andExpect { MockMvcResultMatchers.jsonPath("$.data.genreLineGraph.[$i].count").value(genreLineGraphDto.count) }
         }
 
         ranking.forEachIndexed { i, genreRankDto ->
             println("Genre: ${genreRankDto.genre}, Count: ${genreRankDto.totalCount}")
             resultActions
-                .andExpect { MockMvcResultMatchers.jsonPath("$.genreRanking.[$i].genre").value(genreRankDto.genre) }
-                .andExpect { MockMvcResultMatchers.jsonPath("$.genreRanking.[$i].totalCount").value(genreRankDto.totalCount) }
+                .andExpect { MockMvcResultMatchers.jsonPath("$.data.genreRanking.[$i].genre").value(genreRankDto.genre) }
+                .andExpect { MockMvcResultMatchers.jsonPath("$.data.genreRanking.[$i].totalCount").value(genreRankDto.totalCount) }
         }
     }
 
@@ -182,15 +182,15 @@ class StatisticsControllerTest @Autowired constructor(
         line.forEachIndexed { i, emotionLineGraphDto ->
             println("Axis Label: ${emotionLineGraphDto.axisLabel}, Emotion: ${emotionLineGraphDto.emotion}, Count: ${emotionLineGraphDto.count}")
             resultActions
-                .andExpect { MockMvcResultMatchers.jsonPath("$.emotionLineGraph.[$i].axisLabel").value(emotionLineGraphDto.axisLabel) }
-                .andExpect { MockMvcResultMatchers.jsonPath("$.emotionLineGraph.[$i].emotion").value(emotionLineGraphDto.emotion) }
-                .andExpect { MockMvcResultMatchers.jsonPath("$.emotionLineGraph.[$i].count").value(emotionLineGraphDto.count) }
+                .andExpect { MockMvcResultMatchers.jsonPath("$.data.emotionLineGraph.[$i].axisLabel").value(emotionLineGraphDto.axisLabel) }
+                .andExpect { MockMvcResultMatchers.jsonPath("$.data.emotionLineGraph.[$i].emotion").value(emotionLineGraphDto.emotion) }
+                .andExpect { MockMvcResultMatchers.jsonPath("$.data.emotionLineGraph.[$i].count").value(emotionLineGraphDto.count) }
         }
         ranking.forEachIndexed { i, emotionRankDto ->
             println("Emotion: ${emotionRankDto.emotion}, Count: ${emotionRankDto.totalCount}")
             resultActions
-                .andExpect { MockMvcResultMatchers.jsonPath("$.emotionRanking.[$i].emotion").value(emotionRankDto.emotion) }
-                .andExpect { MockMvcResultMatchers.jsonPath("$.emotionRanking.[$i].totalCount").value(emotionRankDto.totalCount) }
+                .andExpect { MockMvcResultMatchers.jsonPath("$.data.emotionRanking.[$i].emotion").value(emotionRankDto.emotion) }
+                .andExpect { MockMvcResultMatchers.jsonPath("$.data.emotionRanking.[$i].totalCount").value(emotionRankDto.totalCount) }
         }
     }
 
@@ -215,16 +215,16 @@ class StatisticsControllerTest @Autowired constructor(
         line.forEachIndexed { i, ottLineGraphDto ->
             println("Axis Label: ${ottLineGraphDto.axisLabel}, OTT: ${ottLineGraphDto.ottName}, Count: ${ottLineGraphDto.count}")
             resultActions
-                .andExpect { MockMvcResultMatchers.jsonPath("$.ottLineGraph.[$i].axisLabel").value(ottLineGraphDto.axisLabel) }
-                .andExpect { MockMvcResultMatchers.jsonPath("$.ottLineGraph.[$i].ottName").value(ottLineGraphDto.ottName) }
-                .andExpect { MockMvcResultMatchers.jsonPath("$.ottLineGraph.[$i].count").value(ottLineGraphDto.count) }
+                .andExpect { MockMvcResultMatchers.jsonPath("$.data.ottLineGraph.[$i].axisLabel").value(ottLineGraphDto.axisLabel) }
+                .andExpect { MockMvcResultMatchers.jsonPath("$.data.ottLineGraph.[$i].ottName").value(ottLineGraphDto.ottName) }
+                .andExpect { MockMvcResultMatchers.jsonPath("$.data.ottLineGraph.[$i].count").value(ottLineGraphDto.count) }
         }
 
         ranking.forEachIndexed { i, ottRankDto ->
             println("OTT: ${ottRankDto.ottName}, Count: ${ottRankDto.totalCount}")
             resultActions
-                .andExpect { MockMvcResultMatchers.jsonPath("$.ottRanking.[$i].ottName").value(ottRankDto.ottName) }
-                .andExpect { MockMvcResultMatchers.jsonPath("$.ottRanking.[$i].totalCount").value(ottRankDto.totalCount) }
+                .andExpect { MockMvcResultMatchers.jsonPath("$.data.ottRanking.[$i].ottName").value(ottRankDto.ottName) }
+                .andExpect { MockMvcResultMatchers.jsonPath("$.data.ottRanking.[$i].totalCount").value(ottRankDto.totalCount) }
         }
     }
 }

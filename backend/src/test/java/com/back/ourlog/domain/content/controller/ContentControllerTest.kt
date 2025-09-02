@@ -3,8 +3,11 @@ package com.back.ourlog.domain.content.controller
 import com.back.ourlog.config.ContentTestMockConfig
 import com.back.ourlog.domain.content.dto.ContentSearchResultDto
 import com.back.ourlog.domain.content.entity.ContentType
+import com.back.ourlog.domain.user.entity.User
 import com.back.ourlog.external.common.ContentSearchFacade
+import com.back.ourlog.global.rq.Rq
 import org.hamcrest.Matchers
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.mockito.BDDMockito.given
@@ -18,6 +21,7 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders
 import org.springframework.test.web.servlet.result.MockMvcResultHandlers
 import org.springframework.test.web.servlet.result.MockMvcResultHandlers.print
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
 
@@ -34,18 +38,29 @@ internal class ContentControllerTest {
     @Autowired
     private lateinit var contentSearchFacade: ContentSearchFacade
 
+    @Autowired
+    lateinit var rq: Rq
+
+    @Autowired
+    lateinit var testUserFactory: (Int) -> User
+
+    @BeforeEach
+    fun setUpAuth() {
+        val mockUser = testUserFactory.invoke(18)
+
+        given(rq.currentUser).willReturn(mockUser)
+    }
+
+
     @Test
     @DisplayName("컨텐츠 조회")
     fun t1() {
         val diaryId = 1
 
-        val resultActions = mvc.perform(
-            MockMvcRequestBuilders.get("/api/v1/contents/$diaryId")
-        ).andDo(MockMvcResultHandlers.print())
-
-        resultActions
+        mvc.perform(get("/api/v1/contents/$diaryId"))
+            .andDo(print())
             .andExpect(handler().handlerType(ContentController::class.java))
-            .andExpect(handler().methodName("getContent"))
+            .andExpect(handler().methodName("getContentForDiary"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.msg").value("${diaryId}번 다이어리의 컨텐츠 조회 성공"))
             .andExpect(jsonPath("$.data.title").value("콘텐츠 30"))
