@@ -1,10 +1,10 @@
 "use client";
 
-import { Card, Image, Row, Col } from "react-bootstrap";
 import { TimelineItem } from "../types/timeline";
 import { FaHeart, FaRegHeart, FaComment } from "react-icons/fa";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 interface Props {
   item: TimelineItem;
@@ -26,7 +26,6 @@ export default function TimelineCard({ item }: Props) {
 
       if (!response.ok) throw new Error("좋아요 요청 실패");
 
-      //  좋아요 후, 서버에서 최신 좋아요 수 조회
       const data = await response.json();
 
       setIsLiked(data.liked);
@@ -42,63 +41,97 @@ export default function TimelineCard({ item }: Props) {
   };
 
   return (
-    <Card
-      className="shadow-sm rounded overflow-hidden mb-4 timeline-hover"
-      style={{ width: "100%", maxWidth: "360px" }}
+    <article
+      className="bg-white border border-gray-200 rounded-2xl shadow-sm hover:shadow-lg overflow-hidden cursor-pointer transition-all duration-300 w-full max-w-sm group"
       onClick={handleCardClick}
     >
+      {/* 이미지 섹션 */}
       {item.imageUrl && (
-        <Card.Img
-          variant="top"
-          src={item.imageUrl}
-          alt="Diary poster"
-          style={{ height: "200px", objectFit: "cover" }}
-        />
+        <div className="relative h-48 w-full overflow-hidden">
+          <Image
+            src={item.imageUrl}
+            alt={`${item.title} 포스터`}
+            fill
+            className="object-cover group-hover:scale-105 transition-transform duration-500"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          />
+        </div>
       )}
 
-      <Card.Body>
-        <Card.Title className="d-flex justify-content-between align-items-center">
-          <span className="fw-bold">{item.title}</span>
-        </Card.Title>
-        <small className="text-muted">
-          {new Date(item.createdAt).toLocaleDateString()}
-        </small>
-      </Card.Body>
+      <div className="p-6 space-y-6">
+        {/* 제목과 본문 */}
+        <div className="space-y-3">
+          <h3 className="font-bold text-2xl text-gray-900 leading-tight line-clamp-2 group-hover:text-gray-700 transition-colors">
+            {item.title}
+          </h3>
 
-      <Card.Footer className="bg-white border-0 pt-0">
-        <Row className="align-items-center text-muted">
+          {/* 내용 미리보기 (있다면) - 한 줄만 */}
+          {item.content && (
+            <p className="text-gray-600 text-sm line-clamp-1 leading-relaxed">
+              {item.content}
+            </p>
+          )}
+        </div>
 
-          {/* ❤️ 좋아요 버튼 + 숫자 */}
-          <Col xs="auto" className="d-flex align-items-center gap-1">
-            <span onClick={handleLikeClick} style={{ cursor: "pointer" }}>
-              {isLiked ? (
-                <FaHeart className="text-danger" />  // 좋아요 상태면 빨간 하트
-              ) : (
-                <FaRegHeart className="text-muted" />   // 아니라면 빈 하트
-              )}
-            </span>
-            <span>{likeCount}</span>
-          </Col>
-
-          <Col xs="auto" className="d-flex align-items-center gap-1">
-            <FaComment className="text-primary" />
-            <span>{item.commentCount}</span>
-          </Col>
-
-          <Col className="d-flex align-items-center justify-content-end gap-2">
-            {item.user.profileImageUrl && (
+        {/* 사용자 정보 */}
+        <div className="flex items-center gap-3">
+          <div className="relative w-8 h-8">
+            {item.user.profileImageUrl ? (
               <Image
                 src={item.user.profileImageUrl}
-                roundedCircle
-                width={28}
-                height={28}
-                alt="profile"
+                alt={`${item.user.nickname} 프로필`}
+                fill
+                className="rounded-full object-cover"
               />
+            ) : (
+              <div className="w-full h-full bg-gray-300 rounded-full flex items-center justify-center">
+                <span className="text-gray-600 text-xs font-medium">
+                  {item.user.nickname.charAt(0).toUpperCase()}
+                </span>
+              </div>
             )}
-            <strong className="text-dark">{item.user.nickname}</strong>
-          </Col>
-        </Row>
-      </Card.Footer>
-    </Card>
+          </div>
+          <span className="font-semibold text-gray-900 text-sm">{item.user.nickname}</span>
+        </div>
+
+        {/* 인터랙션 버튼들 */}
+        <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+          <div className="flex items-center gap-4">
+            {/* 좋아요 버튼 */}
+            <button
+              onClick={handleLikeClick} 
+              className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-red-50 transition-all duration-200 group/like"
+              aria-label={isLiked ? "좋아요 취소" : "좋아요"}
+            >
+              {isLiked ? (
+                <FaHeart className="text-red-500 text-base group-hover/like:scale-110 transition-transform" />
+              ) : (
+                <FaRegHeart className="text-gray-400 group-hover/like:text-red-500 text-base group-hover/like:scale-110 transition-all" />
+              )}
+              <span className={`text-sm font-medium ${isLiked ? 'text-red-600' : 'text-gray-600'}`}>
+                {likeCount}
+              </span>
+            </button>
+
+            {/* 댓글 버튼 */}
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-blue-50 transition-colors cursor-pointer group/comment">
+              <FaComment className="text-gray-400 group-hover/comment:text-blue-500 text-base transition-colors" />
+              <span className="text-sm font-medium text-gray-600 group-hover/comment:text-blue-600 transition-colors">
+                {item.commentCount}
+              </span>
+            </div>
+          </div>
+
+          {/* 날짜를 맨 오른쪽에 배치 */}
+          <time className="text-xs text-gray-500 font-medium whitespace-nowrap">
+            {new Date(item.createdAt).toLocaleDateString("ko-KR", {
+              year: "numeric",
+              month: "2-digit", 
+              day: "2-digit",
+            })}
+          </time>
+        </div>
+      </div>
+    </article>
   );
 }
