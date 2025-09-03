@@ -47,7 +47,7 @@ const Header = () => {
           </nav>
         </div>
 
-        {/* 오른쪽: 아이콘 + Write */}
+        {/* 오른쪽: 아이콘 */}
         <div className="flex items-center h-full ml-auto pr-0">
           {/* 검색창 드롭다운 */}
           <div className="mr-4">
@@ -57,20 +57,6 @@ const Header = () => {
           {/* 드롭다운 */}
           <div className="flex items-center space-x-8 mr-6">
             <UserMenu />
-          </div>
-
-          {/* Write 버튼 */}
-          <div
-            onClick={() => router.push("/diaries/write")}
-            className={`ml-6 h-full w-[180px] min-w-[160px] flex justify-center items-center cursor-pointer transition duration-200 ${
-              hoveredItem === "write"
-                ? "bg-gray-800 text-white"
-                : "bg-black text-white"
-            }`}
-            onMouseEnter={() => setHoveredItem("write")}
-            onMouseLeave={() => setHoveredItem(null)}
-          >
-            <span className="text-md">Write</span>
           </div>
         </div>
       </div>

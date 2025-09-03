@@ -7,9 +7,11 @@ const SearchClient = dynamic(() => import("./SearchClient"), { ssr: false });
 
 const SearchPage = () => {
   return (
-    <Suspense fallback={<div>Loading search page...</div>}>
-      <SearchClient />
-    </Suspense>
+    <main className="pt-24">
+      <Suspense fallback={<div className="pt-24 text-center">Loading...</div>}>
+        <SearchClient />
+      </Suspense>
+    </main>
   );
 };
 
