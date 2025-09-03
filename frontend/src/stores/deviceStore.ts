@@ -21,7 +21,7 @@ type DeviceStore = DeviceState & DeviceActions;
 
 export const useDeviceStore = create<DeviceStore>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       // 초기 상태
       deviceInfo: {
         deviceId: 'temp_id',

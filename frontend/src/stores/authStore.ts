@@ -211,9 +211,18 @@ export const useAuthStore = create<AuthStore>()(
       },
 
       initializeAuth: async () => {
-        const { accessToken } = get();
+        const { accessToken, isAuthenticated } = get();
 
-        if (!accessToken) {
+        // If we already know we are not authenticated and have no accessToken,
+        // then we are done initializing as unauthenticated.
+        if (!accessToken && !isAuthenticated) {
+            set({ isLoading: false });
+            return;
+        }
+
+        // If no accessToken is present but isAuthenticated is true (e.g., from persisted state),
+        // or if accessToken is present, try to verify/refresh.
+        if (!accessToken) { // This branch is for when accessToken is null but isAuthenticated might be true (from persist)
           const refreshed = await get().refreshAccessToken();
           if (!refreshed) {
             set({ isLoading: false });

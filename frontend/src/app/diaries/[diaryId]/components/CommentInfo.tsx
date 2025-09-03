@@ -4,6 +4,7 @@ import { Comment } from "../../types/detail";
 import { useRouter } from "next/navigation";
 import { axiosInstance } from "@/lib/api-client";
 import { useAuthStore } from "@/stores";
+import Image from "next/image";
 
 export default function CommentInfo({
   comments,
@@ -92,9 +93,11 @@ export default function CommentInfo({
                 onClick={() => router.push(`/profile/${comment.id}`)}
               >
                 {comment.profileImageUrl ? (
-                  <img
+                  <Image
                     src={comment.profileImageUrl}
                     alt={`${comment.nickname}님의 프로필 이미지`}
+                    width={48}
+                    height={48}
                     className="w-full h-full object-cover rounded-full"
                   />
                 ) : (

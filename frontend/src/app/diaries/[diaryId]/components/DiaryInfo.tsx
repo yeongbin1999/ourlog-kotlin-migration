@@ -6,9 +6,11 @@ export default function DiaryInfo({
   tagNames,
   onEdit,
   onDelete,
+  isOwner,
 }: DiaryInfoProps & {
   onEdit: () => void;
   onDelete: () => void;
+  isOwner: boolean;
 }) {
   return (
     <div className="bg-white border border-gray-200 rounded-3xl shadow-sm overflow-hidden">
@@ -62,22 +64,24 @@ export default function DiaryInfo({
       </div>
 
       {/* 버튼 섹션 */}
-      <div className="bg-gray-50 px-8 lg:px-10 py-6 border-t border-gray-200">
-        <div className="flex justify-end gap-3">
-          <button
-            onClick={onEdit}
-            className="px-6 py-3 rounded-xl border-2 border-gray-300 text-gray-700 font-semibold hover:border-gray-900 hover:text-gray-900 transition-all duration-200 hover:-translate-y-0.5"
-          >
-            수정하기
-          </button>
-          <button
-            onClick={onDelete}
-            className="px-6 py-3 rounded-xl border-2 border-red-200 text-red-600 font-semibold hover:border-red-500 hover:text-red-700 hover:bg-red-50 transition-all duration-200 hover:-translate-y-0.5"
-          >
-            삭제하기
-          </button>
+      {isOwner && (
+        <div className="bg-gray-50 px-8 lg:px-10 py-6 border-t border-gray-200">
+          <div className="flex justify-end gap-3">
+            <button
+              onClick={onEdit}
+              className="px-6 py-3 rounded-xl border-2 border-gray-300 text-gray-700 font-semibold hover:border-gray-900 hover:text-gray-900 transition-all duration-200 hover:-translate-y-0.5"
+            >
+              수정하기
+            </button>
+            <button
+              onClick={onDelete}
+              className="px-6 py-3 rounded-xl border-2 border-red-200 text-red-600 font-semibold hover:border-red-500 hover:text-red-700 hover:bg-red-50 transition-all duration-200 hover:-translate-y-0.5"
+            >
+              삭제하기
+            </button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

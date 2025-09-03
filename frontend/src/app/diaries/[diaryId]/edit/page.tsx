@@ -1,18 +1,29 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import DiaryForm from "@/components/diary/DiaryForm";
 import { Content, Diary } from "@/app/diaries/types/detail";
 import { axiosInstance } from "@/lib/api-client";
+import { useAuthStore } from "@/stores/authStore";
 
 const EditDiaryPage = () => {
   const { diaryId } = useParams();
   const [diary, setDiary] = useState<Diary | null>(null);
   const [content, setContent] = useState<Content | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
+  const { isAuthenticated, isLoading: authLoading } = useAuthStore();
 
   useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      router.push("/login");
+    }
+  }, [isAuthenticated, authLoading, router]);
+
+  useEffect(() => {
+    if (!isAuthenticated || authLoading) return; // Wait for authentication to load
+
     const fetchDiaryAndContent = async () => {
       try {
         // diary 먼저 조회
@@ -34,9 +45,9 @@ const EditDiaryPage = () => {
     if (diaryId) {
       fetchDiaryAndContent();
     }
-  }, [diaryId]);
+  }, [diaryId, isAuthenticated, authLoading]);
 
-  if (isLoading || !diary || !content) {
+  if (isLoading || !diary || !content || authLoading || !isAuthenticated) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">

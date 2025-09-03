@@ -1,9 +1,14 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
+import { useAuthStore } from "@/stores/authStore";
 
 export default function Home() {
   const [visibleElements, setVisibleElements] = useState(new Set());
+  const router = useRouter();
+  const { isAuthenticated } = useAuthStore();
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -26,7 +31,11 @@ export default function Home() {
   }, []);
 
   const handleCTAClick = () => {
-    alert("회원가입/로그인 페이지로 이동합니다!");
+    if (isAuthenticated) {
+      router.push("/social");
+    } else {
+      router.push("/login");
+    }
   };
 
   const handleLearnMore = () => {
@@ -302,9 +311,11 @@ export default function Home() {
                 <div className="p-12">
                   <div className="flex gap-8 mb-8">
                     <div className="w-24 h-36 rounded-lg overflow-hidden shadow-lg flex-shrink-0 transform transition-transform duration-300 hover:scale-105">
-                      <img
+                      <Image
                         src={example.poster}
                         alt={example.title}
+                        width={96}
+                        height={144}
                         className="w-full h-full object-cover"
                       />
                     </div>

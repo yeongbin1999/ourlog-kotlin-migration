@@ -1,15 +1,15 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { useSignup } from '@/generated/api/api';
-import { useAuthStore } from '@/stores/authStore';
 import { Eye, EyeOff, Mail, Lock, User, Check, X } from 'lucide-react';
 import { AxiosError } from 'axios';
+import { useAuthStore } from '@/stores/authStore';
 
 export default function SignUpPage() {
   const [email, setEmail] = useState('');
@@ -22,6 +22,13 @@ export default function SignUpPage() {
   const router = useRouter();
 
   const { mutateAsync: signupMutation } = useSignup();
+  const { isAuthenticated } = useAuthStore();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push('/');
+    }
+  }, [isAuthenticated, router]);
 
   // 비밀번호 검증
   const isPasswordValid = password.length >= 6;

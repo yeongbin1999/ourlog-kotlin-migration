@@ -1,4 +1,5 @@
 export type Diary = {
+    userId: number;
     title: string;
     rating: number;
     contentText: string;

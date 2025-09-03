@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { Rss } from "lucide-react";
 import TimelineCard from "../social/components/TimelineCard";
 import { TimelineItem } from "../social/types/timeline";
-import axios, { isCancel } from "axios";
+import axios from "axios";
 import { axiosInstance } from "@/lib/api-client";
 import { unwrapList } from "@/lib/unwrap";
 
@@ -74,7 +74,6 @@ export default function TimelinePage() {
         if (axios.isCancel(e)) {
           // console.log('Request canceled', e.message);
         } else {
-          // eslint-disable-next-line no-console
           console.error(e);
           setError("타임라인을 불러오는 데 실패했습니다.");
         }

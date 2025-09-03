@@ -1,27 +1,13 @@
 import { useAuthStore } from '../stores';
 import {
-  useGetDiary,
-  useCreateDiary,
-  useUpdateDiary,
-  useDeleteDiary,
   useGetUserProfile,
   useLogin,
   useSignup,
   useLogout,
-  useSearchContents,
   LoginMutationResult,
 } from '../generated/api/api';
 
 /** ===== 공통 유틸: RsData<LoginResponseDTO>에서 accessToken 안전 추출 ===== */
-type RsData<T> = {
-  resultCode: string;
-  msg?: string | null;
-  data?: T | null;
-};
-
-type LoginResponseDTO = {
-  accessToken: string;
-};
 
 const isRecord = (v: unknown): v is Record<string, unknown> =>
   v !== null && typeof v === 'object';
