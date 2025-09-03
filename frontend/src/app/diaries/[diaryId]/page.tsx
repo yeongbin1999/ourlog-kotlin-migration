@@ -9,6 +9,7 @@ import CommentForm from "./components/CommentForm";
 import CommentInfo from "./components/CommentInfo";
 import ContentInfo from "./components/ContentInfo";
 import { axiosInstance } from "@/lib/api-client";
+import { useAuthStore } from "@/stores/authStore";
 
 export default function Page() {
   const [diary, setDiary] = useState<Diary | null>(null);
@@ -19,6 +20,7 @@ export default function Page() {
   const { diaryId } = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { user: me } = useAuthStore();
 
   const fetchData = useCallback(async () => {
     if (!diaryId) return;
@@ -110,6 +112,8 @@ export default function Page() {
     );
   }
 
+  const isOwner = diary && me ? Number(me.id) === diary.userId : false;
+
   return (
     <main className="bg-gray-50 min-h-screen py-8 lg:py-12">
       <div className="max-w-5xl mx-auto px-4 lg:px-6 space-y-8">
@@ -127,6 +131,7 @@ export default function Page() {
           tagNames={diary.tagNames}
           onEdit={() => router.push(`/diaries/${diaryId}/edit`)}
           onDelete={handleDelete}
+          isOwner={isOwner}
         />
         <div className="bg-white border border-gray-200 rounded-3xl shadow-sm overflow-hidden">
           <div className="p-8">
