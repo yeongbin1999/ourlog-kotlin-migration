@@ -7,10 +7,10 @@
  */
 
 export interface CommentResponseDto {
-  id?: number;
-  userId?: number;
-  nickname?: string;
+  id: number;
+  userId: number;
+  nickname: string;
   profileImageUrl?: string;
-  content?: string;
-  createdAt?: string;
+  content: string;
+  createdAt: string;
 }

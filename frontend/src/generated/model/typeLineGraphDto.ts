@@ -8,7 +8,7 @@
 import type { TypeLineGraphDtoType } from "./typeLineGraphDtoType";
 
 export interface TypeLineGraphDto {
-  axisLabel?: string;
-  type?: TypeLineGraphDtoType;
-  count?: number;
+  axisLabel: string;
+  type: TypeLineGraphDtoType;
+  count: number;
 }

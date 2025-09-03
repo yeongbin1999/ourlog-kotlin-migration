@@ -17,7 +17,7 @@ if storedToken ~= ARGV[1] then
 end
 
 -- 일치할 경우 새로운 refreshToken으로 덮어쓰기
-redis.call("SET", KEYS[1], ARGV[2])
-redis.call("EXPIRE", KEYS[1], ARGV[3])
+local expiration = tonumber(ARGV[3])
+redis.call("SETEX", KEYS[1], expiration, ARGV[2])
 
 return 1

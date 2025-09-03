@@ -7,10 +7,10 @@
  */
 
 export interface FollowUserResponse {
-  userId?: number;
-  email?: string;
-  nickname?: string;
+  userId: number;
+  email: string;
+  nickname: string;
   profileImageUrl?: string;
-  followId?: number;
-  following?: boolean;
+  followId: number;
+  isFollowing: boolean;
 }

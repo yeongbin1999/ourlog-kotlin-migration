@@ -8,9 +8,9 @@
 import type { PageDiaryResponseDto } from "./pageDiaryResponseDto";
 
 export interface RsDataPageDiaryResponseDto {
-  resultCode?: string;
+  resultCode: string;
   msg?: string;
   data?: PageDiaryResponseDto;
-  fail?: boolean;
-  success?: boolean;
+  isSuccess: boolean;
+  isFail: boolean;
 }

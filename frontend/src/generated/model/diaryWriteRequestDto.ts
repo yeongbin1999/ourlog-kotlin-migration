@@ -19,6 +19,6 @@ export interface DiaryWriteRequestDto {
   type: DiaryWriteRequestDtoType;
   externalId: string;
   tagNames: string[];
-  genreIds?: number[];
-  ottIds?: number[];
+  genreIds: number[];
+  ottIds: number[];
 }

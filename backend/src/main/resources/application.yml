@@ -73,6 +73,15 @@ jwt:
 cookie:
   secure: false
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health"
+  endpoint:
+    health:
+      show-details: never
+
 app:
   base-url: ${BASE_URL:http://localhost:8080}
   sql:

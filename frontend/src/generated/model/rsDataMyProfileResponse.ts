@@ -8,9 +8,9 @@
 import type { MyProfileResponse } from "./myProfileResponse";
 
 export interface RsDataMyProfileResponse {
-  resultCode?: string;
+  resultCode: string;
   msg?: string;
   data?: MyProfileResponse;
-  fail?: boolean;
-  success?: boolean;
+  isSuccess: boolean;
+  isFail: boolean;
 }

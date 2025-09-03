@@ -8,9 +8,9 @@
 import type { LoginResponse } from "./loginResponse";
 
 export interface RsDataLoginResponse {
-  resultCode?: string;
+  resultCode: string;
   msg?: string;
   data?: LoginResponse;
-  fail?: boolean;
-  success?: boolean;
+  isSuccess: boolean;
+  isFail: boolean;
 }

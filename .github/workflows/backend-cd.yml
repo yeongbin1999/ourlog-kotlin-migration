@@ -1,0 +1,185 @@
+name: Backend CD
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/**"
+      - "backend/**"
+      - "infra/docker/**"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      DOCKER_IMAGE_NAME: ourlog-backend
+      DOT_ENV: ${{ secrets.DOT_ENV }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create Git Tag
+        id: create_tag
+        uses: mathieudutour/github-tag-action@v6.2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set Tag Output
+        id: set_tag_output
+        run: echo "new_tag=${{ steps.create_tag.outputs.new_tag }}" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.create_tag.outputs.new_tag }}
+          release_name: Release ${{ steps.create_tag.outputs.new_tag }}
+          body: ${{ steps.create_tag.outputs.changelog }}
+          draft: false
+          prerelease: false
+
+      - name: Generate .env
+        run: echo "$DOT_ENV" > backend/.env
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & Push Docker Image
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: infra/docker/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/${{ env.DOCKER_IMAGE_NAME }}:${{ steps.create_tag.outputs.new_tag }}
+            ghcr.io/${{ github.repository_owner }}/${{ env.DOCKER_IMAGE_NAME }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ secrets.AWS_REGION }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: Get EC2 Instance ID
+        id: get_instance
+        run: |
+          INSTANCE_ID=$(aws ec2 describe-instances \
+            --filters "Name=tag:Name,Values=terra-ec2-web" "Name=instance-state-name,Values=running" \
+            --query "Reservations[].Instances[].InstanceId" --output text)
+          if [ -z "$INSTANCE_ID" ]; then
+            echo "❌ No running EC2 instance found"
+            exit 1
+          fi
+          echo "INSTANCE_ID=$INSTANCE_ID" >> $GITHUB_ENV
+
+      - name: Deploy Container via SSM
+        uses: peterkimzz/aws-ssm-send-command@master
+        with:
+          aws-region: ${{ secrets.AWS_REGION }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          instance-ids: ${{ env.INSTANCE_ID }}
+          working-directory: /
+          comment: Deploy
+          command: |
+            IMAGE=ghcr.io/${{ github.repository_owner }}/${{ env.DOCKER_IMAGE_NAME }}:${{ steps.create_tag.outputs.new_tag }}
+
+            # --- 현재 활성 컨테이너 확인 ---
+            if docker ps --filter "name=backend-blue" | grep backend-blue; then
+                ACTIVE=blue
+                INACTIVE=green
+                PORT_ACTIVE=8081
+                PORT_INACTIVE=8082
+            elif docker ps --filter "name=backend-green" | grep backend-green; then
+                ACTIVE=green
+                INACTIVE=blue
+                PORT_ACTIVE=8082
+                PORT_INACTIVE=8081
+            else
+                ACTIVE=none
+                INACTIVE=blue
+                PORT_ACTIVE=
+                PORT_INACTIVE=8081
+            fi
+
+            NEW_CONTAINER=backend-$INACTIVE
+
+            # 기존 INACTIVE 컨테이너 제거
+            docker stop $NEW_CONTAINER || true
+            docker rm $NEW_CONTAINER || true
+
+            # 새 컨테이너 실행
+            docker run -d --name $NEW_CONTAINER \
+              --network common \
+              -p $PORT_INACTIVE:8080 \
+              $IMAGE
+
+            # 초기 딜레이
+            sleep 20
+
+            # --- 헬스체크 (컨테이너 이름 기준) ---
+            echo "⏱ Waiting for $NEW_CONTAINER to become healthy..."
+            HEALTH_OK=false
+            TIMEOUT=120
+            INTERVAL=3
+            ELAPSED=0
+
+            until [ $ELAPSED -ge $TIMEOUT ]; do
+              STATUS=$(docker exec $NEW_CONTAINER curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8080/actuator/health || echo 000)
+              if [ "$STATUS" -eq 200 ]; then
+                HEALTH_OK=true
+                echo "✅ $NEW_CONTAINER is healthy!"
+                break
+              fi
+              sleep $INTERVAL
+              ELAPSED=$((ELAPSED + INTERVAL))
+            done
+
+            if [ "$HEALTH_OK" = false ]; then
+              echo "❌ $NEW_CONTAINER did not pass health check. Aborting deployment."
+              docker stop $NEW_CONTAINER || true
+              docker rm $NEW_CONTAINER || true
+              exit 1
+            fi
+
+            # --- NPM 토큰 발급 ---
+            TOKEN=$(curl -s -X POST http://127.0.0.1:81/api/tokens \
+              -H "Content-Type: application/json" \
+              -d "{\"identity\": \"${{ secrets.NPM_ID }}\", \"secret\": \"${{ secrets.NPM_PASSWORD }}\"}" | jq -r '.token')
+            echo "✅ NPM Token: $TOKEN"
+
+            # --- 프록시 ID 확인 ---
+            PROXY_ID=$(curl -s -X GET "http://127.0.0.1:81/api/nginx/proxy-hosts" \
+              -H "Authorization: Bearer $TOKEN" \
+              | jq ".[] | select(.domain_names[]==\"${{ secrets.NPM_DOMAIN }}\") | .id")
+            echo "✅ Proxy ID: $PROXY_ID"
+
+            # --- 업스트림 전환 (최소 필드만) ---
+            NEW_CONFIG=$(jq -n --arg host "$NEW_CONTAINER" --argjson port 8080 '{forward_host: $host, forward_port: $port}')
+            echo "📄 New Config: $NEW_CONFIG"
+
+            curl -s -X PUT "http://127.0.0.1:81/api/nginx/proxy-hosts/$PROXY_ID" \
+              -H "Authorization: Bearer $TOKEN" \
+              -H "Content-Type: application/json" \
+              -d "$NEW_CONFIG"
+
+            echo "✅ 업스트림 전환 완료 (SSL 및 기존 설정 유지)"
+
+            # 이전 ACTIVE 컨테이너 제거
+            if [ "$ACTIVE" != "none" ]; then
+              docker stop backend-$ACTIVE || true
+              docker rm backend-$ACTIVE || true
+            fi
+
+            echo "✅ Blue-Green switch complete: $NEW_CONTAINER is now active."

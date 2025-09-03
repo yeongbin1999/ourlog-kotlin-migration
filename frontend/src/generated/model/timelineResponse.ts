@@ -13,9 +13,8 @@ export interface TimelineResponse {
   content?: string;
   createdAt?: string;
   imageUrl?: string;
-  likeCount?: number;
-  commentCount?: number;
+  likeCount: number;
+  commentCount: number;
+  isLiked: boolean;
   user?: UserSummary;
-  liked?: boolean;
-  isLiked?: boolean;
 }

@@ -7,6 +7,6 @@
  */
 
 export interface MonthlyDiaryCount {
-  period?: string;
-  views?: number;
+  period: string;
+  views: number;
 }

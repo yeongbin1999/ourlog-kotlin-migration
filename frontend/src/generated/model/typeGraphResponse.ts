@@ -9,6 +9,6 @@ import type { TypeLineGraphDto } from "./typeLineGraphDto";
 import type { TypeRankDto } from "./typeRankDto";
 
 export interface TypeGraphResponse {
-  typeLineGraph?: TypeLineGraphDto[];
-  typeRanking?: TypeRankDto[];
+  typeLineGraph: TypeLineGraphDto[];
+  typeRanking: TypeRankDto[];
 }

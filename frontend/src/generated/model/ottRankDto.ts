@@ -7,6 +7,6 @@
  */
 
 export interface OttRankDto {
-  ottName?: string;
-  totalCount?: number;
+  ottName: string;
+  totalCount: number;
 }

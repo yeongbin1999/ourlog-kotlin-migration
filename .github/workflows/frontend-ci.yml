@@ -3,12 +3,14 @@ name: Frontend CI
 on:
   push:
     branches:
+      - main
       - dev
     paths:
       - 'frontend/**'
   pull_request:
     types: [opened, synchronize, reopened, edited]
     branches:
+      - main
       - dev
     paths:
       - 'frontend/**'

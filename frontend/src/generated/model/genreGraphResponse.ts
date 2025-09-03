@@ -9,6 +9,6 @@ import type { GenreLineGraphDto } from "./genreLineGraphDto";
 import type { GenreRankDto } from "./genreRankDto";
 
 export interface GenreGraphResponse {
-  genreLineGraph?: GenreLineGraphDto[];
-  genreRanking?: GenreRankDto[];
+  genreLineGraph: GenreLineGraphDto[];
+  genreRanking: GenreRankDto[];
 }

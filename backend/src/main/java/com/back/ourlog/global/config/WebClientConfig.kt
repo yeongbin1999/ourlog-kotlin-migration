@@ -1,6 +1,5 @@
 package com.back.ourlog.global.config
 
-import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.web.reactive.function.client.WebClient
@@ -8,29 +7,28 @@ import org.springframework.web.reactive.function.client.WebClient
 @Configuration
 class WebClientConfig {
 
-    // Spotify 인증 API 호출을 위한 WebClient
+    // 공통 WebClient Builder
     @Bean
-    @Qualifier("spotifyAuthApiClient")
-    fun spotifyAuthApiClient(): WebClient {
-        return WebClient.builder()
+    fun webClientBuilder(): WebClient.Builder = WebClient.builder()
+
+    // Spotify 인증 API
+    @Bean
+    fun spotifyAuthApiClient(webClientBuilder: WebClient.Builder): WebClient =
+        webClientBuilder
             .baseUrl("https://accounts.spotify.com")
             .build()
-    }
 
-    // Spotify 데이터 API 호출을 위한 WebClient
+    // Spotify 데이터 API
     @Bean
-    @Qualifier("spotifyApiDataClient")
-    fun spotifyApiDataClient(): WebClient {
-        return WebClient.builder()
+    fun spotifyApiDataClient(webClientBuilder: WebClient.Builder): WebClient =
+        webClientBuilder
             .baseUrl("https://api.spotify.com")
             .build()
-    }
 
-    // 국립중앙도서관 API 호출을 위한 WebClient
+    // 국립중앙도서관 API
     @Bean
-    fun libraryWebClient(): WebClient {
-        return WebClient.builder()
+    fun libraryWebClient(webClientBuilder: WebClient.Builder): WebClient =
+        webClientBuilder
             .baseUrl("https://www.nl.go.kr")
             .build()
-    }
 }

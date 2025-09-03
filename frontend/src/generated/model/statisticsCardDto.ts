@@ -5,12 +5,12 @@
  * 팀12 2차 프로젝트 API 서버 문서입니다.
  * OpenAPI spec version: beta
  */
+import type { FavoriteTypeAndCountDto } from "./favoriteTypeAndCountDto";
+import type { FavoriteEmotionAndCountDto } from "./favoriteEmotionAndCountDto";
 
 export interface StatisticsCardDto {
-  totalDiaryCount?: number;
-  averageRating?: number;
-  favoriteType?: string;
-  favoriteTypeCount?: number;
-  favoriteEmotion?: string;
-  favoriteEmotionCount?: number;
+  totalDiaryCount: number;
+  averageRating: number;
+  favoriteTypeAndCountDto: FavoriteTypeAndCountDto;
+  favoriteEmotionAndCountDto: FavoriteEmotionAndCountDto;
 }

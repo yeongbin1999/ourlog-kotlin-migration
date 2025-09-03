@@ -7,6 +7,6 @@
  */
 
 export interface EmotionRankDto {
-  emotion?: string;
-  totalCount?: number;
+  emotion: string;
+  totalCount: number;
 }

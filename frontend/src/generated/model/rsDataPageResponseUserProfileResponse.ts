@@ -8,9 +8,9 @@
 import type { PageResponseUserProfileResponse } from "./pageResponseUserProfileResponse";
 
 export interface RsDataPageResponseUserProfileResponse {
-  resultCode?: string;
+  resultCode: string;
   msg?: string;
   data?: PageResponseUserProfileResponse;
-  fail?: boolean;
-  success?: boolean;
+  isSuccess: boolean;
+  isFail: boolean;
 }
