@@ -67,9 +67,9 @@ class TmdbService(
 
         return ContentSearchResultDto(
             externalId = "tmdb-${movie.id}",
-            title = movie.title,
-            creatorName = directorName,
-            description = movie.description,
+            title = movie.title ?: "",
+            creatorName = directorName ?: "미상",
+            description = movie.description ?: "",
             posterUrl = movie.getPosterUrl(),
             releasedAt = movie.parseReleaseDateOrNull(),
             type = ContentType.MOVIE,
