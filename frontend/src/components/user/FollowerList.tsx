@@ -1,62 +1,44 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { axiosInstance } from '@/lib/api-client';
-import PublicProfileHeader from './PublicProfileHeader';
+import UserCard from './UserCard';
+
+type Follower = {
+  userId: number;
+  followId: number | null;
+};
 
 type Props = {
   myUserId: number;
   onActionCompleted?: () => void;
 };
 
-type FollowerUserResponse = {
-  userId: number;
-  nickname: string;
-  email: string;
-  bio: string;
-  profileImageUrl: string;
-  isFollowing: boolean;
-  followId: number;
-};
-
 export default function FollowerList({ myUserId, onActionCompleted }: Props) {
-  const [followers, setFollowers] = useState<FollowerUserResponse[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: followers = [], refetch } = useQuery<Follower[]>({
+    queryKey: ['follows', 'followers', myUserId],
+    queryFn: async () => {
+      const res = await axiosInstance.get('/api/v1/follows/followers', { params: { userId: myUserId } });
+      return res.data.data ?? [];
+    },
+    enabled: !!myUserId,
+  });
 
-  const fetchFollowers = async () => {
-    console.log("Fetching followers...");
-    try {
-      const res = await axiosInstance.get(`/api/v1/follows/followers?userId=${myUserId}`);
-      const data = res.data.data;
-      setFollowers(data);
-    } catch (err) {
-      console.error('팔로워 목록 불러오기 실패', err);
-    } finally {
-      setLoading(false);
-    }
+  const handleActionCompleted = () => {
+    refetch();
+    onActionCompleted?.();
   };
-
-  const handleRefresh = () => {
-    fetchFollowers();
-    onActionCompleted?.(); // 액션 완료 후 콜백 호출
-  };
-
-  useEffect(() => {
-    if (myUserId) {
-      fetchFollowers();
-    }
-  }, [myUserId]);
-
-  if (loading) return <div className="text-center mt-10">로딩 중...</div>;
-  if (followers.length === 0) return <div className="text-center mt-10">아직 팔로워가 없습니다.</div>;
 
   return (
-    <div className="space-y-6">
-      {followers.map((user) => (
-        <PublicProfileHeader
-          key={user.userId}
-          userId={user.userId}
-          onChanged={handleRefresh}
+    <div className="space-y-4">
+      {followers.map(f => (
+        <UserCard
+          key={f.userId}
+          userId={f.userId}
+          userType="followers"
+          initialFollowId={f.followId}
+          onActionCompleted={handleActionCompleted}
         />
       ))}
     </div>

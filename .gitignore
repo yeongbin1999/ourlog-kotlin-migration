@@ -52,7 +52,13 @@ terraform.tfvars
 *.tfvars
 *.tfstate
 *.tfstate.*
-
+# terraform
+terraform.tfvars
+*.tfvars
+*.tfstate
+*.tfstate.*
+.terraform/
+infra/terraform/.terraform.lock.hcl
 infra/terraform/.terraform/
 infra/terraform/terraform.tfvars
 

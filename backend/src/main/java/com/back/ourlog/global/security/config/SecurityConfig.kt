@@ -57,10 +57,13 @@ class SecurityConfig(
                     "/h2-console/**",
                     "/swagger-ui/**",
                     "/v3/api-docs/**",
-                    "/actuator/health"
+                    "/actuator/health",
+                    "/api/v1/users/search",
+                    "/api/v1/users/{userId}"
                 ).permitAll()
 
                 // 인증 필요
+                it.requestMatchers("/api/v1/users/me").authenticated()
                 it.requestMatchers("/api/v1/auth/logout").authenticated()
                 it.requestMatchers("/api/v1/contents/**").permitAll()
                 it.requestMatchers(HttpMethod.GET, "/api/v1/diaries/**").permitAll()

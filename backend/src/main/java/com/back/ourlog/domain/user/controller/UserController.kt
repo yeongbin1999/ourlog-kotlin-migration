@@ -7,11 +7,9 @@ import com.back.ourlog.global.common.dto.PageResponse
 import com.back.ourlog.global.common.dto.RsData
 import com.back.ourlog.global.common.extension.toSuccessResponse
 import com.back.ourlog.global.security.service.CustomUserDetails
-import jakarta.annotation.security.PermitAll
 import lombok.RequiredArgsConstructor
 import org.springframework.data.domain.Pageable
 import org.springframework.http.ResponseEntity
-import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.*
 
@@ -23,19 +21,16 @@ class UserController (
 ) {
 
     @GetMapping("/users/me")
-    @PreAuthorize("isAuthenticated()")
     fun getMe(@AuthenticationPrincipal userDetails: CustomUserDetails): ResponseEntity<RsData<MyProfileResponse>> {
         return userService.getMyProfile(userDetails.id).toSuccessResponse("내 프로필 조회 성공")
     }
 
     @GetMapping("/users/{userId}")
-    @PermitAll
     fun getUserProfile(@PathVariable userId: Int): ResponseEntity<RsData<UserProfileResponse>> {
         return userService.getUserProfile(userId).toSuccessResponse("유저 프로필 조회 성공")
     }
 
     @GetMapping("/users/search")
-    @PermitAll
     fun searchUsers(@RequestParam keyword: String,
         pageable: Pageable
     ): ResponseEntity<RsData<PageResponse<UserProfileResponse>>> {

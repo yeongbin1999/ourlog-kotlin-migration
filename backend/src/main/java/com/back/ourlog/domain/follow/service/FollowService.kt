@@ -47,6 +47,18 @@ class FollowService(
         }
     }
 
+    @Transactional(readOnly = true)
+    fun getFollowStatusWithId(userId: Int, otherUserId: Int): Pair<String, Int?> {
+        val follow = followRepository.findByFollowerIdAndFolloweeId(userId, otherUserId)
+            ?: return Pair("NONE", null)
+
+        return when(follow.status) {
+            FollowStatus.PENDING -> Pair("PENDING", follow.id)
+            FollowStatus.ACCEPTED -> Pair("ACCEPTED", follow.id)
+            else -> Pair("NONE", null)
+        }
+    }
+
     // 언팔로우 요청을 처리하는 함수
     @Transactional
     fun unfollow(myUserId: Int, otherUserId: Int) {

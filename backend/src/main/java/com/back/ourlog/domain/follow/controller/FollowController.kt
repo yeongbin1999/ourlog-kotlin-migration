@@ -1,5 +1,6 @@
 package com.back.ourlog.domain.follow.controller
 
+import com.back.ourlog.domain.follow.dto.FollowStatusResponse
 import com.back.ourlog.domain.follow.dto.FollowUserResponse
 import com.back.ourlog.domain.follow.service.FollowService
 import com.back.ourlog.global.common.dto.RsData
@@ -26,6 +27,13 @@ class FollowController(
         return toSuccessResponseWithoutData("팔로우 요청했습니다.")
     }
 
+    @DeleteMapping("/{followeeId}/cancel")
+    @Operation(summary = "팔로우 요청 취소")
+    fun cancelFollowRequest(@PathVariable followeeId: Int): ResponseEntity<RsData<Nothing>> {
+        followService.cancelFollowRequest(rq.currentUser.id, followeeId)
+        return toSuccessResponseWithoutData("팔로우 요청을 취소했습니다.")
+    }
+
     @DeleteMapping("/{otherUserId}")
     @Operation(summary = "팔로우 관계 끊기 (언팔로우)")
     fun unfollowUser(@PathVariable otherUserId: Int): ResponseEntity<RsData<Nothing>> {
@@ -44,6 +52,16 @@ class FollowController(
     fun getFollowers(): ResponseEntity<RsData<List<FollowUserResponse>>> =
         followService.getFollowers(rq.currentUser.id)
             .toSuccessResponse("나를 팔로우한 유저 목록 조회 완료")
+
+    @GetMapping("/status/{otherUserId}")
+    @Operation(
+        summary = "특정 유저와의 팔로우 상태 조회",
+        description = "나와 특정 유저의 팔로우 상태와 followId를 반환합니다. NONE / PENDING / ACCEPTED 중 하나"
+    )
+    fun getFollowStatus(@PathVariable otherUserId: Int): ResponseEntity<RsData<FollowStatusResponse>> {
+        val (status, followId) = followService.getFollowStatusWithId(rq.currentUser.id, otherUserId)
+        return FollowStatusResponse(status, followId).toSuccessResponse("팔로우 상태 조회 성공")
+    }
 
     @PostMapping("/{followId}/accept")
     @Operation(summary = "팔로우 요청 수락")

@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
 import { useRouter } from "next/navigation";
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { useAuthStore } from "@/stores/authStore";
 import DiaryList from "@/components/user/DiaryList";
@@ -12,14 +12,46 @@ import FollowerList from "@/components/user/FollowerList";
 import FollowingList from "@/components/user/FollowingList";
 import { axiosInstance } from "@/lib/api-client";
 import { unwrapList } from "@/lib/unwrap";
-import { useQuery, useQueryClient } from "@tanstack/react-query"; // Correctly placed at the top
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 const TAB_ITEMS = [
   { key: "diary", label: "마이 다이어리", type: "diary" },
-  { key: "received", label: "받은 요청", type: "user_list", endpoint: () => `/api/v1/follows/requests`, actionType: "accept_reject", empty: "받은 팔로우 요청이 없습니다.", queryKey: ['follows', 'requests'] },
-  { key: "sent", label: "보낸 요청", type: "user_list", endpoint: () => `/api/v1/follows/sent-requests`, actionType: "cancel", empty: "보낸 팔로우 요청이 없습니다.", queryKey: ['follows', 'sent-requests'] },
-  { key: "following", label: "팔로잉", type: "user_list", endpoint: () => `/api/v1/follows/followings`, actionType: "unfollow", empty: "팔로우하는 사용자가 없습니다.", queryKey: ['follows', 'followings'] },
-  { key: "followers", label: "팔로워", type: "user_list", endpoint: () => `/api/v1/follows/followers`, actionType: "none", empty: "아직 팔로워가 없습니다.", queryKey: ['follows', 'followers'] },
+  {
+    key: "received",
+    label: "받은 요청",
+    type: "user_list",
+    endpoint: () => `/api/v1/follows/requests`,
+    actionType: "accept_reject",
+    empty: "받은 팔로우 요청이 없습니다.",
+    queryKey: ["follows", "requests"] as const,
+  },
+  {
+    key: "sent",
+    label: "보낸 요청",
+    type: "user_list",
+    endpoint: () => `/api/v1/follows/sent-requests`,
+    actionType: "cancel",
+    empty: "보낸 팔로우 요청이 없습니다.",
+    queryKey: ["follows", "sent-requests"] as const,
+  },
+  {
+    key: "following",
+    label: "팔로잉",
+    type: "user_list",
+    endpoint: () => `/api/v1/follows/followings`,
+    actionType: "unfollow",
+    empty: "팔로우하는 사용자가 없습니다.",
+    queryKey: ["follows", "followings"] as const,
+  },
+  {
+    key: "followers",
+    label: "팔로워",
+    type: "user_list",
+    endpoint: () => `/api/v1/follows/followers`,
+    actionType: "none",
+    empty: "아직 팔로워가 없습니다.",
+    queryKey: ["follows", "followers"] as const,
+  },
 ] as const;
 
 type TabKey = (typeof TAB_ITEMS)[number]["key"];
@@ -30,30 +62,34 @@ export default function MyProfilePage() {
   const router = useRouter();
   const queryClient = useQueryClient();
 
+  // Auth 초기화
   useEffect(() => {
-    initializeAuth();
+    const initAuth = async () => await initializeAuth();
+    initAuth();
   }, [initializeAuth]);
 
+  // 로그인 체크
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      router.push("/login");
-    }
+    if (!isLoading && !isAuthenticated) router.push("/login");
   }, [isAuthenticated, isLoading, router]);
 
   const myUserId = user?.id ? Number(user.id) : undefined;
 
+  // ===== 쿼리: counts =====
   const { data: diaryCount = 0 } = useQuery({
-    queryKey: ['diaries', 'users', myUserId],
+    queryKey: ["diaries", "users", myUserId],
     queryFn: async () => {
       if (!myUserId) return 0;
-      const response = await axiosInstance.get(`/api/v1/diaries/users/${myUserId}`, { params: { page: 0, size: 1 } });
+      const response = await axiosInstance.get(`/api/v1/diaries/users/${myUserId}`, {
+        params: { page: 0, size: 1 },
+      });
       return response.data.data?.totalElements ?? 0;
     },
     enabled: !!myUserId,
   });
 
   const { data: receivedCount = 0 } = useQuery({
-    queryKey: ['follows', 'requests'],
+    queryKey: ["follows", "requests"],
     queryFn: async () => {
       const response = await axiosInstance.get(`/api/v1/follows/requests`);
       return unwrapList(response.data).length;
@@ -62,7 +98,7 @@ export default function MyProfilePage() {
   });
 
   const { data: sentCount = 0 } = useQuery({
-    queryKey: ['follows', 'sent-requests'],
+    queryKey: ["follows", "sent-requests"],
     queryFn: async () => {
       const response = await axiosInstance.get(`/api/v1/follows/sent-requests`);
       return unwrapList(response.data).length;
@@ -71,7 +107,7 @@ export default function MyProfilePage() {
   });
 
   const { data: followingCount = 0 } = useQuery({
-    queryKey: ['follows', 'followings'],
+    queryKey: ["follows", "followings"],
     queryFn: async () => {
       const response = await axiosInstance.get(`/api/v1/follows/followings`);
       return unwrapList(response.data).length;
@@ -80,7 +116,7 @@ export default function MyProfilePage() {
   });
 
   const { data: followersCount = 0 } = useQuery({
-    queryKey: ['follows', 'followers'],
+    queryKey: ["follows", "followers"],
     queryFn: async () => {
       const response = await axiosInstance.get(`/api/v1/follows/followers`);
       return unwrapList(response.data).length;
@@ -108,17 +144,18 @@ export default function MyProfilePage() {
 
   const renderTabContent = () => {
     if (!selectedTab) return null;
+
     const onActionCompleted = () => {
       if (selectedTab.type === "user_list" && selectedTab.queryKey) {
-        queryClient.invalidateQueries({ queryKey: selectedTab.queryKey });
+        queryClient.invalidateQueries({ queryKey: [...selectedTab.queryKey] });
       }
-      // Also invalidate the main profile query if it's affected by these actions
-      queryClient.invalidateQueries({ queryKey: ['users', 'me', 'profile'] });
-    };
+      queryClient.invalidateQueries({ queryKey: ["users", "me", "profile"] });
+    };   
 
     if (selectedTab.type === "diary") {
       return <DiaryList userId={myUserId!} onActionCompleted={onActionCompleted} />;
     }
+
     if (selectedTab.type === "user_list") {
       switch (selectedTab.key) {
         case "received":
@@ -133,6 +170,7 @@ export default function MyProfilePage() {
           return null;
       }
     }
+
     return null;
   };
 
@@ -153,9 +191,7 @@ export default function MyProfilePage() {
               </div>
               <h2 className="text-2xl font-bold text-gray-900">{user.nickname}</h2>
               <p className="text-sm text-gray-500 font-mono mb-4">{user.email}</p>
-              <p className="text-gray-600 leading-relaxed max-w-sm mx-auto">
-                {user.bio || "소개글이 없습니다."}
-              </p>
+              <p className="text-gray-600 leading-relaxed max-w-sm mx-auto">{user.bio || "소개글이 없습니다."}</p>
               <div className="grid grid-cols-2 gap-4 pt-4 mt-4 border-t border-gray-100">
                 <div>
                   <div className="text-2xl font-bold text-sky-500">{counts.following}</div>
