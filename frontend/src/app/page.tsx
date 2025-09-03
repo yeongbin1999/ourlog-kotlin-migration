@@ -1,11 +1,14 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-
+import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { useAuthStore } from "@/stores/authStore";
 
 export default function Home() {
   const [visibleElements, setVisibleElements] = useState(new Set());
+  const router = useRouter();
+  const { isAuthenticated } = useAuthStore();
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -28,7 +31,11 @@ export default function Home() {
   }, []);
 
   const handleCTAClick = () => {
-    alert("회원가입/로그인 페이지로 이동합니다!");
+    if (isAuthenticated) {
+      router.push("/social");
+    } else {
+      router.push("/login");
+    }
   };
 
   const handleLearnMore = () => {
