@@ -134,19 +134,27 @@ export default function TimelineCard({ item }: { item: TimelineItem }) {
   const [isLiked, setIsLiked] = useState(!!item.isLiked);
   const [likeCount, setLikeCount] = useState(item.likeCount ?? 0);
 
+
   const handleLikeClick = async (e: MouseEvent) => {
     e.stopPropagation();
     try {
+
+      const stateString = localStorage.getItem("auth-storage");
+      const accessToken = stateString ? JSON.parse(stateString).state.accessToken : null;
       const method = isLiked ? "DELETE" : "POST";
-      const res = await fetch(`/api/v1/likes/${item.id}`, { method });
+
+      const res = await fetch(`/api/v1/likes/${item.id}`, {
+            method,
+            headers: {
+              "Authorization": `Bearer ${accessToken}`,
+              "Content-Type": "application/json",
+            },
+          });
       if (!res.ok) throw new Error("좋아요 요청 실패");
-      const data: { liked?: boolean; likeCount?: number } = await res.json();
-      setIsLiked(!!data.liked);
-      setLikeCount(
-        typeof data.likeCount === "number"
-          ? data.likeCount
-          : likeCount + (isLiked ? -1 : 1)
-      );
+      const response = await res.json();
+      const resultData = response.data;
+      setIsLiked(resultData.liked);
+      setLikeCount(resultData.likeCount);
     } catch (err) {
       // eslint-disable-next-line no-console
       console.error(err);
