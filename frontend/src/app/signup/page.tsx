@@ -30,18 +30,6 @@ export default function SignUpPage() {
     }
   }, [isAuthenticated, router]);
 
-export default function SignUpPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [nickname, setNickname] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
-
-  const { mutateAsync: signupMutation } = useSignup();
-
   // 비밀번호 검증
   const isPasswordValid = password.length >= 6;
   const isPasswordMatch = password === confirmPassword && confirmPassword.length > 0;
