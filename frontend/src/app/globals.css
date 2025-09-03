@@ -24,11 +24,11 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: 'Inter', sans-serif; 
+  font-family: "Inter", sans-serif;
 }
 
 .font-logo {
-  font-family: 'Anton', sans-serif;
+  font-family: "Anton", sans-serif;
 }
 
 a {
@@ -50,4 +50,9 @@ a {
 .timeline-hover:active {
   transform: translateY(-2px) scale(0.98);
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.group:hover .comment-menu-button {
+  opacity: 1 !important;
+  transition: opacity 0.2s ease;
 }
