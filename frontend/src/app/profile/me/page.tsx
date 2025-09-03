@@ -29,7 +29,7 @@ export default function MyProfilePage() {
   const fetchAllCounts = useCallback(async (userId: number) => {
     try {
       const diaryPromise = axiosInstance
-        .get(`/api/v1/diaries/users/${userId}`, { params: { page: 0, size: 1 } }) // ✅ 대괄호 X
+        .get(`/api/v1/diaries/users/${userId}`, { params: { page: 0, size: 1 } })
         .then((r) => r.data.data?.totalElements ?? 0);
 
       const socialPromises = TAB_ITEMS
@@ -95,8 +95,8 @@ export default function MyProfilePage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="lg:grid lg:grid-cols-12 lg:gap-8">
           <aside className="lg:col-span-4 lg:sticky lg:top-8 self-start space-y-6">
-            <div className="bg-white p-6 rounded-2xl border border-gray-200 text-center">
-              <div className="relative w-28 h-28 mx-auto mb-4">
+            <div className="bg-white p-6 rounded-2xl border border-gray-200 text-center shadow-md transition-all duration-300 ease-in-out hover:shadow-xl hover:-translate-y-1">
+              <div className="relative w-28 h-28 mx-auto mb-4 transition-transform duration-300 hover:scale-110">
                 <Image
                   src={user.profileImageUrl || "/images/no-image.png"}
                   alt="프로필"
@@ -121,13 +121,15 @@ export default function MyProfilePage() {
                 </div>
               </div>
             </div>
-            <div className="bg-white p-4 rounded-2xl border border-gray-200 space-y-2">
+            <div className="bg-white p-4 rounded-2xl border border-gray-200 space-y-2 shadow-md">
               {TAB_ITEMS.map((tab) => (
                 <button
                   key={tab.key}
                   onClick={() => setSelectedTabKey(tab.key)}
                   className={`w-full flex items-center justify-between px-4 py-3 text-left rounded-lg transition-all duration-200 ${
-                    selectedTabKey === tab.key ? "bg-sky-500 text-white shadow-sm" : "hover:bg-gray-100 text-gray-700"
+                    selectedTabKey === tab.key
+                      ? "bg-sky-500 text-white shadow-sm"
+                      : "hover:bg-gray-100 text-gray-700 hover:translate-x-1"
                   }`}
                 >
                   <span className="font-semibold">{tab.label}</span>
@@ -142,8 +144,8 @@ export default function MyProfilePage() {
               ))}
             </div>
           </aside>
-          <main className="lg:col-span-8 mt-8 lg:mt-0">
-            <div className="bg-white rounded-2xl border border-gray-200">
+          <main key={selectedTabKey} className="lg:col-span-8 mt-8 lg:mt-0 animate-fadeIn">
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-md">
               <div className="px-6 py-4 border-b border-gray-100">
                 <h3 className="text-xl font-bold text-gray-900">{selectedTab?.label}</h3>
               </div>
