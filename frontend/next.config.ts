@@ -2,30 +2,50 @@ import type { NextConfig } from "next";
 
 const backendApi = process.env.NEXT_PUBLIC_BACKEND_API || "http://localhost:8080";
 
-const nextConfig: NextConfig = {
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   images: {
-    domains: [
-      "i.scdn.co",
-      "image.tmdb.org",
-      "www.nl.go.kr",
-      "picsum.photos",
-      "*.googleusercontent.com",
-      "*.pstatic.net",
-      "*.kakaocdn.net",
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'k.kakaocdn.net',
+        port: '',
+        pathname: '**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'ssl.pstatic.net',
+        port: '',
+        pathname: '**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'picsum.photos',
+        port: '',
+        pathname: '**',
+      },
+      {
+        protocol: 'http',
+        hostname: 'img1.kakaocdn.net',
+        port: '',
+        pathname: '**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'lh3.googleusercontent.com',
+        port: '',
+        pathname: '**',
+      },
     ],
   },
-
   async rewrites() {
     return [
       {
-        source: "/api/:path*",
-        destination: `${backendApi}/api/:path*`,
+        source: '/api/:path*',
+        destination: 'http://localhost:8080/api/:path*',
       },
     ];
   },
 };
 
-export default nextConfig;
+module.exports = nextConfig;
