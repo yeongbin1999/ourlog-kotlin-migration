@@ -18,10 +18,10 @@ import org.springframework.context.annotation.Import
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultHandlers
 import org.springframework.test.web.servlet.result.MockMvcResultHandlers.print
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
 
@@ -63,7 +63,7 @@ internal class ContentControllerTest {
             .andExpect(handler().methodName("getContentForDiary"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.msg").value("${diaryId}번 다이어리의 컨텐츠 조회 성공"))
-            .andExpect(jsonPath("$.data.title").value("콘텐츠 30"))
+            .andExpect(jsonPath("$.data.title").value("콘텐츠 260"))
     }
 
     @Test

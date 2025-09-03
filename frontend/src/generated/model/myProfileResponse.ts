@@ -7,7 +7,6 @@
  */
 
 export interface MyProfileResponse {
-  
   userId?: number;
   email?: string;
   nickname?: string;

@@ -12,13 +12,14 @@ import FollowerList from "@/components/user/FollowerList";
 import FollowingList from "@/components/user/FollowingList";
 import { axiosInstance } from "@/lib/api-client";
 import { unwrapList } from "@/lib/unwrap";
+import { useQuery, useQueryClient } from "@tanstack/react-query"; // Correctly placed at the top
 
 const TAB_ITEMS = [
   { key: "diary", label: "마이 다이어리", type: "diary" },
-  { key: "received", label: "받은 요청", type: "user_list", endpoint: () => `/api/v1/follows/requests`, actionType: "accept_reject", empty: "받은 팔로우 요청이 없습니다." },
-  { key: "sent", label: "보낸 요청", type: "user_list", endpoint: () => `/api/v1/follows/sent-requests`, actionType: "cancel", empty: "보낸 팔로우 요청이 없습니다." },
-  { key: "following", label: "팔로잉", type: "user_list", endpoint: () => `/api/v1/follows/followings`, actionType: "unfollow", empty: "팔로우하는 사용자가 없습니다." },
-  { key: "followers", label: "팔로워", type: "user_list", endpoint: () => `/api/v1/follows/followers`, actionType: "none", empty: "아직 팔로워가 없습니다." },
+  { key: "received", label: "받은 요청", type: "user_list", endpoint: () => `/api/v1/follows/requests`, actionType: "accept_reject", empty: "받은 팔로우 요청이 없습니다.", queryKey: ['follows', 'requests'] },
+  { key: "sent", label: "보낸 요청", type: "user_list", endpoint: () => `/api/v1/follows/sent-requests`, actionType: "cancel", empty: "보낸 팔로우 요청이 없습니다.", queryKey: ['follows', 'sent-requests'] },
+  { key: "following", label: "팔로잉", type: "user_list", endpoint: () => `/api/v1/follows/followings`, actionType: "unfollow", empty: "팔로우하는 사용자가 없습니다.", queryKey: ['follows', 'followings'] },
+  { key: "followers", label: "팔로워", type: "user_list", endpoint: () => `/api/v1/follows/followers`, actionType: "none", empty: "아직 팔로워가 없습니다.", queryKey: ['follows', 'followers'] },
 ] as const;
 
 type TabKey = (typeof TAB_ITEMS)[number]["key"];
@@ -27,49 +28,75 @@ export default function MyProfilePage() {
   const [selectedTabKey, setSelectedTabKey] = useState<TabKey>("diary");
   const { user, isAuthenticated, isLoading, initializeAuth } = useAuthStore();
   const router = useRouter();
-
-  const [counts, setCounts] = useState({ diary: 0, received: 0, sent: 0, following: 0, followers: 0 });
-
-  const fetchAllCounts = useCallback(async (userId: number) => {
-    try {
-      const diaryPromise = axiosInstance
-        .get(`/api/v1/diaries/users/${userId}`, { params: { page: 0, size: 1 } }) // ✅ 대괄호 X
-        .then((r) => r.data.data?.totalElements ?? 0);
-
-      const socialPromises = TAB_ITEMS
-        .filter((tab) => tab.type === "user_list")
-        .map((tab) => axiosInstance.get(tab.endpoint!()).then((r) => unwrapList(r.data).length));
-
-      const [diaryCount, ...socialCounts] = await Promise.all([diaryPromise, ...socialPromises]);
-
-      setCounts({
-        diary: diaryCount,
-        received: socialCounts[0],
-        sent: socialCounts[1],
-        following: socialCounts[2],
-        followers: socialCounts[3],
-      });
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error("Failed to fetch counts", error);
-    }
-  }, []);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     initializeAuth();
   }, [initializeAuth]);
 
   useEffect(() => {
-    if (!isLoading) { // Only proceed after loading is complete
-      if (!isAuthenticated) {
-        router.push("/login");
-      } else if (user?.id) {
-        fetchAllCounts(Number(user.id));
-      }
+    if (!isLoading && !isAuthenticated) {
+      router.push("/login");
     }
-  }, [user, isAuthenticated, isLoading, router, fetchAllCounts]);
+  }, [isAuthenticated, isLoading, router]);
 
-  if (isLoading || !user) { // Show loading while authenticating or if user is null
+  const myUserId = user?.id ? Number(user.id) : undefined;
+
+  const { data: diaryCount = 0 } = useQuery({
+    queryKey: ['diaries', 'users', myUserId],
+    queryFn: async () => {
+      if (!myUserId) return 0;
+      const response = await axiosInstance.get(`/api/v1/diaries/users/${myUserId}`, { params: { page: 0, size: 1 } });
+      return response.data.data?.totalElements ?? 0;
+    },
+    enabled: !!myUserId,
+  });
+
+  const { data: receivedCount = 0 } = useQuery({
+    queryKey: ['follows', 'requests'],
+    queryFn: async () => {
+      const response = await axiosInstance.get(`/api/v1/follows/requests`);
+      return unwrapList(response.data).length;
+    },
+    enabled: isAuthenticated,
+  });
+
+  const { data: sentCount = 0 } = useQuery({
+    queryKey: ['follows', 'sent-requests'],
+    queryFn: async () => {
+      const response = await axiosInstance.get(`/api/v1/follows/sent-requests`);
+      return unwrapList(response.data).length;
+    },
+    enabled: isAuthenticated,
+  });
+
+  const { data: followingCount = 0 } = useQuery({
+    queryKey: ['follows', 'followings'],
+    queryFn: async () => {
+      const response = await axiosInstance.get(`/api/v1/follows/followings`);
+      return unwrapList(response.data).length;
+    },
+    enabled: isAuthenticated,
+  });
+
+  const { data: followersCount = 0 } = useQuery({
+    queryKey: ['follows', 'followers'],
+    queryFn: async () => {
+      const response = await axiosInstance.get(`/api/v1/follows/followers`);
+      return unwrapList(response.data).length;
+    },
+    enabled: isAuthenticated,
+  });
+
+  const counts = {
+    diary: diaryCount,
+    received: receivedCount,
+    sent: sentCount,
+    following: followingCount,
+    followers: followersCount,
+  };
+
+  if (isLoading || !user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="w-8 h-8 border-4 border-sky-200 border-t-sky-500 rounded-full animate-spin"></div>
@@ -77,24 +104,31 @@ export default function MyProfilePage() {
     );
   }
 
-  const myUserId = Number(user.id);
   const selectedTab = TAB_ITEMS.find((t) => t.key === selectedTabKey);
 
   const renderTabContent = () => {
     if (!selectedTab) return null;
+    const onActionCompleted = () => {
+      if (selectedTab.type === "user_list" && selectedTab.queryKey) {
+        queryClient.invalidateQueries({ queryKey: selectedTab.queryKey });
+      }
+      // Also invalidate the main profile query if it's affected by these actions
+      queryClient.invalidateQueries({ queryKey: ['users', 'me', 'profile'] });
+    };
+
     if (selectedTab.type === "diary") {
-      return <DiaryList userId={myUserId} onActionCompleted={() => fetchAllCounts(myUserId)} />;
+      return <DiaryList userId={myUserId!} onActionCompleted={onActionCompleted} />;
     }
     if (selectedTab.type === "user_list") {
       switch (selectedTab.key) {
         case "received":
-          return <FollowRequestList myUserId={myUserId} onActionCompleted={() => fetchAllCounts(myUserId)} />;
+          return <FollowRequestList myUserId={myUserId!} onActionCompleted={onActionCompleted} />;
         case "sent":
-          return <SentRequestList myUserId={myUserId} onActionCompleted={() => fetchAllCounts(myUserId)} />;
+          return <SentRequestList myUserId={myUserId!} onActionCompleted={onActionCompleted} />;
         case "following":
-          return <FollowingList myUserId={myUserId} onActionCompleted={() => fetchAllCounts(myUserId)} />;
+          return <FollowingList myUserId={myUserId!} onActionCompleted={onActionCompleted} />;
         case "followers":
-          return <FollowerList myUserId={myUserId} onActionCompleted={() => fetchAllCounts(myUserId)} />;
+          return <FollowerList myUserId={myUserId!} onActionCompleted={onActionCompleted} />;
         default:
           return null;
       }

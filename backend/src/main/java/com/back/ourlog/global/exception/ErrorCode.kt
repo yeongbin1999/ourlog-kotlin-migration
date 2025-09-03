@@ -59,7 +59,7 @@ enum class ErrorCode(
     CANNOT_FOLLOW_SELF(HttpStatus.BAD_REQUEST, "FOLLOW_003", "자기 자신은 팔로우할 수 없습니다."),
     FOLLOW_ALREADY_REJECTED(HttpStatus.BAD_REQUEST, "FOLLOW_004", "이미 거절한 팔로우 요청입니다."),
     FOLLOW_ALREADY_ACCEPTED(HttpStatus.BAD_REQUEST, "FOLLOW_005", "이미 수락된 팔로우 요청입니다."),
-    FOLLOW_REQUEST_EXISTS(HttpStatus.BAD_REQUEST, "FOLLOW_006", "이미 상대방의 팔로우 요청이 있습니다. 요청을 수락해주세요."),
+    CANNOT_CANCEL_NON_PENDING_REQUEST(HttpStatus.BAD_REQUEST, "FOLLOW_007", "대기 중인 팔로우 요청만 취소할 수 있습니다."),
 
     // ======================== 락 충돌 관련 ========================
     CONFLICT_VERSION(HttpStatus.CONFLICT, "COMMON_409", "버전 충돌이 발생했습니다."),

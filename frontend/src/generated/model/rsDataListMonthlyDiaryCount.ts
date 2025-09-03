@@ -11,6 +11,6 @@ export interface RsDataListMonthlyDiaryCount {
   resultCode: string;
   msg?: string;
   data?: MonthlyDiaryCount[];
-  isSuccess: boolean;
   isFail: boolean;
+  isSuccess: boolean;
 }

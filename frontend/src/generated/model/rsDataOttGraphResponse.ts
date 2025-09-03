@@ -11,6 +11,6 @@ export interface RsDataOttGraphResponse {
   resultCode: string;
   msg?: string;
   data?: OttGraphResponse;
-  isSuccess: boolean;
   isFail: boolean;
+  isSuccess: boolean;
 }

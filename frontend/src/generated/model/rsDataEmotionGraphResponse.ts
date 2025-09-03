@@ -11,6 +11,6 @@ export interface RsDataEmotionGraphResponse {
   resultCode: string;
   msg?: string;
   data?: EmotionGraphResponse;
-  isSuccess: boolean;
   isFail: boolean;
+  isSuccess: boolean;
 }

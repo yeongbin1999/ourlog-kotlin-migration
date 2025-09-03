@@ -10,6 +10,6 @@ export interface RsDataInteger {
   resultCode: string;
   msg?: string;
   data?: number;
-  isSuccess: boolean;
   isFail: boolean;
+  isSuccess: boolean;
 }

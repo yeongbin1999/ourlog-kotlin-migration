@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import UserProfileCard from './UserProfileCard'; // 상대 프로필 카드 (공용 컴포넌트)
+import PublicProfileHeader from './PublicProfileHeader';
 import { axiosInstance } from '@/lib/api-client';
 
 type Props = {
@@ -52,12 +52,10 @@ export default function FollowRequestList({ myUserId, onActionCompleted }: Props
   return (
     <div className="space-y-6">
       {requests.map((user) => (
-        <UserProfileCard
+        <PublicProfileHeader
           key={user.userId}
-          userId={String(user.userId)}
-          userType="received"
-          followId={user.followId}
-          onActionCompleted={handleRefresh}
+          userId={user.userId}
+          onChanged={handleRefresh}
         />
       ))}
     </div>

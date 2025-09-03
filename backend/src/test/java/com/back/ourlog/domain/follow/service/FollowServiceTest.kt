@@ -17,14 +17,8 @@ import org.mockito.InjectMocks
 import org.mockito.Mock
 import org.mockito.Mockito.mock
 import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.kotlin.any
-import org.mockito.kotlin.never
-import org.mockito.kotlin.spy
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
-
-import org.springframework.data.repository.findByIdOrNull
-import java.util.Optional
+import org.mockito.kotlin.*
+import java.util.*
 
 @ExtendWith(MockitoExtension::class)
 class FollowServiceTest {
@@ -127,19 +121,6 @@ class FollowServiceTest {
     }
 
     @Test
-    @DisplayName("실패(Case 2): 상대방의 요청이 PENDING이면 FOLLOW_REQUEST_EXISTS 예외가 발생한다")
-    fun `상대방의 요청이 PENDING일 때 요청`() {
-        // given
-        val reversedFollow = Follow(mock(), mock())
-        whenever(followRepository.findByFollowerIdAndFolloweeId(followerId, followeeId)).thenReturn(null)
-        whenever(followRepository.findByFollowerIdAndFolloweeId(followeeId, followerId)).thenReturn(reversedFollow)
-
-        // when & then
-        val e = assertThrows<CustomException> { followService.follow(followerId, followeeId) }
-        assertThat(e.errorCode).isEqualTo(ErrorCode.FOLLOW_REQUEST_EXISTS)
-    }
-
-    @Test
     @DisplayName("실패: 자기 자신을 팔로우하면 CANNOT_FOLLOW_SELF 예외가 발생한다")
     fun `자기 자신을 팔로우`() {
         // given
@@ -204,13 +185,13 @@ class FollowServiceTest {
         val follow1 = Follow(me, followee1).apply { accept() }
         val follow2 = Follow(me, followee2).apply { accept() }
 
-        whenever(userRepository.findById(me.id!!)).thenReturn(Optional.of(me))
+        whenever(userRepository.findById(me.id)).thenReturn(Optional.of(me))
         whenever(
-            followRepository.findFollowingsByFollowerIdAndStatus(me.id!!, FollowStatus.ACCEPTED)
+            followRepository.findFollowingsByFollowerIdAndStatus(me.id, FollowStatus.ACCEPTED)
         ).thenReturn(listOf(follow1, follow2))
 
         // when
-        val result = followService.getFollowings(me.id!!)
+        val result = followService.getFollowings(me.id)
 
         // then
         assertThat(result).hasSize(2)
@@ -239,14 +220,14 @@ class FollowServiceTest {
         // 내가 follow1만 맞팔로우한 상태
         val myFollowBack = Follow(me, follower1).apply { accept() }
 
-        whenever(userRepository.findById(me.id!!)).thenReturn(Optional.of(me))
-        whenever(followRepository.findFollowersByFolloweeIdAndStatus(me.id!!, FollowStatus.ACCEPTED))
+        whenever(userRepository.findById(me.id)).thenReturn(Optional.of(me))
+        whenever(followRepository.findFollowersByFolloweeIdAndStatus(me.id, FollowStatus.ACCEPTED))
             .thenReturn(listOf(follow1, follow2))
-        whenever(followRepository.findFollowingsByFollowerIdAndStatus(me.id!!, FollowStatus.ACCEPTED))
+        whenever(followRepository.findFollowingsByFollowerIdAndStatus(me.id, FollowStatus.ACCEPTED))
             .thenReturn(listOf(myFollowBack))
 
         // when
-        val result = followService.getFollowers(me.id!!)
+        val result = followService.getFollowers(me.id)
 
         // then
         assertThat(result).hasSize(2)

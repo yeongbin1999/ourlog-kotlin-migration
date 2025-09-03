@@ -11,6 +11,6 @@ export interface RsDataLoginResponse {
   resultCode: string;
   msg?: string;
   data?: LoginResponse;
-  isSuccess: boolean;
   isFail: boolean;
+  isSuccess: boolean;
 }

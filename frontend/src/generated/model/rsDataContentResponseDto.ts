@@ -11,6 +11,6 @@ export interface RsDataContentResponseDto {
   resultCode: string;
   msg?: string;
   data?: ContentResponseDto;
-  isSuccess: boolean;
   isFail: boolean;
+  isSuccess: boolean;
 }

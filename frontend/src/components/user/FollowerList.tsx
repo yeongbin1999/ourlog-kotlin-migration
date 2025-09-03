@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { axiosInstance } from '@/lib/api-client';
-import UserProfileCard from './UserProfileCard';
+import PublicProfileHeader from './PublicProfileHeader';
 
 type Props = {
   myUserId: number;
@@ -53,13 +53,10 @@ export default function FollowerList({ myUserId, onActionCompleted }: Props) {
   return (
     <div className="space-y-6">
       {followers.map((user) => (
-        <UserProfileCard
+        <PublicProfileHeader
           key={user.userId}
-          userId={String(user.userId)}
-          userType="followers"
-          followId={user.followId}
-          isFollowing={user.isFollowing}
-          onActionCompleted={handleRefresh}
+          userId={user.userId}
+          onChanged={handleRefresh}
         />
       ))}
     </div>

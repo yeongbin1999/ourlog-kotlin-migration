@@ -42,7 +42,6 @@ class AuthController(
     }
 
     @PostMapping("/logout")
-    @PreAuthorize("isAuthenticated()")
     fun logout(
         @RequestHeader("Authorization") authorization: String,
         @RequestHeader("X-Device-Id") deviceId: String,

@@ -7,7 +7,6 @@ import com.back.ourlog.global.security.jwt.JwtAuthenticationProvider
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.HttpMethod
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
@@ -19,7 +18,6 @@ import org.springframework.web.cors.CorsConfigurationSource
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource
 
 @Configuration
-@EnableMethodSecurity(prePostEnabled = true, jsr250Enabled = true)
 class SecurityConfig(
     private val jwtAuthenticationProvider: JwtAuthenticationProvider,
     private val customAuthenticationEntryPoint: CustomAuthenticationEntryPoint,
@@ -66,7 +64,9 @@ class SecurityConfig(
                 it.requestMatchers("/api/v1/auth/logout").authenticated()
                 it.requestMatchers("/api/v1/contents/**").permitAll()
                 it.requestMatchers(HttpMethod.GET, "/api/v1/diaries/**").permitAll()
-                it.requestMatchers("/api/v1/diaries/**").hasRole("USER")
+                it.requestMatchers(HttpMethod.POST, "/api/v1/diaries").authenticated()
+                it.requestMatchers(HttpMethod.PUT, "/api/v1/diaries/**").authenticated()
+                it.requestMatchers(HttpMethod.DELETE, "/api/v1/diaries/**").authenticated()
                 it.requestMatchers(HttpMethod.GET, "/api/v1/comments/**").permitAll()
                 it.requestMatchers("/api/v1/comments/**").authenticated()
                 it.requestMatchers(HttpMethod.GET, "/api/v1/timeline").permitAll()
@@ -74,6 +74,7 @@ class SecurityConfig(
                 it.requestMatchers(HttpMethod.POST, "/api/v1/likes/**").authenticated()
                 it.requestMatchers(HttpMethod.DELETE, "/api/v1/likes/**").authenticated()
                 it.requestMatchers(HttpMethod.GET, "/api/v1/likes/count").permitAll()
+                it.requestMatchers(HttpMethod.GET, "/api/v1/statistics/**").authenticated()
 
                 // 나머지 요청
                 it.anyRequest().authenticated()

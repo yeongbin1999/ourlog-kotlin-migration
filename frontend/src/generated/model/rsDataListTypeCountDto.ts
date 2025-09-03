@@ -11,6 +11,6 @@ export interface RsDataListTypeCountDto {
   resultCode: string;
   msg?: string;
   data?: TypeCountDto[];
-  isSuccess: boolean;
   isFail: boolean;
+  isSuccess: boolean;
 }

@@ -11,6 +11,6 @@ export interface RsDataTypeGraphResponse {
   resultCode: string;
   msg?: string;
   data?: TypeGraphResponse;
-  isSuccess: boolean;
   isFail: boolean;
+  isSuccess: boolean;
 }

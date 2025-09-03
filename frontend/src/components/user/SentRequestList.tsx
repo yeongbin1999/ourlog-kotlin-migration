@@ -2,8 +2,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-import UserProfileCard from './UserProfileCard';
+import PublicProfileHeader from './PublicProfileHeader';
 import { axiosInstance } from '@/lib/api-client';
 
 type Props = {
@@ -62,11 +61,10 @@ export default function SentRequestList({ myUserId, onActionCompleted }: Props) 
   return (
     <div className="space-y-6">
       {sentRequests.map((user) => (
-        <UserProfileCard
+        <PublicProfileHeader
           key={user.userId}
-          userId={String(user.userId)}
-          userType="sent"
-          onActionCompleted={() => handleCancelRequest(user.userId)}
+          userId={user.userId}
+          onChanged={handleCancelRequest}
         />
       ))}
     </div>

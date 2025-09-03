@@ -35,11 +35,7 @@ class FollowService(
                 throw CustomException(ErrorCode.FOLLOW_ALREADY_EXISTS)
             }
 
-            // Case 2: 상대방이 나에게 보낸 'PENDING' 요청이 있는 경우 -> 맞팔 수락 로직 제거 및 예외 발생
-            reversedFollow?.status == FollowStatus.PENDING -> {
-                // 즉시 수락하지 않고, 예외를 발생시켜 클라이언트가 '요청 수락' 버튼을 누르도록 유도
-                throw CustomException(ErrorCode.FOLLOW_REQUEST_EXISTS)
-            }
+            
 
             // Case 3: 기존 관계가 없거나 'REJECTED' 상태, 상대가 나를 팔로우 중인 경우 모두 포함
             // REJECTED 관계가 있으면 삭제하고, 새로운 PENDING 팔로우 요청을 생성합니다.
@@ -47,7 +43,6 @@ class FollowService(
                 existingFollow?.let { followRepository.delete(it) } // 내가 보냈던 REJECTED 요청 등이 있다면 삭제
                 val newFollow = Follow(findUserById(followerId), findUserById(followeeId))
                 followRepository.save(newFollow)
-                updateFollowCounts(newFollow)
             }
         }
     }
@@ -120,6 +115,19 @@ class FollowService(
             FollowStatus.ACCEPTED -> throw CustomException(ErrorCode.FOLLOW_ALREADY_ACCEPTED)
             FollowStatus.PENDING -> follow.reject()
         }
+    }
+
+    // 팔로우 요청을 취소하는 함수 (요청을 보낸 사람이 취소)
+    @Transactional
+    fun cancelFollowRequest(followerId: Int, followeeId: Int) {
+        val followRequest = followRepository.findByFollowerIdAndFolloweeId(followerId, followeeId)
+            ?: throw CustomException(ErrorCode.FOLLOW_NOT_FOUND) // Or a more specific error like REQUEST_NOT_FOUND
+
+        if (followRequest.status != FollowStatus.PENDING) {
+            throw CustomException(ErrorCode.CANNOT_CANCEL_NON_PENDING_REQUEST) // Need to add this ErrorCode
+        }
+
+        followRepository.delete(followRequest)
     }
 
     // 팔로워와 팔로이의 팔로우/팔로잉 카운트를 증가시킵니다.

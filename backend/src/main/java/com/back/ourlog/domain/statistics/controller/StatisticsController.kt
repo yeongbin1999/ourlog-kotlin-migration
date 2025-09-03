@@ -30,28 +30,24 @@ class StatisticsController(
 ) {
 
     @GetMapping(value = ["/card"])
-    @PreAuthorize("isAuthenticated()")
     @Operation(summary = "통계 카드 조회", description = "총 감상 수, 평균 별점, 선호 장르, 주요 감정을 조회합니다.")
     fun getStatisticsCard(@AuthenticationPrincipal userDetails: CustomUserDetails): ResponseEntity<RsData<StatisticsCardDto>> {
         return statisticsService.getStatisticsCardByUserId(getUserId(userDetails)).toSuccessResponse("통계 카드 조회 성공")
     }
 
     @GetMapping(value = ["/monthly-diary-graph"])
-    @PreAuthorize("isAuthenticated()")
     @Operation(summary = "최근 6개월 월 별 감상 수", description = "특정 회원의 최근 6개월 월 별 감상 수를 조회합니다")
     fun getLast6MonthsDiaryCounts(@AuthenticationPrincipal userDetails: CustomUserDetails): ResponseEntity<RsData<List<MonthlyDiaryCount>>> {
         return statisticsService.getLast6MonthsDiaryCountsByUser(getUserId(userDetails)).toSuccessResponse("최근 6개월 월 별 감상 수 조회 성공")
     }
 
     @GetMapping(value = ["/type-distribution"])
-    @PreAuthorize("isAuthenticated()")
     @Operation(summary = "콘텐츠 타입 분포", description = "특정 회원의 콘텐츠 타입 분포를 조회합니다")
     fun getTypeDistribution(@AuthenticationPrincipal userDetails: CustomUserDetails): ResponseEntity<RsData<List<TypeCountDto>>> {
         return statisticsService.getTypeDistributionByUser(getUserId(userDetails)).toSuccessResponse("콘텐츠 타입 분포 조회 성공")
     }
 
     @GetMapping("/type-graph")
-    @PreAuthorize("isAuthenticated()")
     @Operation(summary = "콘텐츠 타입 그래프", description = "콘텐츠 타입에 대한 그래프 데이터를 조회합니다.")
     fun getTypeGraph(
         @RequestParam period: PeriodOption,
@@ -61,7 +57,6 @@ class StatisticsController(
     }
 
     @GetMapping("/genre-graph")
-    @PreAuthorize("isAuthenticated()")
     @Operation(summary = "장르 그래프", description = "장르에 대한 그래프 데이터를 조회합니다.")
     fun getGenreGraph(
         @RequestParam period: PeriodOption,
@@ -71,7 +66,6 @@ class StatisticsController(
     }
 
     @GetMapping("/emotion-graph")
-    @PreAuthorize("isAuthenticated()")
     @Operation(summary = "감정 그래프", description = "감정에 대한 그래프 데이터를 조회합니다.")
     fun getEmotionGraph(
         @RequestParam period: PeriodOption,
@@ -81,7 +75,6 @@ class StatisticsController(
     }
 
     @GetMapping("/ott-graph")
-    @PreAuthorize("isAuthenticated()")
     @Operation(summary = "OTT 그래프", description = "OTT에 대한 그래프 데이터를 조회합니다.")
     fun getOttGraph(
         @RequestParam period: PeriodOption,

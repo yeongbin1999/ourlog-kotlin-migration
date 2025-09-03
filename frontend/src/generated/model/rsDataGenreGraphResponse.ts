@@ -11,6 +11,6 @@ export interface RsDataGenreGraphResponse {
   resultCode: string;
   msg?: string;
   data?: GenreGraphResponse;
-  isSuccess: boolean;
   isFail: boolean;
+  isSuccess: boolean;
 }

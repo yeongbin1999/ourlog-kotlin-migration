@@ -11,6 +11,6 @@ export interface RsDataStatisticsCardDto {
   resultCode: string;
   msg?: string;
   data?: StatisticsCardDto;
-  isSuccess: boolean;
   isFail: boolean;
+  isSuccess: boolean;
 }

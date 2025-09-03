@@ -11,6 +11,6 @@ export interface RsDataListTimelineResponse {
   resultCode: string;
   msg?: string;
   data?: TimelineResponse[];
-  isSuccess: boolean;
   isFail: boolean;
+  isSuccess: boolean;
 }

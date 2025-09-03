@@ -21,6 +21,7 @@ import com.back.ourlog.domain.tag.entity.DiaryTag
 import com.back.ourlog.domain.tag.entity.Tag
 import com.back.ourlog.domain.tag.repository.TagRepository
 import com.back.ourlog.domain.user.entity.User
+import com.back.ourlog.domain.follow.enums.FollowStatus
 import com.back.ourlog.domain.user.repository.UserRepository
 import jakarta.transaction.Transactional
 import org.springframework.boot.CommandLineRunner
@@ -59,9 +60,9 @@ class DataInitializer(
         val tags = createTags()
         val genres = createGenres()
         val otts = createOtts()
-        val users = createUsers(20)
-        val contents = createContents(30)
-        val diaries = createDiaries(users, contents, 50)
+        val users = createUsers(200)
+        val contents = createContents(300)
+        val diaries = createDiaries(users, contents, 800)
         createFollows(users)
         createCommentsAndLikes(users, diaries)
         attachTagsGenresOtts(diaries, tags, genres, otts)
@@ -123,15 +124,38 @@ class DataInitializer(
 
     private fun createFollows(users: List<User>) {
         val follows = mutableListOf<Follow>()
+        val followProbabilities: Map<FollowStatus, Double> = mapOf(
+            FollowStatus.ACCEPTED to 0.6, // 60% accepted
+            FollowStatus.PENDING to 0.3,  // 30% pending
+            FollowStatus.REJECTED to 0.1   // 10% rejected
+        )
+
         for (follower in users) {
-            val followCount = 3 + random.nextInt(3)
-            val alreadyFollowed = mutableSetOf<User>()
-            repeat(followCount) {
+            val numInteractions = 5 + random.nextInt(6) // 5 to 10 interactions per user
+            val interactedWith = mutableSetOf<User>()
+
+            repeat(numInteractions) {
                 val followee = users[random.nextInt(users.size)]
-                if (followee != follower && alreadyFollowed.add(followee)) {
-                    follows.add(Follow(follower, followee))
-                    follower.increaseFollowingsCount()
-                    followee.increaseFollowersCount()
+
+                if (followee != follower && interactedWith.add(followee)) {
+                    val statusRoll = random.nextDouble()
+                    var currentProb = 0.0
+                    val selectedStatus = followProbabilities.entries.first { (status: FollowStatus, prob: Double) ->
+                        currentProb += prob
+                        statusRoll <= currentProb
+                    }.key
+
+                    val follow = Follow(follower, followee)
+                    when (selectedStatus) {
+                        FollowStatus.ACCEPTED -> {
+                            follow.accept()
+                            follower.increaseFollowingsCount()
+                            followee.increaseFollowersCount()
+                        }
+                        FollowStatus.REJECTED -> follow.reject()
+                        FollowStatus.PENDING -> { /* default is PENDING, no count update */ }
+                    }
+                    follows.add(follow)
                 }
             }
         }
@@ -141,6 +165,11 @@ class DataInitializer(
     private fun createCommentsAndLikes(users: List<User>, diaries: List<Diary>) {
         val comments = mutableListOf<Comment>()
         val likes = mutableListOf<Like>()
+
+        // Ensure user1 owns the first comment for testing purposes
+        val user1 = users[0]
+        val firstDiary = diaries[0]
+        comments.add(Comment(firstDiary, user1, "이 다이어리 정말 좋네요! ${UUID.randomUUID()}"))
 
         for (diary in diaries) {
             repeat(2 + random.nextInt(3)) {

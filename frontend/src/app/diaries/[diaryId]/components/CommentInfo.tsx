@@ -3,6 +3,7 @@ import CommentMenuButton from "./CommentMenuButton";
 import { Comment } from "../../types/detail";
 import { useRouter } from "next/navigation";
 import { axiosInstance } from "@/lib/api-client";
+import { useAuthStore } from "@/stores";
 
 export default function CommentInfo({
   comments,
@@ -14,6 +15,7 @@ export default function CommentInfo({
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editContent, setEditContent] = useState("");
   const router = useRouter();
+  const user = useAuthStore();
 
   const handleEdit = (comment: Comment) => {
     setEditingId(comment.id);
@@ -159,12 +161,12 @@ export default function CommentInfo({
                     })}
                   </span>
                 </div>
-                <div className="comment-menu-button opacity-0">
+                {Number(user.user.id) === comment.userId && (
                   <CommentMenuButton
                     onEdit={() => handleEdit(comment)}
                     onDelete={() => handleDelete(comment.id)}
                   />
-                </div>
+                )}
               </div>
             </div>
           </div>

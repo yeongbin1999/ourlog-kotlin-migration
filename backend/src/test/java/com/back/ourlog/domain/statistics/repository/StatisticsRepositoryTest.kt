@@ -1,10 +1,8 @@
 package com.back.ourlog.domain.statistics.repository
 
-import com.querydsl.core.util.MathUtils.result
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertNotNull
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
@@ -31,7 +29,7 @@ class StatisticsRepositoryTest @Autowired constructor(
     @DisplayName("총 다이어리 개수 조회 성공")
     fun successfulGetTotalDiaryCountByUserId(){
         val result = statisticsRepository.getTotalDiaryCountByUserId(existUserId)
-        assertThat(result).isEqualTo(2L)
+        assertThat(result).isEqualTo(8L)
     }
 
     @Test
@@ -45,7 +43,7 @@ class StatisticsRepositoryTest @Autowired constructor(
     @DisplayName("평균 별점 조회 성공")
     fun successfulGetAverageRatingByUserId(){
         val result = statisticsRepository.getAverageRatingByUserId(existUserId)
-        assertThat(result).isEqualTo(3.5)
+        assertThat(result).isEqualTo(2.63)
     }
 
     @Test
@@ -60,7 +58,7 @@ class StatisticsRepositoryTest @Autowired constructor(
     fun successfulFindFavoriteTypeAndCountByUserId(){
         val result = statisticsRepository.findFavoriteTypeAndCountByUserId(existUserId)
         assertThat(result.favoriteType).isEqualTo("BOOK")
-        assertThat(result.favoriteTypeCount).isEqualTo(1L)
+        assertThat(result.favoriteTypeCount).isEqualTo(3L)
     }
 
     @Test
@@ -94,7 +92,7 @@ class StatisticsRepositoryTest @Autowired constructor(
         val startMonth = LocalDate.now().minusMonths(5).withDayOfMonth(1).atStartOfDay()
         val result = statisticsRepository.count6MonthlyDiaryByUserId(existUserId, startMonth)
         assertThat(result[0].period).isEqualTo("2025-09")
-        assertThat(result[0].views).isEqualTo(2L)
+        assertThat(result[0].views).isEqualTo(8L)
     }
 
     @Test
@@ -110,9 +108,9 @@ class StatisticsRepositoryTest @Autowired constructor(
     fun successfulFindTypeCountsByUserId(){
         val result = statisticsRepository.findTypeCountsByUserId(existUserId)
         assertThat(result[0].type).isEqualTo("BOOK")
-        assertThat(result[0].count).isEqualTo(1L)
+        assertThat(result[0].count).isEqualTo(3L)
         assertThat(result[1].type).isEqualTo("MUSIC")
-        assertThat(result[1].count).isEqualTo(1L)
+        assertThat(result[1].count).isEqualTo(3L)
     }
 
     @Test

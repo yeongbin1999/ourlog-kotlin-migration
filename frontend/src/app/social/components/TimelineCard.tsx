@@ -109,10 +109,15 @@ export default function TimelineCard({ item }: { item: TimelineItem }) {
 
   // meta 우선 선택
   const meta: ContentMeta =
-    item.contentMeta ?? item.contentInfo ?? item.contentDetail ?? item.contentObj ?? {};
+    item.contentMeta ??
+    item.contentInfo ??
+    item.contentDetail ??
+    item.contentObj ??
+    {};
 
   // 타입 결정(명시 필드 + snake_case 필드까지 커버)
-  const _typeRaw = meta.type || item.type || item.contentType || item.content_type;
+  const _typeRaw =
+    meta.type || item.type || item.contentType || item.content_type;
   const _typeText = typeLabel(_typeRaw);
 
   // 포스터/날짜/제목
@@ -123,12 +128,15 @@ export default function TimelineCard({ item }: { item: TimelineItem }) {
   const preview = item.content ? item.content.slice(0, 100) : "";
 
   // 사용자 입력 태그 우선
-  const tags = (item.tagNames && item.tagNames.length ? item.tagNames : item.tags) || [];
+  const tags =
+    (item.tagNames && item.tagNames.length ? item.tagNames : item.tags) || [];
 
   // 평점(없으면 0)
   const rating = typeof item.rating === "number" ? item.rating : 0;
 
-  const dateText = released ? new Date(released).toLocaleDateString("ko-KR") : "";
+  const dateText = released
+    ? new Date(released).toLocaleDateString("ko-KR")
+    : "";
 
   // ♥ 상태
   const [isLiked, setIsLiked] = useState(!!item.isLiked);
@@ -137,16 +145,24 @@ export default function TimelineCard({ item }: { item: TimelineItem }) {
   const handleLikeClick = async (e: MouseEvent) => {
     e.stopPropagation();
     try {
+      const stateString = localStorage.getItem("auth-storage");
+      const accessToken = stateString
+        ? JSON.parse(stateString).state.accessToken
+        : null;
       const method = isLiked ? "DELETE" : "POST";
-      const res = await fetch(`/api/v1/likes/${item.id}`, { method });
+
+      const res = await fetch(`/api/v1/likes/${item.id}`, {
+        method,
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+      });
       if (!res.ok) throw new Error("좋아요 요청 실패");
-      const data: { liked?: boolean; likeCount?: number } = await res.json();
-      setIsLiked(!!data.liked);
-      setLikeCount(
-        typeof data.likeCount === "number"
-          ? data.likeCount
-          : likeCount + (isLiked ? -1 : 1)
-      );
+      const response = await res.json();
+      const resultData = response.data;
+      setIsLiked(resultData.liked);
+      setLikeCount(resultData.likeCount);
     } catch (err) {
       // eslint-disable-next-line no-console
       console.error(err);

@@ -31,9 +31,7 @@ class Follow(
     var status: FollowStatus = FollowStatus.PENDING
 
     fun accept() {
-        println("[DEBUG] 이전 상태: ${this.status}")
         this.status = FollowStatus.ACCEPTED
-        println("[DEBUG] 변경 후 상태: ${this.status}")
     }
 
     fun reject() {

@@ -11,6 +11,6 @@ export interface RsDataListContentSearchResultDto {
   resultCode: string;
   msg?: string;
   data?: ContentSearchResultDto[];
-  isSuccess: boolean;
   isFail: boolean;
+  isSuccess: boolean;
 }

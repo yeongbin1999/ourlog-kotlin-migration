@@ -11,6 +11,6 @@ export interface RsDataPageDiaryResponseDto {
   resultCode: string;
   msg?: string;
   data?: PageDiaryResponseDto;
-  isSuccess: boolean;
   isFail: boolean;
+  isSuccess: boolean;
 }

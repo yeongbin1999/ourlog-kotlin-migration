@@ -11,6 +11,6 @@ export interface RsDataListFollowUserResponse {
   resultCode: string;
   msg?: string;
   data?: FollowUserResponse[];
-  isSuccess: boolean;
   isFail: boolean;
+  isSuccess: boolean;
 }
