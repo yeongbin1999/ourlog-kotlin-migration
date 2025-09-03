@@ -22,7 +22,7 @@ class WebClientConfig {
     @Qualifier("spotifyApiDataClient")
     fun spotifyApiDataClient(): WebClient {
         return WebClient.builder()
-            .baseUrl("accounts.spotify.com")
+            .baseUrl("https://api.spotify.com")
             .build()
     }
 

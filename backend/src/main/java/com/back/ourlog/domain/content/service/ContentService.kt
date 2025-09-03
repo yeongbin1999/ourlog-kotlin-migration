@@ -22,10 +22,6 @@ class ContentService(
         val diary = diaryRepository.findById(diaryId)
             .orElseThrow { CustomException(ErrorCode.DIARY_NOT_FOUND) }
 
-        if (diary.user.id != userId) {
-            throw CustomException(ErrorCode.AUTH_FORBIDDEN)
-        }
-
         return ContentResponseDto.from(diary.content)
     }
 
@@ -33,5 +29,4 @@ class ContentService(
         return contentRepository.findByExternalIdAndType(result.externalId, type)
             ?: contentRepository.save(Content.of(result))
     }
-
 }

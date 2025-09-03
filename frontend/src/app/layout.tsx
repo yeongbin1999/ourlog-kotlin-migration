@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter, Anton } from "next/font/google";
 import "./globals.css";
 
 import Header from "@/components/layout/Header";
@@ -7,13 +7,14 @@ import Footer from "@/components/layout/Footer";
 import QueryProvider from "@/components/QueryProvider";
 import { Toaster } from 'sonner';
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const anton = Anton({
+  variable: "--font-anton",
+  weight: "400",
   subsets: ["latin"],
 });
 
@@ -45,7 +46,7 @@ export default function RootLayout({
   return (
     <html lang="kr">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${inter.variable} ${anton.variable} font-sans antialiased`}
       >
         <QueryProvider>
           <Header />
