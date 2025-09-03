@@ -8,6 +8,24 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
+        hostname: 'image.tmdb.org',
+        port: '',
+        pathname: '/t/p/**',
+      },
+      {
+        protocol: "http",
+        hostname: "www.nl.go.kr",
+        port: "",
+        pathname: "/seoji/fu/ecip/dbfiles/**",
+      },
+      {
+        protocol: "https",
+        hostname: "i.scdn.co",
+        port: "",
+        pathname: "/image/**",
+      },
+      {
+        protocol: 'https',
         hostname: 'k.kakaocdn.net',
         port: '',
         pathname: '**',
@@ -42,7 +60,7 @@ const nextConfig = {
     return [
       {
         source: '/api/:path*',
-        destination: 'http://localhost:8080/api/:path*',
+        destination: `${backendApi}/api/:path*`,
       },
     ];
   },

@@ -85,6 +85,7 @@ class LibraryService(
                 .mapNotNull { book ->
                     runCatching { book.mapToSearchResultDto() }.getOrNull()
                 }
+                .distinctBy { it.externalId }
         } catch (e: Exception) {
             logger.error("Failed to search book by title: {}", title, e)
             emptyList()
