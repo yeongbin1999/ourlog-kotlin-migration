@@ -5,7 +5,11 @@ import React, { useEffect, useState, useCallback } from "react";
 import Image from "next/image";
 import { useAuthStore } from "@/stores/authStore";
 import DiaryList from "@/components/user/DiaryList";
-import UserList from "@/components/user/UserList";
+
+import FollowRequestList from "@/components/user/FollowRequestList";
+import SentRequestList from "@/components/user/SentRequestList";
+import FollowerList from "@/components/user/FollowerList";
+import FollowingList from "@/components/user/FollowingList";
 import { axiosInstance } from "@/lib/api-client";
 import { unwrapList } from "@/lib/unwrap";
 
@@ -82,16 +86,18 @@ export default function MyProfilePage() {
       return <DiaryList userId={myUserId} onActionCompleted={() => fetchAllCounts(myUserId)} />;
     }
     if (selectedTab.type === "user_list") {
-      return (
-        <UserList
-          key={selectedTab.key}
-          myUserId={myUserId}
-          endpoint={selectedTab.endpoint()}
-          actionType={selectedTab.actionType}
-          emptyMessage={selectedTab.empty}
-          onActionCompleted={() => fetchAllCounts(myUserId)}
-        />
-      );
+      switch (selectedTab.key) {
+        case "received":
+          return <FollowRequestList myUserId={myUserId} onActionCompleted={() => fetchAllCounts(myUserId)} />;
+        case "sent":
+          return <SentRequestList myUserId={myUserId} onActionCompleted={() => fetchAllCounts(myUserId)} />;
+        case "following":
+          return <FollowingList myUserId={myUserId} onActionCompleted={() => fetchAllCounts(myUserId)} />;
+        case "followers":
+          return <FollowerList myUserId={myUserId} onActionCompleted={() => fetchAllCounts(myUserId)} />;
+        default:
+          return null;
+      }
     }
     return null;
   };
