@@ -16,6 +16,13 @@ export default function SelectTypePage() {
   const [selectedType, setSelectedType] = useState("");
   const { isAuthenticated, isLoading } = useAuthStore();
 
+  const handleTypeSelect = (type: string) => {
+    setSelectedType(type);
+    setTimeout(() => {
+      router.push(`/diaries/select-content?type=${type}`);
+    }, 250);
+  };
+
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       router.push("/login");
