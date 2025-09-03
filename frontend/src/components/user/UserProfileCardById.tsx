@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { axiosInstance } from '@/lib/api-client';
 import { useAuthStore } from '@/stores/authStore';
@@ -14,8 +14,7 @@ type UserProfileData = {
   profileImageUrl?: string;
   isFollowing: boolean;           // 내가 팔로우하고 있는 상태
   followId?: number;              // 팔로우 관계 ID
-  isFollowRequestReceived?: boolean; // 상대가 나에게 팔로우 요청 보낸 상태
-  isFollowRequestSent?: boolean;      // 내가 상대에게 팔로우 요청 보낸 상태
+  isFollowRequestSent?: boolean;  // 내가 상대에게 팔로우 요청 보낸 상태
 };
 
 export default function UserProfileCardById({ userId }: Props) {
@@ -39,7 +38,6 @@ export default function UserProfileCardById({ userId }: Props) {
           profileImageUrl: data.profileImageUrl,
           isFollowing: data.isFollowing ?? false,
           followId: data.followId,
-          isFollowRequestReceived: data.isFollowRequestReceived ?? false,
           isFollowRequestSent: data.isFollowRequestSent ?? false,
         });
       } catch (err) {
@@ -53,69 +51,33 @@ export default function UserProfileCardById({ userId }: Props) {
 
   const isMe = Number(myUserId) === profile.userId;
 
-  // 팔로우 / 취소 / 언팔로우 상태 토글
+  // 팔로우 / 요청 취소 / 언팔로우 처리
   const handleFollow = async () => {
-    if (!profile) return;
+    if (!profile || loading) return;
+
     setLoading(true);
+    const prevProfile = { ...profile };
+
     try {
       if (profile.isFollowing) {
         // 언팔로우
-        await axiosInstance.delete(`/api/v1/follows/${profile.userId}`);
-        setProfile(prev => prev ? { ...prev, isFollowing: false, followId: undefined } : prev);
+        setProfile({ ...profile, isFollowing: false, followId: undefined });
+        if (profile.followId) await axiosInstance.delete(`/api/v1/follows/${profile.followId}`);
       } else if (profile.isFollowRequestSent) {
         // 팔로우 요청 취소
-        if (profile.followId) {
-          await axiosInstance.delete(`/api/v1/follows/${profile.followId}`);
-          setProfile(prev => prev ? { ...prev, isFollowRequestSent: false, followId: undefined } : prev);
-        }
+        setProfile({ ...profile, isFollowRequestSent: false, followId: undefined });
+        if (profile.followId) await axiosInstance.delete(`/api/v1/follows/${profile.followId}`);
       } else {
-        // 팔로우 요청
+        // 팔로우 요청 보내기
+        setProfile({ ...profile, isFollowRequestSent: true });
         const res = await axiosInstance.post(`/api/v1/follows/${profile.userId}`);
         const data = res.data.data ?? {};
-        setProfile(prev => prev ? {
-          ...prev,
-          isFollowRequestSent: true,
-          followId: data.followId ?? prev.followId,
-        } : prev);
+        setProfile(prev => ({ ...prev!, followId: data.followId ?? prev!.followId }));
       }
     } catch (err) {
       console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // 팔로우 요청 수락
-  const handleAccept = async () => {
-    if (!profile || !profile.followId) return;
-    setLoading(true);
-    try {
-      await axiosInstance.post(`/api/v1/follows/${profile.followId}/accept`);
-      setProfile(prev => prev ? {
-        ...prev,
-        isFollowing: true,
-        isFollowRequestReceived: false
-      } : prev);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // 팔로우 요청 거절
-  const handleReject = async () => {
-    if (!profile || !profile.followId) return;
-    setLoading(true);
-    try {
-      await axiosInstance.post(`/api/v1/follows/${profile.followId}/reject`);
-      setProfile(prev => prev ? {
-        ...prev,
-        isFollowRequestReceived: false,
-        followId: undefined
-      } : prev);
-    } catch (err) {
-      console.error(err);
+      setProfile(prevProfile);
+      alert('요청 처리 중 오류가 발생했습니다.');
     } finally {
       setLoading(false);
     }
@@ -123,29 +85,18 @@ export default function UserProfileCardById({ userId }: Props) {
 
   // 버튼 렌더링
   const renderButton = () => {
-    if (loading) return <button className="mt-4 px-4 py-2 rounded border">처리중...</button>;
+    if (isMe) return null;
 
-    if (profile.isFollowRequestReceived) {
-      return (
-        <div className="flex justify-center gap-2 mt-4">
-          <button
-            onClick={e => { e.stopPropagation(); handleAccept(); }}
-            className="px-4 py-2 rounded bg-green-500 text-white"
-          >수락</button>
-          <button
-            onClick={e => { e.stopPropagation(); handleReject(); }}
-            className="px-4 py-2 rounded bg-red-500 text-white"
-          >거절</button>
-        </div>
-      );
-    }
+    if (loading) return <button className="mt-4 px-4 py-2 rounded border">처리중...</button>;
 
     if (profile.isFollowing) {
       return (
         <button
           onClick={e => { e.stopPropagation(); handleFollow(); }}
           className="mt-4 px-4 py-2 rounded border"
-        >언팔로우</button>
+        >
+          언팔로우
+        </button>
       );
     }
 
@@ -154,7 +105,9 @@ export default function UserProfileCardById({ userId }: Props) {
         <button
           onClick={e => { e.stopPropagation(); handleFollow(); }}
           className="mt-4 px-4 py-2 rounded bg-gray-300"
-        >요청 취소</button>
+        >
+          요청 취소
+        </button>
       );
     }
 
@@ -162,7 +115,9 @@ export default function UserProfileCardById({ userId }: Props) {
       <button
         onClick={e => { e.stopPropagation(); handleFollow(); }}
         className="mt-4 px-4 py-2 rounded bg-blue-500 text-white"
-      >팔로우</button>
+      >
+        팔로우
+      </button>
     );
   };
 
