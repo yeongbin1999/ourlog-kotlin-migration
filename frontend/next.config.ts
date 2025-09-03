@@ -12,6 +12,9 @@ const nextConfig: NextConfig = {
       "image.tmdb.org",
       "www.nl.go.kr",
       "picsum.photos",
+      "*.googleusercontent.com",
+      "*.pstatic.net",
+      "*.kakaocdn.net",
     ],
   },
 
