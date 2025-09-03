@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from 'react';
 import { axiosInstance } from '@/lib/api-client';
 import { useAuthStore } from '@/stores/authStore';
+import { FollowUserResponse } from "@/generated/model";
 
 type Props = {
   userId: string;
@@ -47,21 +48,20 @@ export default function UserProfileCard({ userId, onActionCompleted }: Props) {
       try {
         // 팔로잉 목록
         const followingRes = await axiosInstance.get(`/api/v1/follows/followings?userId=${myUserId}`);
-        const followings = followingRes.data.data ?? [];
+        const followings: FollowUserResponse[] = followingRes.data.data ?? [];
 
-        // API 응답 구조에 맞게 필드 확인 (예: followeeId)
-        if (followings.some((f: any) => f.followeeId === Number(userId))) {
+        if (followings.some((f) => f.userId === Number(userId))) {
           setFollowStatus('accepted');
-          setFollowId(followings.find((f: any) => f.followeeId === Number(userId))?.id ?? null);
+          setFollowId(followings.find((f) => f.userId === Number(userId))?.followId ?? null);
           return;
         }
 
         // 보낸 팔로우 요청
         const sentRes = await axiosInstance.get(`/api/v1/follows/sent-requests`);
-        const sent = sentRes.data.data ?? [];
-        if (sent.some((f: any) => f.followeeId === Number(userId))) {
+        const sent: FollowUserResponse[] = sentRes.data.data ?? [];
+        if (sent.some((f) => f.userId === Number(userId))) {
           setFollowStatus('pending');
-          setFollowId(sent.find((f: any) => f.followeeId === Number(userId))?.id ?? null);
+          setFollowId(sent.find((f) => f.userId === Number(userId))?.followId ?? null);
           return;
         }
 

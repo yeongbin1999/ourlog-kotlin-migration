@@ -42,7 +42,7 @@ export default function PublicProfileHeader({ userId, onChanged }: Props) {
     enabled: isAuthenticated !== null,
   });
 
-  const useFollowMutation = (mutationFn: () => Promise<any>, updateFn: (user: PublicUser) => PublicUser) => {
+  const useFollowMutation = (mutationFn: () => Promise<unknown>, updateFn: (user: PublicUser) => PublicUser) => {
     return useMutation({
       mutationFn,
       onMutate: async () => {
