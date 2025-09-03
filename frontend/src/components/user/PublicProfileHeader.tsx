@@ -1,7 +1,8 @@
 'use client';
 
+import Image from "next/image";
+
 import React, { useMemo } from 'react';
-import { useRouter } from 'next/navigation';
 import { axiosInstance } from '@/lib/api-client';
 import { useAuthStore } from '@/stores/authStore';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -27,7 +28,6 @@ type Props = {
 
 export default function PublicProfileHeader({ userId, onChanged }: Props) {
   const { user: me, isAuthenticated } = useAuthStore();
-  const router = useRouter();
   const queryClient = useQueryClient();
 
   const isMe = useMemo(() => Number(me?.id) === userId, [me?.id, userId]);
@@ -125,11 +125,12 @@ export default function PublicProfileHeader({ userId, onChanged }: Props) {
 
   return (
     <header className="flex items-center gap-8 md:gap-16">
-      <div className="flex-shrink-0 w-24 h-24 md:w-36 md:h-36">
-        <img
+      <div className="relative flex-shrink-0 w-24 h-24 md:w-36 md:h-36">
+        <Image
           src={user.profileImageUrl || '/images/no-image.png'}
           alt="프로필"
-          className="w-full h-full rounded-full object-cover ring-2 ring-offset-2 ring-gray-100"
+          fill
+          className="rounded-full object-cover ring-2 ring-offset-2 ring-gray-100"
         />
       </div>
 

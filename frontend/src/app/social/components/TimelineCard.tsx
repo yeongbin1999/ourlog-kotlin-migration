@@ -164,7 +164,6 @@ export default function TimelineCard({ item }: { item: TimelineItem }) {
       setIsLiked(resultData.liked);
       setLikeCount(resultData.likeCount);
     } catch (err) {
-      // eslint-disable-next-line no-console
       console.error(err);
       alert("좋아요 요청 중 오류가 발생했습니다.");
     }

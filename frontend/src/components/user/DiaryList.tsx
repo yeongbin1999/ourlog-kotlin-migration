@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback, MouseEvent } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { axiosInstance } from '@/lib/api-client';
 import { FaEdit, FaTrashAlt } from 'react-icons/fa';

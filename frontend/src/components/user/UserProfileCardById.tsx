@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { axiosInstance } from '@/lib/api-client';
 import { useAuthStore } from '@/stores/authStore';

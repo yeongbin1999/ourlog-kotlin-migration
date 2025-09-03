@@ -1,4 +1,5 @@
 import { Content } from "../../types/detail";
+import Image from "next/image";
 
 export default function ContentInfo({
   content,
@@ -15,12 +16,13 @@ export default function ContentInfo({
         <div className="grid lg:grid-cols-5 gap-6">
           {/* 포스터 */}
           <div className="lg:col-span-2 flex justify-center">
-            <div className="w-[90%] aspect-[3/4] bg-gray-100 rounded-xl overflow-hidden shadow-md">
+            <div className="relative w-[90%] aspect-[3/4] bg-gray-100 rounded-xl overflow-hidden shadow-md">
               {content.posterUrl ? (
-                <img
+                <Image
                   src={content.posterUrl}
                   alt={`${content.title} 포스터`}
-                  className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                  fill
+                  className="object-cover hover:scale-105 transition-transform duration-300"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm font-medium">

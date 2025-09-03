@@ -7,7 +7,6 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { useSignup } from '@/generated/api/api';
-import { useAuthStore } from '@/stores/authStore';
 import { Eye, EyeOff, Mail, Lock, User, Check, X } from 'lucide-react';
 import { AxiosError } from 'axios';
 

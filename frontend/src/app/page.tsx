@@ -2,6 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 
+import Image from "next/image";
+
 export default function Home() {
   const [visibleElements, setVisibleElements] = useState(new Set());
 
@@ -302,9 +304,11 @@ export default function Home() {
                 <div className="p-12">
                   <div className="flex gap-8 mb-8">
                     <div className="w-24 h-36 rounded-lg overflow-hidden shadow-lg flex-shrink-0 transform transition-transform duration-300 hover:scale-105">
-                      <img
+                      <Image
                         src={example.poster}
                         alt={example.title}
+                        width={96}
+                        height={144}
                         className="w-full h-full object-cover"
                       />
                     </div>

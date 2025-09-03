@@ -1,6 +1,5 @@
 'use client';
 
-import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from 'react';
 import { axiosInstance } from '@/lib/api-client';
 import { useAuthStore } from '@/stores/authStore';
@@ -21,7 +20,6 @@ type UserProfile = {
 type FollowStatus = 'none' | 'pending' | 'accepted';
 
 export default function UserProfileCard({ userId, onActionCompleted }: Props) {
-  const router = useRouter();
   const { user: me } = useAuthStore();
   const myUserId = me?.id ? Number(me.id) : null;
 

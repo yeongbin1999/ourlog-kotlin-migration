@@ -13,7 +13,7 @@ const nextConfig = {
         pathname: '/t/p/**',
       },
       {
-        protocol: "http",
+        protocol: "https",
         hostname: "www.nl.go.kr",
         port: "",
         pathname: "/seoji/fu/ecip/dbfiles/**",

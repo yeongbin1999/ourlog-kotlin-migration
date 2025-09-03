@@ -1,11 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { UserMenu } from "./UserMenu";
 import UserSearchDropdown from "../UserSearchDropdown";
-import router from "next/router";
 
 const Header = () => {
   const [hoveredItem, setHoveredItem] = React.useState<string | null>(null);
