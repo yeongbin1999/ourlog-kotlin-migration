@@ -159,7 +159,7 @@ export default function CommentInfo({
                     })}
                   </span>
                 </div>
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                <div className="comment-menu-button opacity-0">
                   <CommentMenuButton
                     onEdit={() => handleEdit(comment)}
                     onDelete={() => handleDelete(comment.id)}

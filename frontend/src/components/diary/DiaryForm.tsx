@@ -8,7 +8,7 @@ import { axiosInstance } from "@/lib/api-client"
 interface Tag {
   id: number;
   name: string;
-  color?: string; 
+  color?: string;
 }
 
 const tagColors = [
@@ -140,7 +140,7 @@ export default function DiaryForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-  
+
     const payload = {
       title,
       contentText,
@@ -151,7 +151,7 @@ export default function DiaryForm({
       externalId,
       type,
     };
-  
+
     try {
       let res;
       if (mode === "edit") {
@@ -159,14 +159,14 @@ export default function DiaryForm({
       } else {
         res = await axiosInstance.post("/api/v1/diaries", payload);
       }
-    
+
       alert("감상일기가 저장되었습니다.");
       const redirectId = res.data.data?.id ?? diaryId;
       const redirectUrl = mode === "edit" ? `/diaries/${redirectId}?refresh=1` : `/diaries/${redirectId}`;
       router.push(redirectUrl);
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error && 'response' in err 
-        ? (err as { response?: { data?: { msg?: string } } }).response?.data?.msg 
+      const errorMessage = err instanceof Error && 'response' in err
+        ? (err as { response?: { data?: { msg?: string } } }).response?.data?.msg
         : "오류가 발생했습니다.";
       alert(errorMessage || "오류가 발생했습니다.");
     } finally {
@@ -204,17 +204,40 @@ export default function DiaryForm({
   }[type] || type);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-white-50 p-6">
       <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            감상일기 {mode === "edit" ? "수정" : "작성"}
-          </h1>
-          <p className="text-gray-600">
-            {getTypeLabel(type)} 감상 후기를 자유롭게 {mode === "edit" ? "수정" : "작성"}해보세요.
-          </p>
+        <div className="pt-8 mb-10">
+          <div className="flex items-center gap-5">
+            {/* 아이콘 */}
+            <div className="flex-shrink-0 p-4 bg-gradient-to-br from-sky-100 to-blue-200 rounded-full">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="32"
+                height="32"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="text-sky-600"
+              >
+                <path d="M12 20h9" />
+                <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+              </svg>
+            </div>
+            {/* 텍스트 블록 */}
+            <div>
+              <h1 className="text-2xl font-bold text-gray-800 tracking-tight">
+                감상일기 {mode === "edit" ? "수정" : "작성"}
+              </h1>
+              <p className="text-gray-500 mt-1 tracking-wide">
+                {getTypeLabel(type)} 감상 후기를 자유롭게 {mode === "edit" ? "수정" : "작성"}해보세요.
+              </p>
+            </div>
+          </div>
         </div>
-  
+
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
           {/* 콘텐츠 정보 카드 */}
           <div className="lg:col-span-2">
@@ -260,12 +283,12 @@ export default function DiaryForm({
               )}
             </div>
           </div>
-  
+
           {/* 작성 폼 */}
           <div className="lg:col-span-3">
             <form onSubmit={handleSubmit}>
               <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-8 space-y-8">
-  
+
                 {/* 공개 여부 */}
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-bold text-gray-900">일기 작성</h2>
@@ -279,7 +302,7 @@ export default function DiaryForm({
                     </div>
                   </label>
                 </div>
-  
+
                 {/* 제목 */}
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-3">제목</label>
@@ -288,7 +311,7 @@ export default function DiaryForm({
                     placeholder="일기 제목을 입력하세요"
                   />
                 </div>
-  
+
                 {/* 내용 */}
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-3">감상 후기</label>
@@ -297,7 +320,7 @@ export default function DiaryForm({
                     rows={6} placeholder="작품을 보고 느낀 점을 자유롭게 작성해보세요..."
                   />
                 </div>
-  
+
                 {/* OTT */}
                 {type === 'MOVIE' && (
                   <div>
@@ -334,7 +357,7 @@ export default function DiaryForm({
                     </div>
                   </div>
                 )}
-  
+
                 {/* 태그 */}
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-3">감정 태그</label>
@@ -355,7 +378,7 @@ export default function DiaryForm({
                   </div>
                   <div className="flex gap-3">
                     <input type="text" value={newTagName} onChange={(e) => setNewTagName(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleCreateNewTag()}
+                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleCreateNewTag(); } }}
                       className="flex-1 border-2 border-gray-200 px-4 py-2 rounded-2xl focus:border-black focus:outline-none"
                       placeholder="새로운 감정 태그 추가"
                     />
@@ -367,7 +390,7 @@ export default function DiaryForm({
                     </button>
                   </div>
                 </div>
-  
+
                 {/* 평점 */}
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-3">평점</label>
@@ -395,7 +418,7 @@ export default function DiaryForm({
                     </div>
                   </div>
                 </div>
-  
+
                 {/* 제출 버튼 */}
                 <div className="pt-4">
                   <button type="submit" disabled={isSubmitting || !title || !contentText}
@@ -408,7 +431,7 @@ export default function DiaryForm({
                     ) : mode === "edit" ? "수정 완료" : "일기 작성 완료"}
                   </button>
                 </div>
-  
+
               </div>
             </form>
           </div>

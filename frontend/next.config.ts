@@ -11,6 +11,7 @@ const nextConfig: NextConfig = {
       "i.scdn.co",
       "image.tmdb.org",
       "www.nl.go.kr",
+      "picsum.photos",
     ],
   },
 
