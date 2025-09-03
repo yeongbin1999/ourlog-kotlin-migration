@@ -4,9 +4,10 @@ import React from "react";
 import Link from "next/link";
 import { UserMenu } from "./UserMenu";
 import UserSearchDropdown from "../UserSearchDropdown";
+import { usePathname } from 'next/navigation'; // Correctly placed at the top
 
 const Header = () => {
-  const [hoveredItem, setHoveredItem] = React.useState<string | null>(null);
+  const pathname = usePathname();
 
   const leftNavItems = [
     { key: "feed", label: "Feed", href: "/social" },
@@ -31,12 +32,10 @@ const Header = () => {
               <Link key={item.key} href={item.href} passHref>
                 <span
                   className={`inline-block text-base px-4 py-2 rounded-full transition duration-200 ${
-                    hoveredItem === item.key
+                    pathname === item.href
                       ? "bg-black text-white"
                       : "text-gray-700 hover:bg-black hover:text-white"
                   }`}
-                  onMouseEnter={() => setHoveredItem(item.key)}
-                  onMouseLeave={() => setHoveredItem(null)}
                 >
                   {item.label}
                 </span>

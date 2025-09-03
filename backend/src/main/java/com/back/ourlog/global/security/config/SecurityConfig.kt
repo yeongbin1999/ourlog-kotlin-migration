@@ -100,6 +100,7 @@ class SecurityConfig(
                 "http://127.0.0.1:3000",
                 "https://ourlog.vercel.app",
                 "https://*.ourlog.shop",
+                "https://ourlog-kotlin-migration.vercel.app"
             )
             allowedMethods = listOf("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
             allowedHeaders = listOf("*")
