@@ -19,28 +19,23 @@ class TmdbClient(
 
     private val log = LoggerFactory.getLogger(TmdbClient::class.java)
 
-    fun searchMovie(query: String, appendToResponse: String? = null): TmdbSearchResponse? {
+    fun searchMovie(query: String): TmdbSearchResponse? {
+        log.info("🔍 TMDB 영화 검색 API 호출: query={}", query)
         val url = buildUrl("/search/movie") {
             queryParam("query", query)
             queryParam("language", "ko-KR")
             queryParam("region", "KR")
             queryParam("include_adult", false)
-            if (!appendToResponse.isNullOrBlank()) {
-                queryParam("append_to_response", appendToResponse)
-            }
         }
 
         var response = restTemplate.getForObject(url, TmdbSearchResponse::class.java)
 
-        // 결과 없을 경우 fallback = 영어로 다시 검색
         if (response?.results.isNullOrEmpty()) {
+            log.info("🔍 TMDB 한국어 검색 결과 없음. 영어로 재검색: query={}", query)
             val fallbackUrl = buildUrl("/search/movie") {
                 queryParam("query", query)
                 queryParam("language", "en-US")
                 queryParam("include_adult", false)
-                if (!appendToResponse.isNullOrBlank()) {
-                    queryParam("append_to_response", appendToResponse)
-                }
             }
             response = restTemplate.getForObject(fallbackUrl, TmdbSearchResponse::class.java)
         }
@@ -48,6 +43,7 @@ class TmdbClient(
     }
 
     fun fetchMovieById(id: String, appendToResponse: String? = null): TmdbMovieDto? {
+        log.info("🎬 TMDB 영화 상세 정보 API 호출: id={}", id)
         val url = buildUrl("/movie/$id") {
             queryParam("language", "ko-KR")
             if (!appendToResponse.isNullOrBlank()) {

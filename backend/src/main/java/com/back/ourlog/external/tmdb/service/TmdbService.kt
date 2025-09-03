@@ -34,15 +34,27 @@ class TmdbService(
     }
 
     fun searchMovieByTitle(title: String): List<ContentSearchResultDto> {
-        val response = tmdbClient.searchMovie(title, "credits")
-        val movies = response?.results ?: return emptyList()
+        // 1단계: 제목으로 영화 '검색' (기본 정보만 획득)
+        val searchResponse = tmdbClient.searchMovie(title)
+        val movieSummaries = searchResponse?.results ?: return emptyList()
 
-        return movies
+        // 2단계: 검색된 영화 ID를 기반으로 '상세 정보'를 다시 조회
+        return movieSummaries
             .filterNotNull()
             .filter { !it.posterPath.isNullOrBlank() }
-            .sortedByDescending { it.voteCount }
-            .take(10)
-            .map { movieDto -> toContentSearchResult(movieDto) }
+            .sortedByDescending { it.voteCount } // 인기도 순 정렬
+            .take(10) // 상위 10개만
+            .mapNotNull { summaryDto ->
+                // 상세 정보 조회 실패 시 목록에서 제외하기 위해 mapNotNull 사용
+                try {
+                    // credits(제작진)를 포함하여 상세 정보 조회
+                    val detailedMovie = tmdbClient.fetchMovieById(summaryDto.id.toString(), "credits")
+                    detailedMovie?.let { toContentSearchResult(it) }
+                } catch (e: Exception) {
+                    log.error("Failed to fetch movie details for id: {}. Reason: {}", summaryDto.id, e.message)
+                    null // 예외 발생 시 null을 반환하여 최종 리스트에서 제외
+                }
+            }
     }
 
     private fun toContentSearchResult(movie: TmdbMovieDto): ContentSearchResultDto {
