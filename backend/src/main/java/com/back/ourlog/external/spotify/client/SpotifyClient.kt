@@ -77,7 +77,7 @@ class SpotifyClient(
                     .path("/v1/search")
                     .queryParam("q", keyword)
                     .queryParam("type", "track")
-                    .queryParam("limit", 5)
+                    .queryParam("limit", 10)
                     .build()
             }
             .header(HttpHeaders.AUTHORIZATION, "Bearer ${getAccessToken()}")
