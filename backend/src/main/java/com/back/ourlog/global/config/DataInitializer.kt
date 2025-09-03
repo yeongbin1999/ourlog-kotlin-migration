@@ -8,6 +8,7 @@ import com.back.ourlog.domain.content.repository.ContentRepository
 import com.back.ourlog.domain.diary.entity.Diary
 import com.back.ourlog.domain.diary.repository.DiaryRepository
 import com.back.ourlog.domain.follow.entity.Follow
+import com.back.ourlog.domain.follow.enums.FollowStatus
 import com.back.ourlog.domain.follow.repository.FollowRepository
 import com.back.ourlog.domain.genre.entity.DiaryGenre
 import com.back.ourlog.domain.genre.entity.Genre
@@ -21,18 +22,16 @@ import com.back.ourlog.domain.tag.entity.DiaryTag
 import com.back.ourlog.domain.tag.entity.Tag
 import com.back.ourlog.domain.tag.repository.TagRepository
 import com.back.ourlog.domain.user.entity.User
-import com.back.ourlog.domain.follow.enums.FollowStatus
 import com.back.ourlog.domain.user.repository.UserRepository
 import jakarta.transaction.Transactional
 import org.springframework.boot.CommandLineRunner
-import org.springframework.context.annotation.Profile
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Component
 import java.time.LocalDateTime
 import java.util.*
 
 @Component
-@Profile("!prod")
+//@Profile("!prod")
 class DataInitializer(
     private val userRepository: UserRepository,
     private val contentRepository: ContentRepository,
