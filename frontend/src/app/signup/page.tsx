@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Input } from '@/components/ui/input';
@@ -9,6 +9,26 @@ import { toast } from 'sonner';
 import { useSignup } from '@/generated/api/api';
 import { Eye, EyeOff, Mail, Lock, User, Check, X } from 'lucide-react';
 import { AxiosError } from 'axios';
+import { useAuthStore } from '@/stores/authStore';
+
+export default function SignUpPage() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [nickname, setNickname] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
+
+  const { mutateAsync: signupMutation } = useSignup();
+  const { isAuthenticated } = useAuthStore();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push('/');
+    }
+  }, [isAuthenticated, router]);
 
 export default function SignUpPage() {
   const [email, setEmail] = useState('');

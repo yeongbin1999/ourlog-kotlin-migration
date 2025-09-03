@@ -1,8 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { useAuthStore } from "@/stores/authStore";
 
 const CONTENT_TYPES = [
   { key: "MOVIE", label: "영화" },
@@ -13,13 +14,24 @@ const CONTENT_TYPES = [
 export default function SelectTypePage() {
   const router = useRouter();
   const [selectedType, setSelectedType] = useState("");
+  const { isAuthenticated, isLoading } = useAuthStore();
 
-  const handleTypeSelect = (type: string) => {
-    setSelectedType(type);
-    setTimeout(() => {
-      router.push(`/diaries/select-content?type=${type}`);
-    }, 250);
-  };
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.push("/login");
+    }
+  }, [isAuthenticated, isLoading, router]);
+
+  if (isLoading || !isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
+          <p className="text-gray-600 font-medium">인증 확인 중...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white flex items-center justify-center p-6 font-sans">
