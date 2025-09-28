@@ -1,11 +1,11 @@
 plugins {
     java
-    id("org.springframework.boot") version "3.5.3"
+    id("org.springframework.boot") version "3.5.6"
     id("io.spring.dependency-management") version "1.1.7"
-    kotlin("jvm") version "1.9.25"
-    kotlin("plugin.spring") version "1.9.25"
-    kotlin("plugin.jpa") version "1.9.25"
-    id("com.google.devtools.ksp") version "1.9.25-1.0.20"
+    kotlin("jvm") version "2.2.20"
+    kotlin("plugin.spring") version "2.2.20"
+    kotlin("plugin.jpa") version "2.2.20"
+    id("com.google.devtools.ksp") version "2.2.20-2.0.3"
 }
 
 group = "com.back"
@@ -44,8 +44,8 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-actuator")
 
     // --- Kotlin Coroutines ---
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor:1.7.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor:1.10.2")
 
     // --- Database ---
     runtimeOnly("com.h2database:h2")
@@ -57,12 +57,12 @@ dependencies {
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
 
     // --- JWT ---
-    implementation("io.jsonwebtoken:jjwt-api:0.11.5")
-    implementation("io.jsonwebtoken:jjwt-impl:0.11.5")
-    implementation("io.jsonwebtoken:jjwt-jackson:0.11.5")
+    implementation("io.jsonwebtoken:jjwt-api:0.13.0")
+    implementation("io.jsonwebtoken:jjwt-impl:0.13.0")
+    implementation("io.jsonwebtoken:jjwt-jackson:0.13.0")
 
     // --- OpenAPI ---
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.5.0")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.13")
 
     // --- Lombok ---
     compileOnly("org.projectlombok:lombok")
@@ -71,7 +71,7 @@ dependencies {
     testAnnotationProcessor("org.projectlombok:lombok")
 
     // --- Jakarta Annotation ---
-    implementation("jakarta.annotation:jakarta.annotation-api:2.1.1")
+    implementation("jakarta.annotation:jakarta.annotation-api:3.0.0")
 
     // --- Dotenv ---
     implementation("me.paulschwarz:spring-dotenv:4.0.0")
@@ -81,7 +81,7 @@ dependencies {
     ksp("io.github.openfeign.querydsl:querydsl-ksp-codegen:7.0")
 
     // --- Apache Commons Lang (CVE 대응) ---
-    implementation("org.apache.commons:commons-lang3:3.18.0") {
+    implementation("org.apache.commons:commons-lang3:3.19.0") {
         because("Fix CVE-2025-48924: Uncontrolled Recursion vulnerability")
     }
 
@@ -89,11 +89,11 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-test") {
         exclude(group = "org.junit.vintage", module = "junit-vintage-engine")
     }
-    testImplementation("org.junit.jupiter:junit-jupiter:5.12.2")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.12.2")
+    testImplementation("org.junit.jupiter:junit-jupiter:5.13.4")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.13.4")
     testImplementation("org.springframework.security:spring-security-test")
     testImplementation("org.mockito:mockito-inline:5.2.0")
-    testImplementation("org.mockito.kotlin:mockito-kotlin:5.2.1")
+    testImplementation("org.mockito.kotlin:mockito-kotlin:6.0.0")
 }
 
 kotlin {
